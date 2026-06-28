@@ -1,0 +1,120 @@
+name: Velora
+options:
+  bundleIdPrefix: app.velora
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+packages:
+  Velora:
+    path: Velora
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGN_STYLE: Automatic
+targets:
+  VeloraMacApp:
+    type: application
+    platform: macOS
+    productName: Velora
+    sources:
+      - path: Apps/SharedPrototype
+      - path: Apps/VeloraMac
+    dependencies:
+      - package: Velora
+        product: Velora
+    info:
+      path: Apps/VeloraMac/Info.plist
+      properties:
+        CFBundleDisplayName: Velora
+        CFBundleIdentifier: app.velora.mac
+        CFBundleName: Velora
+        CFBundlePackageType: APPL
+        LSMinimumSystemVersion: "14.0"
+        NSHumanReadableCopyright: ""
+        NSMicrophoneUsageDescription: "Velora 仅在你开始录音时使用麦克风，音频只在这台 Mac 上处理。"
+        NSSpeechRecognitionUsageDescription: "Velora 只会在你选择 Apple 本地语音识别后使用该权限。"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.velora.mac
+        PRODUCT_NAME: Velora
+        PRODUCT_MODULE_NAME: VeloraMacApp
+        ENABLE_HARDENED_RUNTIME: true
+        CODE_SIGN_IDENTITY: "-"
+  VeloraiOS:
+    type: application
+    platform: iOS
+    productName: Velora
+    sources:
+      - path: Apps/SharedPrototype
+      - path: Apps/VeloraiOS
+    dependencies:
+      - target: VeloraKeyboard
+        embed: true
+      - package: Velora
+        product: Velora
+    info:
+      path: Apps/VeloraiOS/Info.plist
+      properties:
+        CFBundleDisplayName: Velora
+        CFBundleIdentifier: app.velora.ios
+        CFBundleName: Velora
+        CFBundlePackageType: APPL
+        UILaunchScreen: {}
+        NSMicrophoneUsageDescription: "Velora 仅在你开始录音时使用麦克风，音频只在这台设备上处理。"
+        NSSpeechRecognitionUsageDescription: "Velora 只会在你选择 Apple 本地语音识别后使用该权限。"
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: app.velora.ios
+            CFBundleURLSchemes:
+              - velora
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.velora.ios
+        PRODUCT_NAME: Velora
+        PRODUCT_MODULE_NAME: VeloraiOS
+        SUPPORTS_MACCATALYST: false
+        CODE_SIGN_ENTITLEMENTS: Apps/VeloraiOS/VeloraiOS.entitlements
+  VeloraKeyboard:
+    type: app-extension
+    platform: iOS
+    productName: VeloraKeyboard
+    sources:
+      - path: Apps/VeloraKeyboard
+    dependencies:
+      - package: Velora
+        product: Velora
+    info:
+      path: Apps/VeloraKeyboard/Info.plist
+      properties:
+        CFBundleDisplayName: Velora
+        CFBundleIdentifier: app.velora.ios.keyboard
+        CFBundleName: Velora
+        CFBundlePackageType: XPC!
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.keyboard-service
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).KeyboardViewController"
+          NSExtensionAttributes:
+            IsASCIICapable: true
+            PrefersRightToLeft: false
+            PrimaryLanguage: mul
+            RequestsOpenAccess: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.velora.ios.keyboard
+        PRODUCT_NAME: VeloraKeyboard
+        PRODUCT_MODULE_NAME: VeloraKeyboard
+        CODE_SIGN_ENTITLEMENTS: Apps/VeloraKeyboard/VeloraKeyboard.entitlements
+schemes:
+  Velora:
+    build:
+      targets:
+        VeloraMacApp: all
+    run:
+      config: Debug
+  VeloraiOS:
+    build:
+      targets:
+        VeloraiOS: all
+        VeloraKeyboard: all
+    run:
+      config: Debug

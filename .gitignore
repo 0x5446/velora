@@ -1,0 +1,49 @@
+.DS_Store
+
+# Local agent/editor state
+.claude/
+.idea/
+.vscode/
+
+# Secrets and local environment
+.env
+.env.*
+*.pem
+*.key
+.netrc
+
+# Local model artifacts
+Models/
+*.gguf
+*.ggml
+*.bin
+
+# Swift Package Manager and build outputs
+.build/
+**/.build/
+.swiftpm/
+Packages/
+DerivedData/
+build/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# macOS/iOS products
+*.app
+*.ipa
+*.dSYM/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Logs and diagnostics
+*.log
+*.trace
