@@ -1731,7 +1731,9 @@ final class MacTranslationReviewPanelController {
         let size = panel.frame.size
         let origin = NSPoint(
             x: frame.midX - size.width / 2,
-            y: frame.minY + 96
+            // 56 keeps the visible card at the old minY+96 spot now that the
+            // window carries a 40pt transparent shadow margin below the card.
+            y: frame.minY + 56
         )
         panel.setFrameOrigin(origin)
     }
@@ -1757,6 +1759,11 @@ struct MacTranslationReviewPanelView: View {
             .padding(16)
             .frame(width: 560)
             .veloraCard(radius: VeloraRadius.large, elevation: .high)
+            // Transparent margin so the card's shadow can fade out naturally.
+            // Without it the window is exactly card-sized and the shadow gets
+            // clipped into the four rounded-corner notches, leaving
+            // square-edged shadow remnants at each corner.
+            .padding(40)
             .onAppear {
                 focusedField = .target
             }
