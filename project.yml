@@ -41,6 +41,7 @@ targets:
         PRODUCT_MODULE_NAME: VeloraMacApp
         ENABLE_HARDENED_RUNTIME: true
         CODE_SIGN_IDENTITY: "-"
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
   VeloraiOS:
     type: application
     platform: iOS
@@ -75,6 +76,7 @@ targets:
         PRODUCT_MODULE_NAME: VeloraiOS
         SUPPORTS_MACCATALYST: false
         CODE_SIGN_ENTITLEMENTS: Apps/VeloraiOS/VeloraiOS.entitlements
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
   VeloraKeyboard:
     type: app-extension
     platform: iOS

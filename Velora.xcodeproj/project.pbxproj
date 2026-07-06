@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		05C0CAC20748C60320B544A0 /* VeloraMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDD948E02EB19B1F0AA71F74 /* VeloraMacApp.swift */; };
 		2C627C4D5E0DA9C2E5FFC87B /* Velora in Frameworks */ = {isa = PBXBuildFile; productRef = A97C82CF642E0D002B8B1956 /* Velora */; };
+		3E43A03D7403E830BA90EA54 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CA10A53132B4BA9DF8EF533A /* Assets.xcassets */; };
 		453F17C5AF600FEB309DCC0C /* VeloraKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9545F761AB24D97926A5A619 /* VeloraKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6EBA2CDEB1AC284201E639F2 /* MacDeveloperMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6C8E65D51FB96316F97CCE /* MacDeveloperMode.swift */; };
 		85DDBE30B56A24CD8CE35C89 /* Velora in Frameworks */ = {isa = PBXBuildFile; productRef = 35D51D794D7565B1D8BD86C3 /* Velora */; };
@@ -18,6 +19,7 @@
 		A8B74422740AC9CF85835FEF /* Velora in Frameworks */ = {isa = PBXBuildFile; productRef = 1689D40705771BC35DB329FB /* Velora */; };
 		CFADF3B8791B7E8D2D120C95 /* VeloraiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68061691A8881312E0047E96 /* VeloraiOSApp.swift */; };
 		D151554864E4B40D0E14BC8F /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A31BEB5C2C5B8F2B49ACFE09 /* KeyboardViewController.swift */; };
+		EC8BE8907F35FBF94AC67224 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5A18BD72FCEAE009D56F6C36 /* Assets.xcassets */; };
 		EF28F65B86D14C8169380DFC /* MacSystemInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142347E1EA2B889E947AA263 /* MacSystemInputController.swift */; };
 /* End PBXBuildFile section */
 
@@ -51,6 +53,7 @@
 		142347E1EA2B889E947AA263 /* MacSystemInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSystemInputController.swift; sourceTree = "<group>"; };
 		226A68B828E93B249A625B5F /* MacHotKeySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHotKeySettings.swift; sourceTree = "<group>"; };
 		43C19FEF6F629D5765D3A775 /* Velora */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Velora; path = Velora; sourceTree = SOURCE_ROOT; };
+		5A18BD72FCEAE009D56F6C36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		68061691A8881312E0047E96 /* VeloraiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VeloraiOSApp.swift; sourceTree = "<group>"; };
 		73A098DC95318E22319D318D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		82F1282D865D3ADDE6BDC204 /* Velora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Velora.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,6 +62,7 @@
 		A31BEB5C2C5B8F2B49ACFE09 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		B3392DF2BE8717E42BB56D4B /* PrototypePipelineViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrototypePipelineViewModel.swift; sourceTree = "<group>"; };
 		B4D3ADD4196E337B158ED0C1 /* VeloraKeyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VeloraKeyboard.entitlements; sourceTree = "<group>"; };
+		CA10A53132B4BA9DF8EF533A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DA6C8E65D51FB96316F97CCE /* MacDeveloperMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDeveloperMode.swift; sourceTree = "<group>"; };
 		FB45C326B351948D95487A38 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FDD948E02EB19B1F0AA71F74 /* VeloraMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VeloraMacApp.swift; sourceTree = "<group>"; };
@@ -114,6 +118,7 @@
 		C96767FC9813815A0BD14E6F /* VeloraMac */ = {
 			isa = PBXGroup;
 			children = (
+				CA10A53132B4BA9DF8EF533A /* Assets.xcassets */,
 				73A098DC95318E22319D318D /* Info.plist */,
 				DA6C8E65D51FB96316F97CCE /* MacDeveloperMode.swift */,
 				226A68B828E93B249A625B5F /* MacHotKeySettings.swift */,
@@ -148,6 +153,7 @@
 		F3A1A5282C6B59D4A47C2DBA /* VeloraiOS */ = {
 			isa = PBXGroup;
 			children = (
+				5A18BD72FCEAE009D56F6C36 /* Assets.xcassets */,
 				FB45C326B351948D95487A38 /* Info.plist */,
 				09068E3EC860A09976ADCF37 /* VeloraiOS.entitlements */,
 				68061691A8881312E0047E96 /* VeloraiOSApp.swift */,
@@ -174,6 +180,7 @@
 			buildConfigurationList = 32763CD42A87412EC52BC30E /* Build configuration list for PBXNativeTarget "VeloraMacApp" */;
 			buildPhases = (
 				86FAB1A6A0EEA1F5B637ED2D /* Sources */,
+				91D80DF59FE3371B6AEC3A85 /* Resources */,
 				7B5794E3654261AAC0CEA982 /* Frameworks */,
 			);
 			buildRules = (
@@ -212,6 +219,7 @@
 			buildConfigurationList = A760359D7F97E5D92F706C6C /* Build configuration list for PBXNativeTarget "VeloraiOS" */;
 			buildPhases = (
 				F15F60E27DDF5C40C33F4C85 /* Sources */,
+				6323EF4B696D1BE497492200 /* Resources */,
 				185A9F7B7619DB1C24F7E36E /* Frameworks */,
 				CBC7B42ADA4031B62C4E452D /* Embed Foundation Extensions */,
 			);
@@ -272,6 +280,25 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		6323EF4B696D1BE497492200 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EC8BE8907F35FBF94AC67224 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91D80DF59FE3371B6AEC3A85 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E43A03D7403E830BA90EA54 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		6EA9541CD01FB12FA3A0E674 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -317,6 +344,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Apps/VeloraiOS/VeloraiOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Apps/VeloraiOS/Info.plist;
@@ -394,6 +422,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -513,6 +542,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Apps/VeloraiOS/VeloraiOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Apps/VeloraiOS/Info.plist;
@@ -533,6 +563,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
