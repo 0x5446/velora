@@ -1234,11 +1234,22 @@ public struct OllamaLocalClient: Sendable {
     public var temperature: Double
     public var keepAlive: String
 
+    /// Resident mode pins the model in Ollama's memory (keep_alive=-1) so the
+    /// first dictation after a long idle never pays the multi-second weight
+    /// reload (measured ~4s on qwen3:8b) — at the cost of ~6GB RAM held while
+    /// idle. Read at client construction; engines are built per pipeline run,
+    /// so toggling applies from the next utterance.
+    public static let residentKeepAliveDefaultsKey = "velora.runtime.ollamaKeepResident"
+
+    public static var defaultKeepAlive: String {
+        UserDefaults.standard.bool(forKey: residentKeepAliveDefaultsKey) ? "-1" : "30m"
+    }
+
     public init(
         endpoint: URL = URL(string: "http://127.0.0.1:11434/api/generate")!,
         model: String = ProcessInfo.processInfo.environment["VELORA_OLLAMA_MODEL"] ?? "qwen3:8b",
         temperature: Double = 0.1,
-        keepAlive: String = "30m"
+        keepAlive: String = OllamaLocalClient.defaultKeepAlive
     ) {
         self.endpoint = endpoint
         self.model = model

@@ -39,11 +39,13 @@ struct MacSettingsView: View {
     @State private var accessibilityTrusted = AXIsProcessTrusted()
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var systemProbeStatus = ""
+    @AppStorage(OllamaLocalClient.residentKeepAliveDefaultsKey) private var keepModelResident = false
 
     var body: some View {
         Form {
             hotkeySection
             translationSection
+            performanceSection
             if needsAttention {
                 attentionSection
             }
@@ -57,7 +59,7 @@ struct MacSettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460)
-        .frame(height: developerMode.isEnabled ? 760 : 460)
+        .frame(height: developerMode.isEnabled ? 860 : 560)
         .onAppear {
             refreshPermissions()
         }
@@ -143,6 +145,25 @@ struct MacSettingsView: View {
             Text("翻译")
         } footer: {
             Text("按 \(hotKeys.translatePreset.displayName) 说话，结果先出确认卡片；确认后只上屏所选一侧，可在卡片上临时改选。")
+        }
+    }
+
+    private var performanceSection: some View {
+        Section {
+            Toggle("润色模型常驻内存", isOn: $keepModelResident)
+                .onChange(of: keepModelResident) { _, enabled in
+                    if enabled {
+                        // Pin the model right away instead of on the next
+                        // dictation — the toggle should feel immediate.
+                        Task {
+                            try? await OllamaLocalClient().prewarm()
+                        }
+                    }
+                }
+        } header: {
+            Text("性能")
+        } footer: {
+            Text("开启后模型常驻内存（约 6GB），闲置多久后的第一次上屏都无需等待模型加载。关闭时，Velora 会在你开始说话的同时预热模型来掩盖加载耗时。")
         }
     }
 

@@ -729,6 +729,14 @@ final class MacDictationController {
             )
         )
 
+        // The compose model may have been evicted by Ollama's keep_alive
+        // after a long idle; kick the reload now so its ~4s cost hides
+        // inside the user's own speaking time instead of stalling the first
+        // insert. Cheap no-op when the model is already warm.
+        Task {
+            try? await OllamaLocalClient().prewarm()
+        }
+
         // Latency-budget contract: context capture and hotword ranking run
         // DURING recording (the user is still speaking — this time is free),
         // so the after-release critical path starts straight at ASR.
