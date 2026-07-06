@@ -246,6 +246,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					08A24B4731A7096D851A7B17 = {
+						DevelopmentTeam = AVKUVD4FPN;
 						ProvisioningStyle = Automatic;
 					};
 					29FBF26635365B7A71B31F6F = {
@@ -423,9 +424,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = AVKUVD4FPN;
+				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = Apps/VeloraMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -564,9 +566,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = AVKUVD4FPN;
+				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = Apps/VeloraMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

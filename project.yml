@@ -39,8 +39,15 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.velora.mac
         PRODUCT_NAME: Velora
         PRODUCT_MODULE_NAME: VeloraMacApp
-        ENABLE_HARDENED_RUNTIME: true
-        CODE_SIGN_IDENTITY: "-"
+        # Sign with the local Apple Development cert instead of ad-hoc ("-"):
+        # ad-hoc signatures change every rebuild, so TCC (Accessibility etc.)
+        # treated each build as a new app and dropped its grants. A real cert
+        # keeps the designated requirement stable across rebuilds.
+        # Hardened runtime stays off for the dev loop (ad-hoc signing was
+        # already auto-disabling it); re-enable for release/notarization.
+        ENABLE_HARDENED_RUNTIME: false
+        CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: AVKUVD4FPN
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
   VeloraiOS:
     type: application
