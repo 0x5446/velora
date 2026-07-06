@@ -1714,7 +1714,9 @@ final class MacTranslationReviewPanelController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        // Shadow is drawn by the card itself via .veloraCard(...); a window
+        // shadow would double up and show the transparent canvas rectangle.
+        panel.hasShadow = false
         panel.becomesKeyOnlyIfNeeded = false
         panel.contentView = NSHostingView(rootView: MacTranslationReviewPanelView(model: model))
         return panel
@@ -1754,13 +1756,7 @@ struct MacTranslationReviewPanelView: View {
             }
             .padding(16)
             .frame(width: 560)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(.separator.opacity(0.7))
-            )
-            .shadow(color: .black.opacity(0.2), radius: 22, y: 8)
+            .veloraCard(radius: VeloraRadius.large, elevation: .high)
             .onAppear {
                 focusedField = .target
             }
@@ -1770,14 +1766,15 @@ struct MacTranslationReviewPanelView: View {
     private func header(_ review: MacPendingTranslationReview) -> some View {
         HStack(spacing: 8) {
             Text("确认翻译")
-                .font(.system(size: 13, weight: .semibold))
+                .font(VeloraFont.heading(13))
+                .foregroundStyle(Color.veloraInkPrimary)
             Text(review.modeSummary)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
+                .font(VeloraFont.caption(11, weight: .medium))
+                .foregroundStyle(Color.veloraInkSecondary)
             if !review.warnings.isEmpty {
                 Text("⚠︎ \(review.warnings.joined(separator: " · "))")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.orange)
+                    .font(VeloraFont.caption(10, weight: .medium))
+                    .foregroundStyle(Color.veloraAccent)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
@@ -1799,8 +1796,8 @@ struct MacTranslationReviewPanelView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Text("原文 · \(review.sourceLanguageDisplayName)")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .font(VeloraFont.caption(11, weight: .semibold))
+                    .foregroundStyle(Color.veloraInkSecondary)
                 if model.isRetranslating {
                     ProgressView()
                         .controlSize(.small)
@@ -1809,31 +1806,26 @@ struct MacTranslationReviewPanelView: View {
                         model.onRetranslate?()
                     } label: {
                         Label("重新翻译", systemImage: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(VeloraFont.caption(11, weight: .medium))
                     }
                     .buttonStyle(.borderless)
                     .keyboardShortcut("r", modifiers: .command)
                 }
                 if !model.retranslateIssue.isEmpty {
                     Text(model.retranslateIssue)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.orange)
+                        .font(VeloraFont.caption(10))
+                        .foregroundStyle(Color.veloraAccent)
                         .lineLimit(1)
                 }
                 Spacer()
             }
 
             TextEditor(text: $model.editedSource)
-                .font(.system(size: 12.5))
+                .font(VeloraFont.body(12.5))
                 .scrollContentBackground(.hidden)
                 .padding(7)
                 .frame(height: 76)
-                .background(.background.opacity(0.55))
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .stroke(focusedField == .source ? Color.accentColor.opacity(0.6) : Color(nsColor: .separatorColor).opacity(0.6))
-                )
+                .veloraTextEditorStyle(isFocused: focusedField == .source)
                 .focused($focusedField, equals: .source)
         }
     }
@@ -1842,29 +1834,21 @@ struct MacTranslationReviewPanelView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("译文 · \(review.targetLanguageDisplayName)")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .font(VeloraFont.caption(11, weight: .semibold))
+                    .foregroundStyle(Color.veloraInkSecondary)
                 Text("将上屏 · 可直接修改")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
+                    .font(VeloraFont.caption(10))
+                    .foregroundStyle(Color.veloraInkSecondary.opacity(0.7))
                 Spacer()
             }
 
             TextEditor(text: $model.editedTarget)
-                .font(.system(size: 14))
+                .font(VeloraFont.body(14))
                 .lineSpacing(2)
                 .scrollContentBackground(.hidden)
                 .padding(8)
                 .frame(height: 112)
-                .background(.background.opacity(0.82))
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .stroke(
-                            focusedField == .target ? Color.accentColor.opacity(0.8) : Color(nsColor: .separatorColor).opacity(0.6),
-                            lineWidth: focusedField == .target ? 1.5 : 1
-                        )
-                )
+                .veloraTextEditorStyle(isFocused: focusedField == .target)
                 .focused($focusedField, equals: .target)
         }
     }
@@ -1876,8 +1860,8 @@ struct MacTranslationReviewPanelView: View {
         let other: MacTranslationReviewSelection = preferred == .source ? .target : .source
         return HStack(spacing: 10) {
             Text("Esc 取消 · \(MacProductCopy.hotKey) 或 ⌘⏎ \(preferred.actionTitle) · 修改将用于优化热词")
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .font(VeloraFont.caption(10))
+                .foregroundStyle(Color.veloraInkSecondary.opacity(0.7))
                 .lineLimit(1)
             Spacer()
             Button(other.actionTitle) {
@@ -1892,6 +1876,7 @@ struct MacTranslationReviewPanelView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
+            .tint(Color.veloraAccent)
             .keyboardShortcut(.return, modifiers: .command)
         }
     }
@@ -2445,15 +2430,15 @@ enum MacFloatingPhase {
     var color: Color {
         switch self {
         case .idle:
-            return .secondary
+            return .veloraInkSecondary
         case .requestingPermission, .transcribing, .review:
-            return .blue
+            return .veloraAccent
         case .listening:
-            return .red
+            return .veloraDanger
         case .inserted:
-            return .green
+            return .veloraSuccess
         case .error:
-            return .red
+            return .veloraDanger
         }
     }
 
@@ -2640,11 +2625,11 @@ struct MacFloatingStatusView: View {
             .overlay(
                 Capsule(style: .continuous)
                     .strokeBorder(
-                        .white.opacity(colorScheme == .dark ? 0.14 : 0.5),
+                        Color.veloraBorder.opacity(colorScheme == .dark ? 0.4 : 0.7),
                         lineWidth: 0.5
                     )
             )
-            .shadow(color: .black.opacity(0.16), radius: 16, y: 6)
+            .veloraShadow(.low)
             .fixedSize()
     }
 
@@ -2667,7 +2652,7 @@ struct MacFloatingStatusView: View {
             MacPulsingDot(reduceMotion: reduceMotion)
             MacVoiceWaveform(
                 levels: model.levelHistory,
-                tint: .primary,
+                tint: .veloraInkPrimary,
                 reduceMotion: reduceMotion
             )
             if let startedAt = model.status.startedAt {
@@ -2681,8 +2666,8 @@ struct MacFloatingStatusView: View {
         HStack(spacing: 9) {
             MacThinkingDots()
             Text(model.status.title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
+                .font(VeloraFont.body(12, weight: .medium))
+                .foregroundStyle(Color.veloraInkSecondary)
                 .lineLimit(1)
         }
         .accessibilityLabel("正在处理")
@@ -2692,14 +2677,15 @@ struct MacFloatingStatusView: View {
         HStack(spacing: 7) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.veloraSuccess)
                 .accessibilityHidden(true)
             Text("已上屏")
-                .font(.system(size: 12, weight: .semibold))
+                .font(VeloraFont.body(12, weight: .semibold))
+                .foregroundStyle(Color.veloraInkPrimary)
             if !model.status.detail.isEmpty {
                 Text(model.status.detail)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .font(VeloraFont.mono(11))
+                    .foregroundStyle(Color.veloraInkSecondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: 260)
@@ -2714,12 +2700,13 @@ struct MacFloatingStatusView: View {
                 .foregroundStyle(model.status.phase.color)
                 .accessibilityHidden(true)
             Text(model.status.title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(VeloraFont.body(12, weight: .semibold))
+                .foregroundStyle(Color.veloraInkPrimary)
                 .lineLimit(1)
             if !model.status.detail.isEmpty {
                 Text(model.status.detail)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .font(VeloraFont.caption(11))
+                    .foregroundStyle(Color.veloraInkSecondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: 300)
@@ -2761,7 +2748,7 @@ struct MacPulsingDot: View {
 
     var body: some View {
         Circle()
-            .fill(.red)
+            .fill(Color.veloraDanger)
             .frame(width: 7, height: 7)
             .opacity(dimmed ? 0.45 : 1)
             .accessibilityHidden(true)
@@ -2783,7 +2770,7 @@ struct MacThinkingDots: View {
         HStack(spacing: 3.5) {
             ForEach(0..<3, id: \.self) { index in
                 Circle()
-                    .fill(.secondary)
+                    .fill(Color.veloraInkSecondary)
                     .frame(width: 4.5, height: 4.5)
                     .scaleEffect(animating ? 1 : 0.55)
                     .opacity(animating ? 1 : 0.4)
@@ -2808,8 +2795,8 @@ struct MacElapsedTimeText: View {
     var body: some View {
         TimelineView(.periodic(from: startedAt, by: 1)) { context in
             Text(Self.formattedElapsed(from: startedAt, to: context.date))
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .font(VeloraFont.mono(11, weight: .medium))
+                .foregroundStyle(Color.veloraInkSecondary)
                 .monospacedDigit()
         }
         .accessibilityLabel("录音时长")
