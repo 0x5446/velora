@@ -1,0 +1,1802 @@
+[
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0377",
+  "corpus": "aishell1",
+  "dur": 6.17,
+  "wall_ms": 219,
+  "cer": 0.5556,
+  "text": "北京舉辦東奧會和夏奧會期間相隔14年"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0472",
+  "corpus": "aishell1",
+  "dur": 6.94,
+  "wall_ms": 240,
+  "cer": 0.35,
+  "text": "五岁男同,家门口完爽时,失踪,一辈莫生女子乖走。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0399",
+  "corpus": "aishell1",
+  "dur": 5.37,
+  "wall_ms": 211,
+  "cer": 0.6,
+  "text": "萬龍學長上個學記克流量翻了一翻"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0419",
+  "corpus": "aishell1",
+  "dur": 4.98,
+  "wall_ms": 222,
+  "cer": 0.1875,
+  "text": "自己以往拍拒对于野外路侧都习惯了。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0303",
+  "corpus": "aishell1",
+  "dur": 3.25,
+  "wall_ms": 206,
+  "cer": 0.2222,
+  "text": "比如有參觀者要合照。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0455",
+  "corpus": "aishell1",
+  "dur": 3.7,
+  "wall_ms": 207,
+  "cer": 0.2222,
+  "text": "与院方协商陪传问题"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0213",
+  "corpus": "aishell1",
+  "dur": 4.34,
+  "wall_ms": 213,
+  "cer": 0.2727,
+  "text": "但依然有多个不瞒 外公布。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0199",
+  "corpus": "aishell1",
+  "dur": 4.63,
+  "wall_ms": 219,
+  "cer": 0.0,
+  "text": "所有的利益在一个特定的圈子里来分配"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0368",
+  "corpus": "aishell1",
+  "dur": 4.19,
+  "wall_ms": 214,
+  "cer": 0.6,
+  "text": "不半一届淘寶鴉院會怎麼說的過去"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0235",
+  "corpus": "aishell1",
+  "dur": 3.69,
+  "wall_ms": 204,
+  "cer": 0.1,
+  "text": "最重要的一點是要改革"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0328",
+  "corpus": "aishell1",
+  "dur": 5.68,
+  "wall_ms": 206,
+  "cer": 0.25,
+  "text": "而自动化生产模式可完成2300件"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0171",
+  "corpus": "aishell1",
+  "dur": 4.86,
+  "wall_ms": 217,
+  "cer": 0.5,
+  "text": "但這部影響房企觸碗日記的延續"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0297",
+  "corpus": "aishell1",
+  "dur": 2.46,
+  "wall_ms": 212,
+  "cer": 0.6,
+  "text": "言江者恩志"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0321",
+  "corpus": "aishell1",
+  "dur": 3.68,
+  "wall_ms": 204,
+  "cer": 0.25,
+  "text": "有效保護消防員的人生安全。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0490",
+  "corpus": "aishell1",
+  "dur": 7.48,
+  "wall_ms": 238,
+  "cer": 0.2857,
+  "text": "杜鴻七代将来能够通过解冻遗址等步骤死而附生。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0213",
+  "corpus": "aishell1",
+  "dur": 6.33,
+  "wall_ms": 225,
+  "cer": 0.625,
+  "text": "正起新份顾及南修产业龙段有待破除"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0418",
+  "corpus": "aishell1",
+  "dur": 4.65,
+  "wall_ms": 209,
+  "cer": 0.3077,
+  "text": "4月初公布懷有小周周的習近"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0320",
+  "corpus": "aishell1",
+  "dur": 4.54,
+  "wall_ms": 208,
+  "cer": 0.2857,
+  "text": "提供一戰式的機器換人解決方案"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0134",
+  "corpus": "aishell1",
+  "dur": 7.29,
+  "wall_ms": 235,
+  "cer": 0.0,
+  "text": "为改善居住条件,再次申请贷款购买普通商品住房。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0453",
+  "corpus": "aishell1",
+  "dur": 4.83,
+  "wall_ms": 208,
+  "cer": 0.4286,
+  "text": "五歲男同醫院看牙兩小時後身亡"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0310",
+  "corpus": "aishell1",
+  "dur": 4.11,
+  "wall_ms": 215,
+  "cer": 0.0714,
+  "text": "具机器人服务员的生产厂家介绍"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0131",
+  "corpus": "aishell1",
+  "dur": 4.41,
+  "wall_ms": 201,
+  "cer": 0.4444,
+  "text": "顯示出極強的威力"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0142",
+  "corpus": "aishell1",
+  "dur": 4.52,
+  "wall_ms": 210,
+  "cer": 0.3333,
+  "text": "甚至在防起未來戰略布局中。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0166",
+  "corpus": "aishell1",
+  "dur": 5.14,
+  "wall_ms": 223,
+  "cer": 0.3571,
+  "text": "正如一位触往營銷的操辦手所說。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0354",
+  "corpus": "aishell1",
+  "dur": 7.27,
+  "wall_ms": 232,
+  "cer": 0.6522,
+  "text": "洛杉磯曾在1932年和1984年2度舉辦二雲會"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0233",
+  "corpus": "aishell1",
+  "dur": 3.84,
+  "wall_ms": 220,
+  "cer": 0.8182,
+  "text": "壟斷會導致市場競爭事領"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0198",
+  "corpus": "aishell1",
+  "dur": 7.6,
+  "wall_ms": 226,
+  "cer": 0.3182,
+  "text": "衛生行政主管部門要進一步強化食品安全,標準公開。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0482",
+  "corpus": "aishell1",
+  "dur": 6.87,
+  "wall_ms": 233,
+  "cer": 0.3889,
+  "text": "五歲男同活潑健康,遭鄰居基督被乖走掐死。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0002W0194",
+  "corpus": "aishell1",
+  "dur": 2.87,
+  "wall_ms": 206,
+  "cer": 0.2,
+  "text": "而是一个金真性的产品"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "aishell_BAC009S0003W0487",
+  "corpus": "aishell1",
+  "dur": 7.68,
+  "wall_ms": 226,
+  "cer": 0.35,
+  "text": "一半品種都在下跌,本報記者流序發自湖北金春"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00308",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 215,
+  "cer": 0.4815,
+  "text": "那Tax or any dialogue system就像是說 它其實要幫我們"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00939",
+  "corpus": "ascend",
+  "dur": 3.2,
+  "wall_ms": 217,
+  "cer": 0.4737,
+  "text": "但是你們不覺得平時也有很多丟掉感嗎?"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01014",
+  "corpus": "ascend",
+  "dur": 3.47,
+  "wall_ms": 197,
+  "cer": 0.0435,
+  "text": "另一个就是 Responsibility 的问题"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01076",
+  "corpus": "ascend",
+  "dur": 3.34,
+  "wall_ms": 215,
+  "cer": 1.0,
+  "text": "我朋友在我家中的大学"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00712",
+  "corpus": "ascend",
+  "dur": 6.0,
+  "wall_ms": 220,
+  "cer": 0.4211,
+  "text": "但我覺得3.0的方式是非常 efficient 的一個方式去得分"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00631",
+  "corpus": "ascend",
+  "dur": 2.06,
+  "wall_ms": 194,
+  "cer": 0.1538,
+  "text": "make friends"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00233",
+  "corpus": "ascend",
+  "dur": 3.44,
+  "wall_ms": 202,
+  "cer": 0.2727,
+  "text": "台灣的台灣大學National Tower University"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01035",
+  "corpus": "ascend",
+  "dur": 10.02,
+  "wall_ms": 221,
+  "cer": 0.4,
+  "text": "但是如果你單純的CL的這個 technology就是說告訴他就是我的self driving這個 function is perfect"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01048",
+  "corpus": "ascend",
+  "dur": 6.51,
+  "wall_ms": 231,
+  "cer": 0.381,
+  "text": "你不能去把它放在真的環境下去測試它因為這個外移那個Sitant happen怎麼辦"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01068",
+  "corpus": "ascend",
+  "dur": 7.44,
+  "wall_ms": 224,
+  "cer": 0.1053,
+  "text": "我小时候我也没有 smartphone但是我是小时候比较早接触的那个电脑"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00947",
+  "corpus": "ascend",
+  "dur": 6.8,
+  "wall_ms": 217,
+  "cer": 0.3333,
+  "text": "就是会有很多比如说跟Luminize聚会一起吃饭然后要么就"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00138",
+  "corpus": "ascend",
+  "dur": 3.05,
+  "wall_ms": 218,
+  "cer": 0.3043,
+  "text": "嗯,所以你現在是比較 focus 才找工作的這件事"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01131",
+  "corpus": "ascend",
+  "dur": 3.49,
+  "wall_ms": 200,
+  "cer": 0.4615,
+  "text": "再建一個model to optimize"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00337",
+  "corpus": "ascend",
+  "dur": 5.16,
+  "wall_ms": 204,
+  "cer": 0.1875,
+  "text": "就是优势去 respond一些就是 interesting 的"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00698",
+  "corpus": "ascend",
+  "dur": 5.44,
+  "wall_ms": 196,
+  "cer": 0.2,
+  "text": "第一是 Michael Jordan"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00193",
+  "corpus": "ascend",
+  "dur": 3.77,
+  "wall_ms": 540,
+  "cer": 1.0,
+  "text": "我喜歡擴闊"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01213",
+  "corpus": "ascend",
+  "dur": 3.06,
+  "wall_ms": 202,
+  "cer": 0.1429,
+  "text": "然後他可能會 records your personal life"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00606",
+  "corpus": "ascend",
+  "dur": 8.4,
+  "wall_ms": 215,
+  "cer": 0.9756,
+  "text": "我只能在那裡做工作"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00706",
+  "corpus": "ascend",
+  "dur": 2.89,
+  "wall_ms": 200,
+  "cer": 0.1579,
+  "text": "因為他的德芬方式非常Efficient"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00404",
+  "corpus": "ascend",
+  "dur": 3.9,
+  "wall_ms": 214,
+  "cer": 0.3043,
+  "text": "那我當初去的是奧本科是E-Baground"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00489",
+  "corpus": "ascend",
+  "dur": 2.64,
+  "wall_ms": 204,
+  "cer": 0.4167,
+  "text": "我记得去上那个居民那边"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00425",
+  "corpus": "ascend",
+  "dur": 6.44,
+  "wall_ms": 224,
+  "cer": 0.0556,
+  "text": "然后再打算申请Graduate School的时候我考虑过挺多Major"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00259",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 207,
+  "cer": 0.45,
+  "text": "那你現在住在紅礦大概住了多久"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00269",
+  "corpus": "ascend",
+  "dur": 5.78,
+  "wall_ms": 205,
+  "cer": 0.4516,
+  "text": "就是像那些沒有得來的時候也不會那麼 stress"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00150",
+  "corpus": "ascend",
+  "dur": 2.76,
+  "wall_ms": 211,
+  "cer": 0.3889,
+  "text": "想過那些因為這次project有點多"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00920",
+  "corpus": "ascend",
+  "dur": 3.84,
+  "wall_ms": 210,
+  "cer": 0.4,
+  "text": "其實我那時候非常的噩淺就是我到了"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00871",
+  "corpus": "ascend",
+  "dur": 3.36,
+  "wall_ms": 209,
+  "cer": 1.0,
+  "text": "你能否使用的"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01182",
+  "corpus": "ascend",
+  "dur": 4.01,
+  "wall_ms": 213,
+  "cer": 0.6667,
+  "text": "那圖像識別其實上學上個Mastowman"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_01055",
+  "corpus": "ascend",
+  "dur": 11.34,
+  "wall_ms": 229,
+  "cer": 0.4182,
+  "text": "好 那我們現在開始我們第二個topic就是你認為就是你認為球者應不應該有自己的smallphone"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-noac",
+  "clip": "ascend_00888",
+  "corpus": "ascend",
+  "dur": 5.54,
+  "wall_ms": 239,
+  "cer": 0.3125,
+  "text": "不能去Decide 你今天想要穿什麼衣服 明天想要穿什麼衣服每天都穿一樣"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0377",
+  "corpus": "aishell1",
+  "dur": 6.17,
+  "wall_ms": 208,
+  "cer": 0.5556,
+  "text": "北京舉辦東奧會和夏奧會期間相隔14年"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0472",
+  "corpus": "aishell1",
+  "dur": 6.94,
+  "wall_ms": 223,
+  "cer": 0.4,
+  "text": "五岁男童,家门口完爽时,世宗一辈莫生女子乖走。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0399",
+  "corpus": "aishell1",
+  "dur": 5.37,
+  "wall_ms": 202,
+  "cer": 0.6,
+  "text": "萬龍學長上個學記克流量翻了一翻"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0419",
+  "corpus": "aishell1",
+  "dur": 4.98,
+  "wall_ms": 207,
+  "cer": 0.1875,
+  "text": "自己以往拍拒对于野外路侧都习惯了"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0303",
+  "corpus": "aishell1",
+  "dur": 3.25,
+  "wall_ms": 188,
+  "cer": 0.2222,
+  "text": "比如有參觀者要合照。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0455",
+  "corpus": "aishell1",
+  "dur": 3.7,
+  "wall_ms": 199,
+  "cer": 0.3333,
+  "text": "与院峰协商陪传问题"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0213",
+  "corpus": "aishell1",
+  "dur": 4.34,
+  "wall_ms": 201,
+  "cer": 0.0909,
+  "text": "但依然有多个部门外公布。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0199",
+  "corpus": "aishell1",
+  "dur": 4.63,
+  "wall_ms": 200,
+  "cer": 0.0,
+  "text": "所有的利益在一个特定的圈子里来分配"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0368",
+  "corpus": "aishell1",
+  "dur": 4.19,
+  "wall_ms": 206,
+  "cer": 0.6,
+  "text": "不半一届淘寶鴉院會怎麼說的過去。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0235",
+  "corpus": "aishell1",
+  "dur": 3.69,
+  "wall_ms": 185,
+  "cer": 0.0,
+  "text": "最重要的一点是要改革"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0328",
+  "corpus": "aishell1",
+  "dur": 5.68,
+  "wall_ms": 197,
+  "cer": 0.25,
+  "text": "而自动化生产模式可完成2300件"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0171",
+  "corpus": "aishell1",
+  "dur": 4.86,
+  "wall_ms": 199,
+  "cer": 0.5,
+  "text": "但這部影響房企觸碗日記的延續"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0297",
+  "corpus": "aishell1",
+  "dur": 2.46,
+  "wall_ms": 188,
+  "cer": 0.8,
+  "text": "岩江者溫智"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0321",
+  "corpus": "aishell1",
+  "dur": 3.68,
+  "wall_ms": 183,
+  "cer": 0.25,
+  "text": "有效保護消防員的人生安全。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0490",
+  "corpus": "aishell1",
+  "dur": 7.48,
+  "wall_ms": 228,
+  "cer": 0.3333,
+  "text": "杜鴻七代将来能够通过解冻遗址等步者死而附生。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0213",
+  "corpus": "aishell1",
+  "dur": 6.33,
+  "wall_ms": 211,
+  "cer": 0.625,
+  "text": "正起新份顾及南修产业龙段有待破除。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0418",
+  "corpus": "aishell1",
+  "dur": 4.65,
+  "wall_ms": 196,
+  "cer": 0.2308,
+  "text": "4月初公布懷有小周周的席讯"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0320",
+  "corpus": "aishell1",
+  "dur": 4.54,
+  "wall_ms": 199,
+  "cer": 0.2857,
+  "text": "提供一戰式的機器換人解決方案。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0134",
+  "corpus": "aishell1",
+  "dur": 7.29,
+  "wall_ms": 218,
+  "cer": 0.0476,
+  "text": "未改善居住条件,再次申请贷款购买普通商品住房。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0453",
+  "corpus": "aishell1",
+  "dur": 4.83,
+  "wall_ms": 198,
+  "cer": 0.4286,
+  "text": "五歲男同醫院看牙兩小時後身亡"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0310",
+  "corpus": "aishell1",
+  "dur": 4.11,
+  "wall_ms": 208,
+  "cer": 0.0714,
+  "text": "具机器人服务员的生产厂家介绍。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0131",
+  "corpus": "aishell1",
+  "dur": 4.41,
+  "wall_ms": 193,
+  "cer": 0.5556,
+  "text": "顯示出極強的微力。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0142",
+  "corpus": "aishell1",
+  "dur": 4.52,
+  "wall_ms": 194,
+  "cer": 0.3333,
+  "text": "甚至在防起未來戰略布局中。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0166",
+  "corpus": "aishell1",
+  "dur": 5.14,
+  "wall_ms": 207,
+  "cer": 0.3571,
+  "text": "正如一位触往營銷的操盤手所說。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0354",
+  "corpus": "aishell1",
+  "dur": 7.27,
+  "wall_ms": 214,
+  "cer": 0.6522,
+  "text": "洛杉磯曾在1932年和1984年2度舉辦二雲會"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0233",
+  "corpus": "aishell1",
+  "dur": 3.84,
+  "wall_ms": 204,
+  "cer": 0.8182,
+  "text": "壟斷會導致市場競爭市民"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0198",
+  "corpus": "aishell1",
+  "dur": 7.6,
+  "wall_ms": 216,
+  "cer": 0.3182,
+  "text": "衛生行政主管部門要進一步強化食品安全,標準公開。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0482",
+  "corpus": "aishell1",
+  "dur": 6.87,
+  "wall_ms": 221,
+  "cer": 0.4444,
+  "text": "五歲男同活潑健康,遭鄰居基督被乖走恰死。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0002W0194",
+  "corpus": "aishell1",
+  "dur": 2.87,
+  "wall_ms": 198,
+  "cer": 0.2,
+  "text": "而是一个金真性的产品"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "aishell_BAC009S0003W0487",
+  "corpus": "aishell1",
+  "dur": 7.68,
+  "wall_ms": 212,
+  "cer": 0.35,
+  "text": "一半品種都在下跌,本報記者流序發自湖北金春"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00308",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 202,
+  "cer": 0.4815,
+  "text": "Tax or any dialogue system就像是說,它其實要幫我們"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00939",
+  "corpus": "ascend",
+  "dur": 3.2,
+  "wall_ms": 200,
+  "cer": 0.4737,
+  "text": "但是你們不覺得平時也有很多丟掉感嗎?"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01014",
+  "corpus": "ascend",
+  "dur": 3.47,
+  "wall_ms": 187,
+  "cer": 0.1739,
+  "text": "另一個就是 responsibility 的問題"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01076",
+  "corpus": "ascend",
+  "dur": 3.34,
+  "wall_ms": 202,
+  "cer": 1.0,
+  "text": "我的朋友和我的依革"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00712",
+  "corpus": "ascend",
+  "dur": 6.0,
+  "wall_ms": 200,
+  "cer": 0.4211,
+  "text": "但我覺得3.0的方式是非常 efficient 的一個方式去得分"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00631",
+  "corpus": "ascend",
+  "dur": 2.06,
+  "wall_ms": 188,
+  "cer": 1.0,
+  "text": "做朋友了"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00233",
+  "corpus": "ascend",
+  "dur": 3.44,
+  "wall_ms": 192,
+  "cer": 0.1515,
+  "text": "台灣的台灣大學,National Taiwan University"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01035",
+  "corpus": "ascend",
+  "dur": 10.02,
+  "wall_ms": 211,
+  "cer": 0.4,
+  "text": "但是如果你單純的CL的這個 technology就是說告訴他就是我的self driving這個 function is perfect"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01048",
+  "corpus": "ascend",
+  "dur": 6.51,
+  "wall_ms": 214,
+  "cer": 0.381,
+  "text": "你不能去把它放在真的環境下去測試它因為這個外移那個Sitant happen怎麼辦"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01068",
+  "corpus": "ascend",
+  "dur": 7.44,
+  "wall_ms": 216,
+  "cer": 0.1579,
+  "text": "我小时候我也没有 smartphone但是我是小时候比较早接触的电脑"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00947",
+  "corpus": "ascend",
+  "dur": 6.8,
+  "wall_ms": 208,
+  "cer": 0.3333,
+  "text": "就是会有很多比如说跟Luminize聚会一起吃饭然后要么就"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00138",
+  "corpus": "ascend",
+  "dur": 3.05,
+  "wall_ms": 199,
+  "cer": 0.3043,
+  "text": "嗯,所以你現在是比較 focus 才找工作的這件事"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01131",
+  "corpus": "ascend",
+  "dur": 3.49,
+  "wall_ms": 185,
+  "cer": 0.4615,
+  "text": "再建一個model to optimize"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00337",
+  "corpus": "ascend",
+  "dur": 5.16,
+  "wall_ms": 190,
+  "cer": 0.1875,
+  "text": "就是优势去 respond一些就是 interesting 的"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00698",
+  "corpus": "ascend",
+  "dur": 5.44,
+  "wall_ms": 180,
+  "cer": 0.2,
+  "text": "第一是Michael Jordan"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00193",
+  "corpus": "ascend",
+  "dur": 3.77,
+  "wall_ms": 529,
+  "cer": 1.0,
+  "text": "我喜歡擴闊"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01213",
+  "corpus": "ascend",
+  "dur": 3.06,
+  "wall_ms": 204,
+  "cer": 0.7857,
+  "text": "可能會通過你的個人 life"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00606",
+  "corpus": "ascend",
+  "dur": 8.4,
+  "wall_ms": 204,
+  "cer": 0.9756,
+  "text": "因為我沒有工作,我只在"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00706",
+  "corpus": "ascend",
+  "dur": 2.89,
+  "wall_ms": 192,
+  "cer": 0.0,
+  "text": "因为他的得分方式非常Efficient"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00404",
+  "corpus": "ascend",
+  "dur": 3.9,
+  "wall_ms": 198,
+  "cer": 0.3478,
+  "text": "我當初去的是 日本科是E-Baground"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00489",
+  "corpus": "ascend",
+  "dur": 2.64,
+  "wall_ms": 190,
+  "cer": 0.4167,
+  "text": "我记得去上那个居民那边"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00425",
+  "corpus": "ascend",
+  "dur": 6.44,
+  "wall_ms": 211,
+  "cer": 0.0,
+  "text": "然后在打算申请Graduate School的时候我考虑过挺多Major的"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00259",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 193,
+  "cer": 0.45,
+  "text": "那你現在住在紅礦大概住了多久"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00269",
+  "corpus": "ascend",
+  "dur": 5.78,
+  "wall_ms": 199,
+  "cer": 0.5161,
+  "text": "就是像那些没有得来的时候也不会那么准"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00150",
+  "corpus": "ascend",
+  "dur": 2.76,
+  "wall_ms": 186,
+  "cer": 0.3333,
+  "text": "想過那是因為這次project有點多"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00920",
+  "corpus": "ascend",
+  "dur": 3.84,
+  "wall_ms": 196,
+  "cer": 0.4,
+  "text": "其實我那時候非常的噩淺就是我到了"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00871",
+  "corpus": "ascend",
+  "dur": 3.36,
+  "wall_ms": 201,
+  "cer": 1.0,
+  "text": "你能否使用了最大部分"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01182",
+  "corpus": "ascend",
+  "dur": 4.01,
+  "wall_ms": 201,
+  "cer": 0.4762,
+  "text": "那圖像識別其實上學上個master我們"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_01055",
+  "corpus": "ascend",
+  "dur": 11.34,
+  "wall_ms": 215,
+  "cer": 0.3818,
+  "text": "好 那我們現在開始我們第二個topic就是你認為就是你認為球者應不應該有自己的 smartphone"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac768",
+  "clip": "ascend_00888",
+  "corpus": "ascend",
+  "dur": 5.54,
+  "wall_ms": 223,
+  "cer": 0.4688,
+  "text": "不能去认识今天想要穿什么衣服,明天想要穿什么衣服,每天都穿一样"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0377",
+  "corpus": "aishell1",
+  "dur": 6.17,
+  "wall_ms": 214,
+  "cer": 0.5556,
+  "text": "北京舉辦東奧會和夏奧會期間相隔14年"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0472",
+  "corpus": "aishell1",
+  "dur": 6.94,
+  "wall_ms": 225,
+  "cer": 0.45,
+  "text": "五岁男同,家门口完爽时,世宗一辈莫生女子乖走。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0399",
+  "corpus": "aishell1",
+  "dur": 5.37,
+  "wall_ms": 199,
+  "cer": 0.6,
+  "text": "萬龍學長上個學記克流量翻了一翻"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0419",
+  "corpus": "aishell1",
+  "dur": 4.98,
+  "wall_ms": 210,
+  "cer": 0.1875,
+  "text": "自己以往拍拒对于野外路侧都习惯了。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0303",
+  "corpus": "aishell1",
+  "dur": 3.25,
+  "wall_ms": 192,
+  "cer": 0.2222,
+  "text": "比如有參觀者要合照。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0455",
+  "corpus": "aishell1",
+  "dur": 3.7,
+  "wall_ms": 200,
+  "cer": 0.2222,
+  "text": "与院方协商陪传问题"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0213",
+  "corpus": "aishell1",
+  "dur": 4.34,
+  "wall_ms": 197,
+  "cer": 0.0909,
+  "text": "但依然有多个部门为公布。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0199",
+  "corpus": "aishell1",
+  "dur": 4.63,
+  "wall_ms": 205,
+  "cer": 0.0,
+  "text": "所有的利益在一个特定的圈子里来分配"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0368",
+  "corpus": "aishell1",
+  "dur": 4.19,
+  "wall_ms": 203,
+  "cer": 0.6,
+  "text": "不半一届淘寶鴉院會怎麼說的過去"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0235",
+  "corpus": "aishell1",
+  "dur": 3.69,
+  "wall_ms": 201,
+  "cer": 0.0,
+  "text": "最重要的一点是要改革"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0328",
+  "corpus": "aishell1",
+  "dur": 5.68,
+  "wall_ms": 212,
+  "cer": 0.25,
+  "text": "而自动化生产模式可完成2300件。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0171",
+  "corpus": "aishell1",
+  "dur": 4.86,
+  "wall_ms": 207,
+  "cer": 0.5,
+  "text": "但這部影響房企觸碗日記的延續"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0297",
+  "corpus": "aishell1",
+  "dur": 2.46,
+  "wall_ms": 185,
+  "cer": 0.6,
+  "text": "岩江者溫志"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0321",
+  "corpus": "aishell1",
+  "dur": 3.68,
+  "wall_ms": 198,
+  "cer": 0.25,
+  "text": "有效保護消防員的人生安全。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0490",
+  "corpus": "aishell1",
+  "dur": 7.48,
+  "wall_ms": 230,
+  "cer": 0.2857,
+  "text": "杜鴻七代将来能够通过解冻遗址等步骤死而附生。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0213",
+  "corpus": "aishell1",
+  "dur": 6.33,
+  "wall_ms": 222,
+  "cer": 0.625,
+  "text": "正起新份顾及南修产业龙段有待破除。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0418",
+  "corpus": "aishell1",
+  "dur": 4.65,
+  "wall_ms": 210,
+  "cer": 0.2308,
+  "text": "4月初公布懷有小周周的席讯"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0320",
+  "corpus": "aishell1",
+  "dur": 4.54,
+  "wall_ms": 205,
+  "cer": 0.2857,
+  "text": "提供一戰式的機器換人解決方案。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0134",
+  "corpus": "aishell1",
+  "dur": 7.29,
+  "wall_ms": 229,
+  "cer": 0.0476,
+  "text": "未改善居住条件,再次申请贷款购买普通商品住房。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0453",
+  "corpus": "aishell1",
+  "dur": 4.83,
+  "wall_ms": 201,
+  "cer": 0.4286,
+  "text": "五歲男同醫院看牙兩小時後身亡"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0310",
+  "corpus": "aishell1",
+  "dur": 4.11,
+  "wall_ms": 212,
+  "cer": 0.0714,
+  "text": "具机器人服务员的生产厂家介绍。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0131",
+  "corpus": "aishell1",
+  "dur": 4.41,
+  "wall_ms": 193,
+  "cer": 0.4444,
+  "text": "顯示出極強的威力。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0142",
+  "corpus": "aishell1",
+  "dur": 4.52,
+  "wall_ms": 202,
+  "cer": 0.3333,
+  "text": "甚至在防起未來戰略布局中。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0166",
+  "corpus": "aishell1",
+  "dur": 5.14,
+  "wall_ms": 209,
+  "cer": 0.3571,
+  "text": "正如一位触往營銷的操辦手所說。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0354",
+  "corpus": "aishell1",
+  "dur": 7.27,
+  "wall_ms": 219,
+  "cer": 0.6522,
+  "text": "洛杉磯曾在1932年和1984年2度舉辦奧運會。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0233",
+  "corpus": "aishell1",
+  "dur": 3.84,
+  "wall_ms": 205,
+  "cer": 0.8182,
+  "text": "壟斷會導致市場競爭勢力。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0198",
+  "corpus": "aishell1",
+  "dur": 7.6,
+  "wall_ms": 224,
+  "cer": 0.3182,
+  "text": "衛生行政主管部門要進一步強化食品安全,標準公開。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0482",
+  "corpus": "aishell1",
+  "dur": 6.87,
+  "wall_ms": 225,
+  "cer": 0.4444,
+  "text": "五歲男同活潑健康,遭鄰居基督被乖走恰死。"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0002W0194",
+  "corpus": "aishell1",
+  "dur": 2.87,
+  "wall_ms": 193,
+  "cer": 0.2,
+  "text": "而是一个金真性的产品"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "aishell_BAC009S0003W0487",
+  "corpus": "aishell1",
+  "dur": 7.68,
+  "wall_ms": 212,
+  "cer": 0.35,
+  "text": "一半品種都在下跌,本報記者流序發自湖北金春"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00308",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 254,
+  "cer": 0.6296,
+  "text": "那Tax or ATTWC就像是說,欸,他其實要幫我們"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00939",
+  "corpus": "ascend",
+  "dur": 3.2,
+  "wall_ms": 205,
+  "cer": 0.4737,
+  "text": "但是你們不覺得平時也有很多丟掉感嗎?"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01014",
+  "corpus": "ascend",
+  "dur": 3.47,
+  "wall_ms": 195,
+  "cer": 0.1739,
+  "text": "另一個就是 responsibility 的問題"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01076",
+  "corpus": "ascend",
+  "dur": 3.34,
+  "wall_ms": 214,
+  "cer": 1.0,
+  "text": "我的朋友在我身上"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00712",
+  "corpus": "ascend",
+  "dur": 6.0,
+  "wall_ms": 211,
+  "cer": 0.4211,
+  "text": "但我覺得3.0的方式是非常 efficient 的一個方式去得分"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00631",
+  "corpus": "ascend",
+  "dur": 2.06,
+  "wall_ms": 185,
+  "cer": 1.0,
+  "text": "做朋友了"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00233",
+  "corpus": "ascend",
+  "dur": 3.44,
+  "wall_ms": 192,
+  "cer": 0.1515,
+  "text": "台灣的台灣大學,National Taiwan University"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01035",
+  "corpus": "ascend",
+  "dur": 10.02,
+  "wall_ms": 222,
+  "cer": 0.4,
+  "text": "但是如果你單純的CL的這個 technology就是說告訴他就是我的self driving這個 function is perfect"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01048",
+  "corpus": "ascend",
+  "dur": 6.51,
+  "wall_ms": 219,
+  "cer": 0.381,
+  "text": "你不能去把它放在真的環境下去測試它因為這個外移那個Sitant happen怎麼辦"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01068",
+  "corpus": "ascend",
+  "dur": 7.44,
+  "wall_ms": 211,
+  "cer": 0.1579,
+  "text": "我小时候我也没有 smartphone但是我是小时候比较早接触的电脑"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00947",
+  "corpus": "ascend",
+  "dur": 6.8,
+  "wall_ms": 208,
+  "cer": 0.3333,
+  "text": "就是会有很多比如说跟Luminize聚会一起吃饭然后要么就"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00138",
+  "corpus": "ascend",
+  "dur": 3.05,
+  "wall_ms": 208,
+  "cer": 0.3043,
+  "text": "嗯,所以你現在是比較 focus 才找工作的這件事"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01131",
+  "corpus": "ascend",
+  "dur": 3.49,
+  "wall_ms": 191,
+  "cer": 0.4615,
+  "text": "再建一個model to optimize"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00337",
+  "corpus": "ascend",
+  "dur": 5.16,
+  "wall_ms": 191,
+  "cer": 0.1875,
+  "text": "就是优势去 respond一些就是 interesting 的"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00698",
+  "corpus": "ascend",
+  "dur": 5.44,
+  "wall_ms": 187,
+  "cer": 0.2,
+  "text": "第一是Michael Jordan"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00193",
+  "corpus": "ascend",
+  "dur": 3.77,
+  "wall_ms": 527,
+  "cer": 1.0,
+  "text": "我喜歡擴闊"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01213",
+  "corpus": "ascend",
+  "dur": 3.06,
+  "wall_ms": 207,
+  "cer": 0.9286,
+  "text": "可能會以你的個人來講"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00606",
+  "corpus": "ascend",
+  "dur": 8.4,
+  "wall_ms": 203,
+  "cer": 0.9756,
+  "text": "因為我沒有工作,我只在"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00706",
+  "corpus": "ascend",
+  "dur": 2.89,
+  "wall_ms": 190,
+  "cer": 0.0,
+  "text": "因为他的得分方式非常Efficient"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00404",
+  "corpus": "ascend",
+  "dur": 3.9,
+  "wall_ms": 211,
+  "cer": 0.3478,
+  "text": "我當初去的是 奧本科是E-Baground"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00489",
+  "corpus": "ascend",
+  "dur": 2.64,
+  "wall_ms": 197,
+  "cer": 0.4167,
+  "text": "我记得去上那个居民那边"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00425",
+  "corpus": "ascend",
+  "dur": 6.44,
+  "wall_ms": 213,
+  "cer": 0.0,
+  "text": "然后在打算申请Graduate School的时候我考虑过挺多Major的"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00259",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 199,
+  "cer": 0.45,
+  "text": "那你現在住在紅礦大概住了多久"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00269",
+  "corpus": "ascend",
+  "dur": 5.78,
+  "wall_ms": 206,
+  "cer": 0.5161,
+  "text": "就是像那些没有得来的时候也不会那么准"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00150",
+  "corpus": "ascend",
+  "dur": 2.76,
+  "wall_ms": 199,
+  "cer": 0.3333,
+  "text": "想過那是因為這次project有點多"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00920",
+  "corpus": "ascend",
+  "dur": 3.84,
+  "wall_ms": 204,
+  "cer": 0.4,
+  "text": "其實我那時候非常的噩淺就是我到了"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00871",
+  "corpus": "ascend",
+  "dur": 3.36,
+  "wall_ms": 205,
+  "cer": 1.0,
+  "text": "你能否使用的"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01182",
+  "corpus": "ascend",
+  "dur": 4.01,
+  "wall_ms": 198,
+  "cer": 0.4762,
+  "text": "那圖像識別其實上學上個master我們"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_01055",
+  "corpus": "ascend",
+  "dur": 11.34,
+  "wall_ms": 217,
+  "cer": 0.3818,
+  "text": "好 那我們現在開始我們第二個topic就是你認為就是你認為球者應不應該有自己的 smartphone"
+ },
+ {
+  "model": "base",
+  "combo": "greedy-ac1024",
+  "clip": "ascend_00888",
+  "corpus": "ascend",
+  "dur": 5.54,
+  "wall_ms": 237,
+  "cer": 0.4688,
+  "text": "不能去认识今天想要穿什么衣服,明天想要穿什么衣服,每天都穿一样"
+ }
+]

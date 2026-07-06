@@ -1,12 +1,14 @@
 # MVP 执行计划
 
-版本：2026-06-28
+版本：2026-07-05
+
+统一语言（详见 PRODUCT_TECH_DESIGN.md §0）：两个模式（输入/翻译）；纠错属于 ASR 能力；Polish 是必经层且分级；翻译=同一次 compose 调用多输出一个语种字段；专用翻译引擎是兜底槽位。
 
 ## 1. MVP 定义
 
 MVP 要证明这句话：
 
-用户按住快捷键自然说话，Velora在本地结合语境、热词和模式，把文本插入当前输入位置；翻译模式默认插入原文和译文。
+用户按住快捷键自然说话，Velora在本地结合语境、热词做识别和润色，把文本插入当前输入位置；翻译模式默认插入原文和译文。
 
 MVP 不追求：
 
@@ -18,7 +20,7 @@ MVP 不追求：
 
 ## 2. 阶段划分
 
-当前状态：Phase 0 已完成。Mac 和 iOS/Keyboard 目标已经能构建；核心 pipeline 合同可跑通；iOS App Group 候选写入已在模拟器验证。Phase 1 已进入系统级输入体验：Mac 已有默认 `Fn`、翻译 `Fn ⇧`、可切换 Space 组合键、非激活 voice bar、`whisper.cpp` 本地 ASR、Ollama 本地润色/翻译、pasteboard 插入回退和剪贴板恢复。真实 stage tracing、模型预热、ASR 模型模式已落地。下一步是目标 App 插入矩阵验收、Ollama deadline/fallback、WhisperKit / SpeechAnalyzer / FluidAudio POC，以及 Phase 4 的真机键盘插入验证。
+当前状态：Phase 0 已完成。2026-07-05 完成统一模型重构：两模式（input/translate）、compose 单次调用（规则地板 + Ollama JSON 输出 + deadline 降级 + 语言校验）、翻译审阅改为 reviewRequired 驱动、插入带目标 App 保护、network guard、模型路径启动方式无关、trace 诚实化（未并行前 context/hotword 计入关键路径）、Fn 停止零消歧延迟。实测 warm 翻译单次 compose 约 1.5-2.0s（qwen3:8b），Ollama 冷路径由 deadline 兜住。已完成：常驻 ASR（SenseVoice sherpa-onnx 替换 whisper CLI，18× 提速）、录音期并行化（context/hotword 移进录音期）、SQLite 记忆层（从 correction journal 学习）、插入机制自检脚本。下一步是目标 App 插入矩阵真人验收、speculative compose 移进录音期，以及 Phase 4 的真机键盘插入验证。
 
 ### Phase 0：工程骨架和合同
 
@@ -56,7 +58,7 @@ MVP 不追求：
 
 周期：1 周。
 
-状态：进行中。AVAudioEngine 录音和 `audioPath` pipeline 已接通；`whisper.cpp` CLI adapter 已接入 Mac 默认 POC，`.caf` 录音会自动转 16k WAV；Ollama `qwen3:8b` 已接入润色和翻译。默认 `Fn`、翻译 `Fn ⇧`、可切换 Space 组合键、实时音量 voice bar、pasteboard+CmdV 插入回退、剪贴板延迟恢复、真实 stage tracing、模型预热和 ASR 模型模式均已实现并通过测试。还缺目标 App 插入矩阵、IMK/AX 更稳插入路径、Ollama deadline/fallback，以及 Apple/WhisperKit/FluidAudio 真实 benchmark。
+状态：进行中。AVAudioEngine 录音和 `audioPath` pipeline 已接通；`whisper.cpp` CLI adapter 已接入 Mac 默认 POC，`.caf` 录音会自动转 16k WAV；Ollama `qwen3:8b` 已接入 compose（单次调用出 polished + target）。默认 `Fn`（输入）、`Fn ⇧`（翻译）、可切换 Space 组合键、实时音量 voice bar、pasteboard+CmdV 插入（fail-closed 目标 App 保护）、剪贴板延迟恢复、真实 stage tracing、模型预热、ASR 模型模式、compose 与翻译兜底的 deadline/降级链均已实现并通过测试。还缺目标 App 插入矩阵验收、IMK/AX 更稳插入路径、录音期并行化，以及 Apple/WhisperKit/FluidAudio 真实 benchmark。
 
 交付：
 
@@ -74,20 +76,20 @@ MVP 不追求：
 
 - 实现 `AudioCaptureService`。
 - 实现 VAD 或最小静音检测。
-- 当前已接 `whisper.cpp` CLI 作为第一个真实 ASR；下一步评测 SpeechAnalyzer、WhisperKit、FluidAudio/Parakeet。
+- Mac 主 ASR 已切 SenseVoice-Small（sherpa-onnx int8 常驻 sidecar），whisper.cpp 自动回退；80 条真实语料实测胜出（详见调优报告 §3.4）。
 - 实现 `MacContextProvider`。
 - 实现 `MacInsertionEngine`。
-- 实现 streaming partial 和 speculative correction；CLI adapter 只能做 finalize，不是最终形态。
-- 把 context capture、hotword ranking 移到录音期间。当前 trace 已标记为 `during_recording`，但录音控制器还需要真正提前触发。
+- 实现 streaming partial 和 speculative compose；CLI adapter 只能做 finalize，不是最终形态。
+- 把 context capture、hotword ranking 移到录音期间。当前 trace 诚实标记为 `after_release` 且计入关键路径；真正移进录音期后再改标 `during_recording`。
 - 做 Notes、Mail、Slack、VS Code 插入验证。
 
 验收：
 
 - 10 秒以内短句可以录音、识别、上屏。
-- 默认不联网。
+- 默认不联网（network guard 默认阻断非 loopback 的 LLM endpoint；仅开发期可用 `VELORA_ALLOW_REMOTE_LLM=1` 显式覆盖，发布构建应禁用该覆盖）。
 - 插入失败时结果留在浮动条并可复制。
-- Dictate warm path p50 释放后到上屏低于 700ms，p95 低于 1.2s。
-- Translate warm path p50 释放后到上屏低于 1.1s，p95 低于 1.8s。
+- 输入 warm path p50 释放后到上屏低于 800ms，p95 低于 1.3s。
+- 翻译 warm path p50 释放后到上屏低于 1.0s，p95 低于 1.8s。
 - 冷启动必须被识别并显示，不能算作默认路径成功。
 
 ### Phase 2：热词和纠错
@@ -108,7 +110,7 @@ MVP 不追求：
 - 增加手动热词。
 - 增加 accepted correction 记录。
 - 增加拒绝纠错的负反馈。
-- 实现 CorrectionEngine 第一版：规则 + 本地 LLM 或 Foundation Models。
+- 强化 `HotwordCorrector`（保持在 ASR 能力边界内）：分数阈值、上下文门控、中文同音词保守匹配、低置信替换触发审阅。
 
 验收：
 
@@ -123,20 +125,18 @@ MVP 不追求：
 
 交付：
 
-- `Dictate / Polish / Translate` 模式。
+- `输入 / 翻译` 两模式打磨（compose 单次调用合同已落地）。
 - 翻译语言对设置。
-- 双语上屏。
-- `target_only` 和 `review_card` 插入策略。
-- Apple Translation 或本地翻译引擎接入。
+- 双语上屏（已默认）。
+- `target_only` 和 `review_card` 插入策略（已实现）。
+- Apple Translation 接入兜底槽位（TranslationEngine）。
 
 任务：
 
-- 移植 `translation_mode_poc.py` 的输出合同到 Swift。
-- 实现 `TranslationResultRenderer`。
-- 接 Apple Translation。
-- 加 glossary hits。
-- 加低置信度 review。
-- 加邮件、条列、简洁三种润色风格。
+- 接 Apple Translation 作为兜底翻译引擎。
+- 扩展语言检测覆盖（NLLanguageRecognizer），解除 zh/en/ja/ko 限制。
+- 完善 reviewRequired 触发面（术语冲突、命名实体不一致）。
+- 加邮件、条列、简洁三种润色风格（compose style 参数已预留）。
 
 验收：
 
@@ -263,24 +263,29 @@ public protocol ASREngine {
     var id: String { get }
     func transcribe(_ request: ASRRequest) async throws -> ASRResult
 }
+// 热词纠错 HotwordCorrector 属于 ASR 能力边界，orchestrator 在 ASR 输出后立即执行，
+// 结构化 edits 保留给诊断和反馈学习。
 
 public protocol ContextProvider {
-    func currentSnapshot(mode: DictationMode) async -> ContextSnapshot
+    func currentSnapshot(for request: PipelineRunRequest) async -> ContextSnapshot
 }
 
 public protocol MemoryStore {
     func rankHotwords(for snapshot: ContextSnapshot, limit: Int) async throws -> [HotwordCandidate]
-    func recordFeedback(_ feedback: CorrectionFeedback) async throws
 }
 
+// 单次调用：必经润色 + 可选目标语言（翻译模式多一个输出字段）。
 public protocol TextIntelligenceEngine {
-    func correct(_ request: CorrectionRequest) async throws -> CorrectionResult
-    func polish(_ request: PolishRequest) async throws -> PolishResult
-    func translate(_ request: TranslationRequest) async throws -> TranslationResult
+    func compose(_ request: ComposeRequest) async throws -> ComposeResult
+}
+
+// 兜底槽位：compose 产不出 target 时才使用。
+public protocol TranslationEngine {
+    func translate(_ request: LocalTranslationRequest) async throws -> LocalTranslationOutput
 }
 
 public protocol InsertionEngine {
-    func insert(_ text: String, strategy: InsertionStrategy) async throws -> InsertionResult
+    func insert(_ request: InsertionRequest) async throws -> InsertionResult
 }
 ```
 
@@ -291,12 +296,14 @@ public protocol InsertionEngine {
 | 先 Mac 后 iPhone | 是 | Mac 可实现完整体验，能先验证核心价值 |
 | iPhone 键盘直接录音 | 不作为目标 | 自定义键盘扩展不能访问麦克风 |
 | 默认双语翻译 | 是 | 这是对 Typeless 翻译模式的明确补强 |
-| 默认云端禁用 | 是 | 隐私和速度是产品基础 |
-| 性能优先 | 是 | release-to-insert 是核心指标，冷启动不能进默认路径 |
+| 默认云端禁用 | 是 | 隐私和速度是产品基础；network guard 默认阻断非 loopback，开发期显式 env 覆盖，发布禁用 |
+| 性能优先 | 是 | release-to-insert 是核心指标，北极星任何模式 p50 ≤ 1s，冷启动不能进默认路径 |
 | iPhone 授权最小化 | 是 | 首次启动 0 弹窗，默认录音只问麦克风 |
 | 只注入 Top K 热词 | 是 | 控制隐私、延迟和 prompt 污染 |
-| 翻译默认引擎 | Apple Translation | 专用翻译优先于通用 LLM，双语上屏由渲染层保证 |
-| 润色默认引擎 | 规则 + Foundation Models 可用时补充 | iPhone 不能假设本地大模型一定可用，必须可降级 |
+| 两模式统一语言（2026-07-05） | 输入 / 翻译 | 纠错归 ASR 能力；Polish 是必经层不是模式；dictate/polish 旧值归一到 input |
+| Polish 必须但分级（2026-07-05） | 规则地板 + LLM deadline 增强 | "每次输出都经过润色层"≠"每次都等 LLM"；LLM 不可用产品仍工作 |
+| 翻译默认引擎（2026-07-05 反转） | compose 单次调用直接输出 target | 省一次 prompt eval；润色和翻译共享上下文与术语。专用翻译引擎降为兜底槽位（iPhone 无 LLM 时走 Apple Translation） |
+| 翻译审阅策略（2026-07-05） | reviewRequired 驱动，不无条件审阅 | 语言校验失败、target 缺失、deadline 降级才进审阅 |
 | Mac 本地 LLM | MLX / llama.cpp 只做 benchmark 候选 | 先证明延迟、错改率、耗电，再决定是否进入默认路径 |
 | Clean-room 实现 | 是 | 避免开源许可证风险 |
 
@@ -320,7 +327,7 @@ public protocol InsertionEngine {
 当前工程已建立。下一步常用验证命令：
 
 ```bash
-cd /Users/alpha/Documents/workspace/velora
+cd /Users/alpha/workspace/velora
 xcodegen generate
 swift test --package-path Velora
 xcodebuild -project Velora.xcodeproj -scheme Velora -destination 'platform=macOS' build

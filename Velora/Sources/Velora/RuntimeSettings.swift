@@ -28,10 +28,12 @@ public struct VeloraRuntimeSettings: Codable, Sendable, Equatable {
 
     public static func defaults(environment: [String: String] = ProcessInfo.processInfo.environment) -> VeloraRuntimeSettings {
         VeloraRuntimeSettings(
-            mode: .translate,
+            mode: .input,
             sourceLanguage: "zh",
             targetLanguage: "en",
-            insertPolicy: .bilingual,
+            // Insertion is always single-language (product decision 2026-07-05):
+            // the bilingual block is review-overlay display only, never inserted.
+            insertPolicy: .targetOnly,
             preferredInsertLanguage: "zh",
             asrModelMode: .fromEnvironment(environment)
         )
@@ -43,10 +45,8 @@ public struct VeloraRuntimeSettings: Codable, Sendable, Equatable {
 
     public var displaySummary: String {
         switch mode {
-        case .dictate:
-            return "mode=dictate source=\(sourceLanguage) asr=\(asrModelMode.rawValue)"
-        case .polish:
-            return "mode=polish source=\(sourceLanguage) asr=\(asrModelMode.rawValue)"
+        case .input:
+            return "mode=input source=\(sourceLanguage) asr=\(asrModelMode.rawValue)"
         case .translate:
             return "mode=translate \(sourceLanguage)->\(targetLanguage) output=\(preferredInsertLanguage) asr=\(asrModelMode.rawValue)"
         }
@@ -88,8 +88,10 @@ public final class VeloraSettingsStore: @unchecked Sendable {
 
     public func load() -> VeloraRuntimeSettings {
         let fallback = VeloraRuntimeSettings.defaults(environment: environment)
+        let storedMode = defaults.string(forKey: Key.mode)
+            .flatMap(DictationMode.normalize)
         return VeloraRuntimeSettings(
-            mode: enumValue(forKey: Key.mode, defaultValue: fallback.mode),
+            mode: storedMode ?? fallback.mode,
             sourceLanguage: stringValue(forKey: Key.sourceLanguage, defaultValue: fallback.sourceLanguage),
             targetLanguage: stringValue(forKey: Key.targetLanguage, defaultValue: fallback.targetLanguage),
             insertPolicy: enumValue(forKey: Key.insertPolicy, defaultValue: fallback.insertPolicy),

@@ -4,7 +4,7 @@ import Velora
 
 @MainActor
 final class PrototypePipelineViewModel: ObservableObject {
-    @Published var mode: DictationMode = .translate {
+    @Published var mode: DictationMode = .input {
         didSet { persistRuntimeSettingsFromView() }
     }
     @Published var insertPolicy: InsertPolicy = .bilingual {
@@ -12,7 +12,13 @@ final class PrototypePipelineViewModel: ObservableObject {
     }
     @Published var preferredInsertLanguage = "zh" {
         didSet {
-            preferredInsertLanguage = TranslationLanguageResolver.normalizedLanguage(preferredInsertLanguage)
+            // Reassign only when normalization actually changes the value —
+            // an unconditional self-assignment here recurses until stack overflow.
+            let normalized = TranslationLanguageResolver.normalizedLanguage(preferredInsertLanguage)
+            guard normalized == preferredInsertLanguage else {
+                preferredInsertLanguage = normalized
+                return
+            }
             persistRuntimeSettingsFromView()
         }
     }
@@ -42,7 +48,7 @@ final class PrototypePipelineViewModel: ObservableObject {
     }
 
     var modeOptions: [DictationMode] {
-        [.dictate, .polish, .translate]
+        [.input, .translate]
     }
 
     var insertPolicyOptions: [InsertPolicy] {
@@ -242,7 +248,10 @@ final class PrototypePipelineViewModel: ObservableObject {
 
         return [
             "engine=\(result.asr.engine)",
+            "compose_engine=\(result.compose.engine)",
             "mode=\(result.session.mode.rawValue)",
+            "review_required=\(result.reviewRequired)",
+            "warnings=\(result.compose.warnings.joined(separator: ","))",
             "release_to_insert_ms=\(result.trace.releaseToInsertMS)",
             "stages=\(Self.renderStageTimings(result.trace))",
             "hotwords=\(hotwords)",

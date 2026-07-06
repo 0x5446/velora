@@ -85,6 +85,14 @@ final class KeyboardViewController: UIInputViewController {
             .prefix(2)
             .joined(separator: " ")
 
+        // Low-confidence results honor the same review contract as the Mac
+        // path: no one-tap insertion of text the pipeline flagged.
+        if latestPayload.needsReview {
+            statusLabel.text = "⚠️ 低置信结果，请回主 App 确认后重新生成：\(preview)"
+            insertButton.isEnabled = false
+            return
+        }
+
         statusLabel.text = "\(prefix)：\(preview)"
         insertButton.isEnabled = true
     }

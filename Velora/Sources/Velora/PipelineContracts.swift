@@ -207,39 +207,74 @@ public struct CorrectionResult: Codable, Sendable, Equatable {
     }
 }
 
-public struct PolishRequest: Codable, Sendable, Equatable {
+/// Single text-intelligence call: mandatory tiered polish, plus an optional
+/// second-language output when mode is translate. Engines must honor
+/// `deadlineMS` and return a best-effort (rule-tier) result instead of blocking.
+public struct ComposeRequest: Codable, Sendable, Equatable {
     public var text: String
+    public var mode: DictationMode
     public var style: String
+    public var sourceLanguage: String
+    public var targetLanguage: String?
     public var context: ContextSnapshot
+    public var glossary: [HotwordCandidate]
     public var deadlineMS: Int
 
-    public init(text: String, style: String, context: ContextSnapshot, deadlineMS: Int = 250) {
+    public static let defaultInputDeadlineMS = 4_000
+    public static let defaultTranslateDeadlineMS = 6_000
+
+    public init(
+        text: String,
+        mode: DictationMode,
+        style: String = "clean",
+        sourceLanguage: String,
+        targetLanguage: String? = nil,
+        context: ContextSnapshot,
+        glossary: [HotwordCandidate] = [],
+        deadlineMS: Int? = nil
+    ) {
         self.text = text
+        self.mode = mode
         self.style = style
+        self.sourceLanguage = sourceLanguage
+        self.targetLanguage = mode == .translate ? targetLanguage : nil
         self.context = context
+        self.glossary = glossary
         self.deadlineMS = deadlineMS
+            ?? (mode == .translate ? Self.defaultTranslateDeadlineMS : Self.defaultInputDeadlineMS)
     }
 }
 
-public struct PolishResult: Codable, Sendable, Equatable {
-    public var finalText: String
+public struct ComposeResult: Codable, Sendable, Equatable {
+    public var polishedText: String
+    /// Present only in translate mode. nil means the engine could not produce
+    /// the target language; the orchestrator then uses the fallback TranslationEngine.
+    public var targetText: String?
     public var edits: [TextEdit]
+    public var glossaryHits: [String]
     public var warnings: [String]
     public var confidence: Double
     public var reviewRequired: Bool
+    public var engine: String
 
     public init(
-        finalText: String,
+        polishedText: String,
+        targetText: String? = nil,
         edits: [TextEdit] = [],
+        glossaryHits: [String] = [],
         warnings: [String] = [],
         confidence: Double,
-        reviewRequired: Bool
+        reviewRequired: Bool,
+        engine: String
     ) {
-        self.finalText = finalText
+        self.polishedText = polishedText
+        self.targetText = targetText
         self.edits = edits
+        self.glossaryHits = glossaryHits
         self.warnings = warnings
         self.confidence = confidence
         self.reviewRequired = reviewRequired
+        self.engine = engine
     }
 }
 
@@ -341,7 +376,7 @@ public struct PipelineRunRequest: Codable, Sendable, Equatable {
     public var targetLanguage: String?
     public var insertPolicy: InsertPolicy
     public var preferredInsertLanguage: String
-    public var polishStyle: String
+    public var composeStyle: String
     public var insertionStrategy: InsertionStrategy
 
     public init(
@@ -353,7 +388,7 @@ public struct PipelineRunRequest: Codable, Sendable, Equatable {
         targetLanguage: String? = nil,
         insertPolicy: InsertPolicy = .bilingual,
         preferredInsertLanguage: String = "zh",
-        polishStyle: String = "clean",
+        composeStyle: String = "clean",
         insertionStrategy: InsertionStrategy = .none
     ) {
         self.platform = platform
@@ -364,7 +399,7 @@ public struct PipelineRunRequest: Codable, Sendable, Equatable {
         self.targetLanguage = targetLanguage
         self.insertPolicy = insertPolicy
         self.preferredInsertLanguage = TranslationLanguageResolver.normalizedLanguage(preferredInsertLanguage)
-        self.polishStyle = polishStyle
+        self.composeStyle = composeStyle
         self.insertionStrategy = insertionStrategy
     }
 }
@@ -373,10 +408,13 @@ public struct PipelineRunResult: Codable, Sendable, Equatable {
     public var session: DictationSession
     public var context: ContextSnapshot
     public var asr: ASRResult
+    /// Hotword pass output. Belongs to the ASR capability boundary; kept as a
+    /// separate field so diagnostics and feedback learning can read the edits.
     public var correction: CorrectionResult
-    public var polish: PolishResult?
+    public var compose: ComposeResult
     public var translation: TranslationResult?
     public var finalText: String
+    public var reviewRequired: Bool
     public var insertion: InsertionResult?
     public var trace: PipelineTrace
 
@@ -385,9 +423,10 @@ public struct PipelineRunResult: Codable, Sendable, Equatable {
         context: ContextSnapshot,
         asr: ASRResult,
         correction: CorrectionResult,
-        polish: PolishResult? = nil,
+        compose: ComposeResult,
         translation: TranslationResult? = nil,
         finalText: String,
+        reviewRequired: Bool = false,
         insertion: InsertionResult? = nil,
         trace: PipelineTrace
     ) {
@@ -395,9 +434,10 @@ public struct PipelineRunResult: Codable, Sendable, Equatable {
         self.context = context
         self.asr = asr
         self.correction = correction
-        self.polish = polish
+        self.compose = compose
         self.translation = translation
         self.finalText = finalText
+        self.reviewRequired = reviewRequired
         self.insertion = insertion
         self.trace = trace
     }
@@ -416,11 +456,14 @@ public protocol MemoryStore: Sendable {
     func rankHotwords(for snapshot: ContextSnapshot, limit: Int) async throws -> [HotwordCandidate]
 }
 
+/// Single-call text intelligence: tiered polish plus optional target language.
+/// Translate mode is the same call with one more output field, not a separate stage.
 public protocol TextIntelligenceEngine: Sendable {
-    func correct(_ request: CorrectionRequest) async throws -> CorrectionResult
-    func polish(_ request: PolishRequest) async throws -> PolishResult
+    func compose(_ request: ComposeRequest) async throws -> ComposeResult
 }
 
+/// Fallback slot only. Used when the compose engine cannot emit the target
+/// language (LLM unavailable, deadline exceeded, unsupported pair).
 public protocol TranslationEngine: Sendable {
     func translate(_ request: LocalTranslationRequest) async throws -> LocalTranslationOutput
 }

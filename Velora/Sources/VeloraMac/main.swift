@@ -11,6 +11,7 @@ struct CLIOptions {
     var insertPolicy: InsertPolicy = .bilingual
     var copyToPasteboard = false
     var localModels = false
+    var senseVoice = false
     var asrModelMode: WhisperModelMode = .fromEnvironment(ProcessInfo.processInfo.environment)
     var pretty = true
 }
@@ -58,9 +59,14 @@ struct VeloraMacCLI {
 
     private static func makeOrchestrator(options: CLIOptions) -> PipelineOrchestrator {
         let useLocalModels = options.localModels || options.audioPath != nil
-        let asrEngine: any ASREngine = options.audioPath == nil
-            ? FakeASREngine()
-            : WhisperCLIASREngine(configuration: .configuration(for: options.asrModelMode))
+        let asrEngine: any ASREngine
+        if options.audioPath == nil {
+            asrEngine = FakeASREngine()
+        } else if options.senseVoice, let config = SenseVoiceASREngine.Configuration.resolvedDefault() {
+            asrEngine = SenseVoiceASREngine(configuration: config)
+        } else {
+            asrEngine = WhisperCLIASREngine(configuration: .configuration(for: options.asrModelMode))
+        }
         let textEngine: any TextIntelligenceEngine = useLocalModels
             ? OllamaTextIntelligenceEngine()
             : RuleBasedTextIntelligenceEngine()
@@ -87,7 +93,7 @@ struct VeloraMacCLI {
             switch arg {
             case "--mode":
                 let value = try value(after: arg, in: args, index: &index)
-                guard let mode = DictationMode(rawValue: value) else {
+                guard let mode = DictationMode.normalize(value) else {
                     throw PipelineError.unsupportedMode(value)
                 }
                 options.mode = mode
@@ -113,6 +119,8 @@ struct VeloraMacCLI {
                 }
             case "--copy":
                 options.copyToPasteboard = true
+            case "--sensevoice":
+                options.senseVoice = true
             case "--local-models":
                 options.localModels = true
             case "--asr-mode":
@@ -153,7 +161,7 @@ struct VeloraMacCLI {
               VeloraMac --mode translate --audio /tmp/clip.caf --source zh --target en --local-models
 
             Options:
-              --mode dictate|polish|translate
+              --mode input|translate  (legacy dictate/polish map to input)
               --text TEXT
               --audio PATH
               --source LANG

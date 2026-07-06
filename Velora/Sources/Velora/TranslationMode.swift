@@ -195,6 +195,12 @@ public enum TranslationLanguageResolver {
         }
     }
 
+    /// Languages the script-based detector can actually distinguish. Pairs
+    /// outside this set (e.g. fr/de/es) must not be silently trusted.
+    public static func canDetect(_ language: String) -> Bool {
+        ["zh", "en", "ja", "ko"].contains(normalizedLanguage(language))
+    }
+
     public static func dominantLanguage(in text: String, candidates: [String]) -> String? {
         let candidateSet = Set(candidates.map(normalizedLanguage))
         guard !candidateSet.isEmpty else {

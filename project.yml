@@ -33,6 +33,7 @@ targets:
         NSHumanReadableCopyright: ""
         NSMicrophoneUsageDescription: "Velora 仅在你开始录音时使用麦克风，音频只在这台 Mac 上处理。"
         NSSpeechRecognitionUsageDescription: "Velora 只会在你选择 Apple 本地语音识别后使用该权限。"
+        LSUIElement: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.velora.mac

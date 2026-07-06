@@ -1,0 +1,644 @@
+{
+ "clips": [
+  {
+   "id": "aishell_BAC009S0003W0377",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0377.wav",
+   "lang": "zh",
+   "expected": "北京举办冬奥会和夏奥会期间相隔十四年",
+   "duration": 6.17,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0472",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0472.wav",
+   "lang": "zh",
+   "expected": "五岁男童家门口玩耍时失踪疑被陌生女子拐走",
+   "duration": 6.94,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0399",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0399.wav",
+   "lang": "zh",
+   "expected": "万龙雪场上个雪季客流量翻了一番",
+   "duration": 5.37,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0419",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0419.wav",
+   "lang": "zh",
+   "expected": "自己以往拍剧对于野外如厕都习惯了",
+   "duration": 4.98,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0303",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0303.wav",
+   "lang": "zh",
+   "expected": "比如有参观者要合照",
+   "duration": 3.25,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0455",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0455.wav",
+   "lang": "zh",
+   "expected": "与院方协商赔偿问题",
+   "duration": 3.7,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0213",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0213.wav",
+   "lang": "zh",
+   "expected": "但依然有多个部门未公布",
+   "duration": 4.34,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0199",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0199.wav",
+   "lang": "zh",
+   "expected": "所有的利益在一个特定的圈子里来分配",
+   "duration": 4.63,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0368",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0368.wav",
+   "lang": "zh",
+   "expected": "不办一届淘宝亚运会怎么说得过去",
+   "duration": 4.19,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0235",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0235.wav",
+   "lang": "zh",
+   "expected": "最重要的一点是要改革",
+   "duration": 3.69,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0328",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0328.wav",
+   "lang": "zh",
+   "expected": "而自动化生产模式可完成两千三百件",
+   "duration": 5.68,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0171",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0171.wav",
+   "lang": "zh",
+   "expected": "但这不影响房企触网日记的延续",
+   "duration": 4.86,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0297",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0297.wav",
+   "lang": "zh",
+   "expected": "演讲者翁志",
+   "duration": 2.46,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0321",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0321.wav",
+   "lang": "zh",
+   "expected": "有效保护消防员的人身安全",
+   "duration": 3.68,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0490",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0490.wav",
+   "lang": "zh",
+   "expected": "杜虹期待将来能够通过解冻移植等步骤死而复生",
+   "duration": 7.48,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0213",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0213.wav",
+   "lang": "zh",
+   "expected": "政企兴分痼疾难消产业垄断有待破除",
+   "duration": 6.33,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0418",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0418.wav",
+   "lang": "zh",
+   "expected": "四月初公布怀有小周周的喜讯",
+   "duration": 4.65,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0320",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0320.wav",
+   "lang": "zh",
+   "expected": "提供一站式的机器换人解决方案",
+   "duration": 4.54,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0134",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0134.wav",
+   "lang": "zh",
+   "expected": "为改善居住条件再次申请贷款购买普通商品住房",
+   "duration": 7.29,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0453",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0453.wav",
+   "lang": "zh",
+   "expected": "五岁男童医院看牙两小时后身亡",
+   "duration": 4.83,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0310",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0310.wav",
+   "lang": "zh",
+   "expected": "据机器人服务员的生产厂家介绍",
+   "duration": 4.11,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0131",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0131.wav",
+   "lang": "zh",
+   "expected": "显示出了极强的威力",
+   "duration": 4.41,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0142",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0142.wav",
+   "lang": "zh",
+   "expected": "甚至在房企未来战略布局中",
+   "duration": 4.52,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0166",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0166.wav",
+   "lang": "zh",
+   "expected": "正如一位触网营销的操盘手所说",
+   "duration": 5.14,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0354",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0354.wav",
+   "lang": "zh",
+   "expected": "洛杉矶曾在一九三二年和一九八四年两度举办奥运会",
+   "duration": 7.27,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0233",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0233.wav",
+   "lang": "zh",
+   "expected": "垄断会导致市场竞争失灵",
+   "duration": 3.84,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0198",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0198.wav",
+   "lang": "zh",
+   "expected": "卫生行政主管部门要进一步强化食品安全标准公开",
+   "duration": 7.6,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0482",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0482.wav",
+   "lang": "zh",
+   "expected": "五岁男童活泼健康遭邻居嫉妒被拐走掐死",
+   "duration": 6.87,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0002W0194",
+   "file": "/tmp/velora-eval/corpus/train/S0002/BAC009S0002W0194.wav",
+   "lang": "zh",
+   "expected": "而是一个竞争性的产品",
+   "duration": 2.87,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "aishell_BAC009S0003W0487",
+   "file": "/tmp/velora-eval/corpus/train/S0003/BAC009S0003W0487.wav",
+   "lang": "zh",
+   "expected": "一半品种都在下跌本报记者刘旭发自湖北蕲春",
+   "duration": 7.68,
+   "corpus": "aishell1"
+  },
+  {
+   "id": "ascend_00308",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00308.wav",
+   "lang": "zh",
+   "expected": "那  dialogue system就像是说哎它其实要帮我们",
+   "duration": 3.92,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00939",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00939.wav",
+   "lang": "zh",
+   "expected": "但是你们不觉得平时也有很多due要赶吗",
+   "duration": 3.2,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01014",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01014.wav",
+   "lang": "zh",
+   "expected": "另一个呢就是responsibility的问题",
+   "duration": 3.47,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01076",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01076.wav",
+   "lang": "zh",
+   "expected": "close  嗯很多my friends in my generation",
+   "duration": 3.34,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00712",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00712.wav",
+   "lang": "zh",
+   "expected": "但我觉得three pointer是一个非常efficient的一个方式去得分",
+   "duration": 6.0,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00631",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00631.wav",
+   "lang": "zh",
+   "expected": "make friends啊就",
+   "duration": 2.06,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00233",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00233.wav",
+   "lang": "zh",
+   "expected": "对台湾的台湾大学National Taiwan University念",
+   "duration": 3.44,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01035",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01035.wav",
+   "lang": "zh",
+   "expected": "但是如果你就是单纯的sell这个technology就是说告诉他就是我的我self driving这个方向是perfect",
+   "duration": 10.02,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01048",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01048.wav",
+   "lang": "zh",
+   "expected": "你不能去把它放在真的环境下去测试它因为这个万一那个accident happen怎么办",
+   "duration": 6.51,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01068",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01068.wav",
+   "lang": "zh",
+   "expected": "当然我小时候我也没有smartphone但是呢我是小时候比较早接触过那个电脑",
+   "duration": 7.44,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00947",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00947.wav",
+   "lang": "zh",
+   "expected": "就是会有很多呃比如说跟alumnus聚会啊一起吃饭然后用就是",
+   "duration": 6.8,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00138",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00138.wav",
+   "lang": "zh",
+   "expected": "嗯所以你现在还是比较focus在找工作这件事上",
+   "duration": 3.05,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01131",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01131.wav",
+   "lang": "zh",
+   "expected": "然后再建一个model去optimization这样",
+   "duration": 3.49,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00337",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00337.wav",
+   "lang": "zh",
+   "expected": "就是user去回去respond一些就是interesting的",
+   "duration": 5.16,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00698",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00698.wav",
+   "lang": "zh",
+   "expected": "um那个第一是Michael Jordan",
+   "duration": 5.44,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00193",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00193.wav",
+   "lang": "zh",
+   "expected": "嗯I like hot pot",
+   "duration": 3.77,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01213",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01213.wav",
+   "lang": "zh",
+   "expected": "然后它可能会record your personal life",
+   "duration": 3.06,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00606",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00606.wav",
+   "lang": "zh",
+   "expected": "然后  高高三是我最胖的时候because I呃do not go out i just呃stay",
+   "duration": 8.4,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00706",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00706.wav",
+   "lang": "zh",
+   "expected": "因为他的得分方式非常efficient",
+   "duration": 2.89,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00404",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00404.wav",
+   "lang": "zh",
+   "expected": "对那我当初其实是我本科是e background",
+   "duration": 3.9,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00489",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00489.wav",
+   "lang": "zh",
+   "expected": "我记得学校那个gym那边",
+   "duration": 2.64,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00425",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00425.wav",
+   "lang": "zh",
+   "expected": "然后在打算申请graduate school的时候我考虑过挺多major的",
+   "duration": 6.44,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00259",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00259.wav",
+   "lang": "zh",
+   "expected": "那你现在住在Hong Kong大概住了多久",
+   "duration": 3.92,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00269",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00269.wav",
+   "lang": "zh",
+   "expected": "就是像那些就是没有deadline的时候也不会那么stress",
+   "duration": 5.78,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00150",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00150.wav",
+   "lang": "zh",
+   "expected": "想过但是因为最近project有点多",
+   "duration": 2.76,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00920",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00920.wav",
+   "lang": "zh",
+   "expected": "其实我那时候非常的urgent就是我到了",
+   "duration": 3.84,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00871",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00871.wav",
+   "lang": "zh",
+   "expected": "you can not wear your呃clothes",
+   "duration": 3.36,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01182",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01182.wav",
+   "lang": "zh",
+   "expected": "那图像识别其实上学上个semester我们",
+   "duration": 4.01,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_01055",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_01055.wav",
+   "lang": "zh",
+   "expected": "好那我们现在开始我们第二个topic就是你认为你就是你认为children应不应该有自己的smart phone",
+   "duration": 11.34,
+   "corpus": "ascend"
+  },
+  {
+   "id": "ascend_00888",
+   "file": "/tmp/velora-eval/corpus/clips/ascend_00888.wav",
+   "lang": "zh",
+   "expected": "不能去decide呃你喜今天想要穿什么衣服明天想要每天都穿一样的",
+   "duration": 5.54,
+   "corpus": "ascend"
+  },
+  {
+   "id": "libri_2830-3980-0053",
+   "file": "/tmp/velora-eval/corpus/clips/libri_2830-3980-0053.wav",
+   "lang": "en",
+   "expected": "AT THE SAME TIME PAUL CONFIRMS OUR CREED THAT CHRIST IS VERY GOD",
+   "duration": 5.01,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_6829-68769-0005",
+   "file": "/tmp/velora-eval/corpus/clips/libri_6829-68769-0005.wav",
+   "lang": "en",
+   "expected": "HE WAS SOFT HEARTED AND IMPETUOUS SAID BETH AND BEING IN LOVE HE DIDN'T STOP TO COUNT THE COST",
+   "duration": 6.72,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_7127-75947-0034",
+   "file": "/tmp/velora-eval/corpus/clips/libri_7127-75947-0034.wav",
+   "lang": "en",
+   "expected": "IT SEEMS THE KING WILL NOT CONSENT TO IT",
+   "duration": 2.96,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_6829-68769-0000",
+   "file": "/tmp/velora-eval/corpus/clips/libri_6829-68769-0000.wav",
+   "lang": "en",
+   "expected": "KENNETH AND BETH REFRAINED FROM TELLING THE OTHER GIRLS OR UNCLE JOHN OF OLD WILL ROGERS'S VISIT BUT THEY GOT MISTER WATSON IN THE LIBRARY AND QUESTIONED HIM CLOSELY ABOUT THE PENALTY FOR FORGING A CHECK",
+   "duration": 11.7,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_2094-142345-0046",
+   "file": "/tmp/velora-eval/corpus/clips/libri_2094-142345-0046.wav",
+   "lang": "en",
+   "expected": "I DELIGHT IN YOUR KITCHEN",
+   "duration": 1.91,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_8224-274381-0011",
+   "file": "/tmp/velora-eval/corpus/clips/libri_8224-274381-0011.wav",
+   "lang": "en",
+   "expected": "HIS CONDUCT AND PRESENCE OF MIND IN THIS EMERGENCE APPEARED CONSPICUOUS",
+   "duration": 6.48,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_8230-279154-0011",
+   "file": "/tmp/velora-eval/corpus/clips/libri_8230-279154-0011.wav",
+   "lang": "en",
+   "expected": "SOME IMAGES LIKE SOME SENSATIONS FEEL VERY FAMILIAR WHILE OTHERS FEEL STRANGE",
+   "duration": 6.25,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_6930-76324-0024",
+   "file": "/tmp/velora-eval/corpus/clips/libri_6930-76324-0024.wav",
+   "lang": "en",
+   "expected": "THEY SAY ILLUMINATION BY CANDLE LIGHT IS THE PRETTIEST IN THE WORLD",
+   "duration": 4.05,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_1995-1826-0020",
+   "file": "/tmp/velora-eval/corpus/clips/libri_1995-1826-0020.wav",
+   "lang": "en",
+   "expected": "MISS TAYLOR DID NOT KNOW MUCH ABOUT COTTON BUT AT LEAST ONE MORE REMARK SEEMED CALLED FOR",
+   "duration": 6.12,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_4446-2273-0035",
+   "file": "/tmp/velora-eval/corpus/clips/libri_4446-2273-0035.wav",
+   "lang": "en",
+   "expected": "BARTLEY LEANED OVER HER SHOULDER WITHOUT TOUCHING HER AND WHISPERED IN HER EAR YOU ARE GIVING ME A CHANCE YES",
+   "duration": 6.15,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_8463-294828-0000",
+   "file": "/tmp/velora-eval/corpus/clips/libri_8463-294828-0000.wav",
+   "lang": "en",
+   "expected": "CHAPTER THREE AS MASTER WISHES",
+   "duration": 3.62,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_1320-122612-0009",
+   "file": "/tmp/velora-eval/corpus/clips/libri_1320-122612-0009.wav",
+   "lang": "en",
+   "expected": "IT WOULD HAVE BEEN MORE WONDERFUL HAD HE SPOKEN WITHOUT A BIDDING",
+   "duration": 3.88,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_8224-274384-0012",
+   "file": "/tmp/velora-eval/corpus/clips/libri_8224-274384-0012.wav",
+   "lang": "en",
+   "expected": "IF ANY STILL RETAINED RANCOR AGAINST HIM IN HIS PRESENT CONDITION THEY PASSED IN SILENCE WHILE HIS WELL WISHERS MORE GENEROUS THAN PRUDENT ACCOMPANIED HIS MARCH WITH TEARS WITH ACCLAMATIONS AND WITH PRAYERS FOR HIS SAFETY",
+   "duration": 18.73,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_7021-79759-0004",
+   "file": "/tmp/velora-eval/corpus/clips/libri_7021-79759-0004.wav",
+   "lang": "en",
+   "expected": "WITHOUT GOING TO ANY SUCH EXTREME AS THIS WE CAN EASILY SEE ON REFLECTION HOW VAST AN INFLUENCE ON THE IDEAS AND CONCEPTIONS AS WELL AS ON THE PRINCIPLES OF ACTION IN MATURE YEARS MUST BE EXERTED BY THE NATURE AND CHARACTER OF THE IMAGES WHICH THE PERIOD OF INFANCY AND CHILDHOOD IMPRESSES UPON THE MIND",
+   "duration": 24.47,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_5105-28240-0015",
+   "file": "/tmp/velora-eval/corpus/clips/libri_5105-28240-0015.wav",
+   "lang": "en",
+   "expected": "FOR SOME MOMENTS HE SEEMED PERFECTLY STUPEFIED THEN RECOVERING HIMSELF HE BEGAN TO OVERWHELM THE COUNT WITH A TORRENT OF QUESTIONS",
+   "duration": 8.53,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_1320-122617-0023",
+   "file": "/tmp/velora-eval/corpus/clips/libri_1320-122617-0023.wav",
+   "lang": "en",
+   "expected": "UNCAS WHO HAD ALREADY APPROACHED THE DOOR IN READINESS TO LEAD THE WAY NOW RECOILED AND PLACED HIMSELF ONCE MORE IN THE BOTTOM OF THE LODGE",
+   "duration": 7.82,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_260-123440-0002",
+   "file": "/tmp/velora-eval/corpus/clips/libri_260-123440-0002.wav",
+   "lang": "en",
+   "expected": "IT WAS THE WHITE RABBIT RETURNING SPLENDIDLY DRESSED WITH A PAIR OF WHITE KID GLOVES IN ONE HAND AND A LARGE FAN IN THE OTHER HE CAME TROTTING ALONG IN A GREAT HURRY MUTTERING TO HIMSELF AS HE CAME OH THE DUCHESS THE DUCHESS",
+   "duration": 14.71,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_5142-33396-0044",
+   "file": "/tmp/velora-eval/corpus/clips/libri_5142-33396-0044.wav",
+   "lang": "en",
+   "expected": "I AM STIFF WITH LONG SITTING HE SAID I ITCH FOR A FIGHT I TURNED TO THE FARMER",
+   "duration": 4.86,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_5683-32879-0001",
+   "file": "/tmp/velora-eval/corpus/clips/libri_5683-32879-0001.wav",
+   "lang": "en",
+   "expected": "WELL SHE WAS BETTER THOUGH SHE HAD HAD A BAD NIGHT",
+   "duration": 3.66,
+   "corpus": "librispeech"
+  },
+  {
+   "id": "libri_2094-142345-0039",
+   "file": "/tmp/velora-eval/corpus/clips/libri_2094-142345-0039.wav",
+   "lang": "en",
+   "expected": "I'VE STRONG ASSURANCE THAT NO EVIL WILL HAPPEN TO YOU AND MY UNCLE AND THE CHILDREN FROM ANYTHING I'VE DONE",
+   "duration": 6.28,
+   "corpus": "librispeech"
+  }
+ ]
+}

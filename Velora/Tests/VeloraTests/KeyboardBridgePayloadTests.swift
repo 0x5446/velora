@@ -32,9 +32,38 @@ import Testing
     #expect(payload.targetText?.contains("I have a meeting with Alex") == true)
     #expect(payload.displayText.contains("原文:"))
     #expect(payload.displayText.contains("译文:"))
-    #expect(payload.insertText == "明天上午十点我和 Alex 开会，帮我确认一下 agenda。")
+    // Inserted text is single-language (target); bilingual stays in displayText.
+    #expect(payload.insertText.contains("I have a meeting with Alex"))
+    #expect(!payload.insertText.contains("原文:"))
+    #expect(!payload.needsReview)
     #expect(!payload.isExpired(at: Date(timeIntervalSince1970: 159)))
     #expect(payload.isExpired(at: Date(timeIntervalSince1970: 160)))
+}
+
+@Test func keyboardBridgePayloadDecodesLegacyPayloadWithoutReviewFlag() throws {
+    let legacyJSON = """
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "createdAt": "2026-07-01T00:00:00Z",
+      "expiresAt": "2026-07-01T00:10:00Z",
+      "mode": "dictate",
+      "sourceLanguage": "en",
+      "sourceText": "hello",
+      "correctedSourceText": "hello.",
+      "displayText": "hello.",
+      "insertText": "hello.",
+      "insertPolicy": "targetOnly",
+      "warnings": []
+    }
+    """
+
+    let payload = try KeyboardBridgeCoding.decoder.decode(
+        KeyboardBridgePayload.self,
+        from: Data(legacyJSON.utf8)
+    )
+
+    #expect(payload.mode == .input)
+    #expect(!payload.needsReview)
 }
 
 @Test func keyboardBridgePayloadForDictateUsesFinalTextOnly() async throws {
@@ -50,7 +79,7 @@ import Testing
     let result = try await pipeline.run(
         PipelineRunRequest(
             platform: .iOS,
-            mode: .dictate,
+            mode: .input,
             sampleText: "The biggest risk is prom injection",
             sourceLanguage: "en"
         )
@@ -103,7 +132,7 @@ import Testing
     let payload = KeyboardBridgePayload(
         createdAt: now,
         expiresAt: now.addingTimeInterval(2),
-        mode: .dictate,
+        mode: .input,
         sourceLanguage: "en",
         sourceText: "hello",
         correctedSourceText: "hello.",

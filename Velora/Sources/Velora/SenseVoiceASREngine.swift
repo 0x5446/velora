@@ -1,0 +1,320 @@
+import Foundation
+
+#if os(macOS)
+/// Resident SenseVoice ASR via a long-lived Python sidecar (sherpa-onnx).
+///
+/// Real-corpus gate (2026-07-05, 80 clips): SenseVoice-int8 beats whisper on
+/// every axis — zh CER 0.073 vs base 0.375, code-switch 0.190 (≈whisper-large),
+/// en 0.021 — at p50 ~50ms transcribe vs whisper-large ~900ms. The model stays
+/// resident in the sidecar, so there is no per-utterance process cold start.
+///
+/// The sidecar is a separate process on purpose: it isolates the onnxruntime /
+/// numpy stack from the app and keeps the model warm across recordings. The
+/// eventual shipping form is the sherpa-onnx C API linked directly; this
+/// resident-sidecar stage captures the 18× win now.
+public actor SenseVoiceASREngine: ASREngine {
+    public nonisolated let id = "sensevoice.sherpa-onnx"
+
+    public struct Configuration: Sendable {
+        public var pythonPath: String
+        public var sidecarScript: String
+        public var modelPath: String
+        public var tokensPath: String
+        public var threads: Int
+
+        public init(
+            pythonPath: String,
+            sidecarScript: String,
+            modelPath: String,
+            tokensPath: String,
+            threads: Int = 4
+        ) {
+            self.pythonPath = pythonPath
+            self.sidecarScript = sidecarScript
+            self.modelPath = modelPath
+            self.tokensPath = tokensPath
+            self.threads = threads
+        }
+
+        /// Resolves the repo-relative resident setup (venv + model + sidecar).
+        /// Returns nil when the sidecar assets are not present, so the caller
+        /// can fall back to whisper.cpp instead of failing.
+        public static func resolvedDefault(
+            environment: [String: String] = ProcessInfo.processInfo.environment
+        ) -> Configuration? {
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            let roots = [
+                environment["VELORA_SENSEVOICE_ROOT"],
+                "\(FileManager.default.currentDirectoryPath)",
+                "\(home)/workspace/velora",
+            ].compactMap { $0 }
+
+            for root in roots {
+                let venvPython = "\(root)/Models/sensevoice/.venv/bin/python3"
+                let python = FileManager.default.isExecutableFile(atPath: venvPython)
+                    ? venvPython
+                    : "\(root)/Models/sensevoice/.venv/bin/python"
+                let script = "\(root)/scripts/sensevoice_sidecar.py"
+                let model = "\(root)/Models/sensevoice/model.int8.onnx"
+                let tokens = "\(root)/Models/sensevoice/tokens.txt"
+                if FileManager.default.isExecutableFile(atPath: python),
+                   FileManager.default.fileExists(atPath: script),
+                   FileManager.default.fileExists(atPath: model),
+                   FileManager.default.fileExists(atPath: tokens) {
+                    return Configuration(
+                        pythonPath: python,
+                        sidecarScript: script,
+                        modelPath: model,
+                        tokensPath: tokens
+                    )
+                }
+            }
+            return nil
+        }
+    }
+
+    private let configuration: Configuration
+    private var process: Process?
+    private var stdinHandle: FileHandle?
+    private var reader: SidecarLineReader?
+    private var requestCounter = 0
+
+    public init(configuration: Configuration) {
+        self.configuration = configuration
+    }
+
+    /// Boots the sidecar and blocks until its readiness banner arrives. Safe
+    /// to call repeatedly; a live sidecar is reused. Call from prewarm so the
+    /// model is resident before the first utterance.
+    public func prewarm() async throws {
+        try ensureRunning()
+        _ = try await waitForReady()
+    }
+
+    public func transcribe(_ request: ASRRequest) async throws -> ASRResult {
+        guard let audioPath = request.audioPath?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !audioPath.isEmpty else {
+            throw PipelineError.emptyInput
+        }
+        guard FileManager.default.fileExists(atPath: audioPath) else {
+            throw PipelineError.asrUnavailable("audio_file_missing")
+        }
+
+        try ensureRunning()
+        try await waitForReady()
+
+        requestCounter += 1
+        let requestID = "r\(requestCounter)"
+        let payload: [String: Any] = [
+            "id": requestID,
+            "audio": audioPath,
+            "language": senseVoiceLanguage(for: request.sourceLanguage),
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let stdinHandle else {
+            throw PipelineError.asrUnavailable("sensevoice_write_failed")
+        }
+        stdinHandle.write(data)
+        stdinHandle.write(Data("\n".utf8))
+
+        guard let reader else {
+            throw PipelineError.asrUnavailable("sensevoice_reader_missing")
+        }
+        let response = try await reader.next(matching: requestID)
+        try Task.checkCancellation()
+
+        guard response["ok"] as? Bool == true,
+              let text = (response["text"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+            let error = response["error"] as? String ?? "sensevoice_unknown_error"
+            throw PipelineError.asrUnavailable("sensevoice_failed:\(error)")
+        }
+
+        let language = (response["language"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            ?? request.sourceLanguage
+        return ASRResult(
+            text: text,
+            language: language,
+            confidence: 0.9,
+            segments: [ASRSegment(text: text, startMS: 0, endMS: max(500, text.count * 45), confidence: 0.9)],
+            engine: id,
+            modelVersion: URL(fileURLWithPath: configuration.modelPath).lastPathComponent
+        )
+    }
+
+    public func shutdown() {
+        stdinHandle?.closeFile()
+        process?.terminate()
+        process = nil
+        stdinHandle = nil
+        reader = nil
+    }
+
+    private func ensureRunning() throws {
+        if let process, process.isRunning {
+            return
+        }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: configuration.pythonPath)
+        process.arguments = [
+            configuration.sidecarScript,
+            "--model", configuration.modelPath,
+            "--tokens", configuration.tokensPath,
+            "--threads", String(configuration.threads),
+        ]
+        let stdinPipe = Pipe()
+        let stdoutPipe = Pipe()
+        process.standardInput = stdinPipe
+        process.standardOutput = stdoutPipe
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+        } catch {
+            throw PipelineError.asrUnavailable("sensevoice_spawn_failed:\(error)")
+        }
+        self.process = process
+        stdinHandle = stdinPipe.fileHandleForWriting
+        reader = SidecarLineReader(handle: stdoutPipe.fileHandleForReading)
+        readyState = .pending
+    }
+
+    private enum ReadyState {
+        case pending
+        case ready
+    }
+    private var readyState: ReadyState = .pending
+
+    @discardableResult
+    private func waitForReady() async throws -> Bool {
+        if case .ready = readyState {
+            return true
+        }
+        guard let reader else {
+            throw PipelineError.asrUnavailable("sensevoice_reader_missing")
+        }
+        let banner = try await reader.nextReadyBanner()
+        guard banner["ready"] as? Bool == true else {
+            let error = banner["error"] as? String ?? "sensevoice_not_ready"
+            throw PipelineError.asrUnavailable("sensevoice_load_failed:\(error)")
+        }
+        readyState = .ready
+        return true
+    }
+
+    private func senseVoiceLanguage(for sourceLanguage: String) -> String {
+        // Always auto. Measured (pocs/tuning/sv_lang_probe.py, 2026-07-05):
+        // on code-switch auto beats forced-en 0.200 vs 0.294 CER (forcing en
+        // wrecks Chinese sentences); on pure English forced-zh ties auto
+        // (0.023 vs 0.021) — SenseVoice does not hard-gate output on the tag.
+        // So a forced language can only match or hurt; auto is strictly safe.
+        // English-token damage in code-switch is acoustic and is repaired in
+        // the compose/glossary layer, not by the language parameter.
+        _ = sourceLanguage
+        return "auto"
+    }
+}
+
+/// Buffers the sidecar's stdout and yields whole JSON lines. Matches responses
+/// by request id and drains readiness banners; a 30s wall clock bounds any
+/// single wait so a stuck sidecar can't hang the pipeline forever.
+private final class SidecarLineReader: @unchecked Sendable {
+    private let handle: FileHandle
+    private let lock = NSLock()
+    private var buffered: [[String: Any]] = []
+    private var leftover = Data()
+    private var readerStarted = false
+    private var continuations: [CheckedContinuation<Void, Never>] = []
+
+    init(handle: FileHandle) {
+        self.handle = handle
+    }
+
+    func nextReadyBanner() async throws -> [String: Any] {
+        try await next(predicate: { $0["ready"] != nil })
+    }
+
+    func next(matching id: String) async throws -> [String: Any] {
+        try await next(predicate: { ($0["id"] as? String) == id })
+    }
+
+    private func next(predicate: @escaping ([String: Any]) -> Bool) async throws -> [String: Any] {
+        startReadingIfNeeded()
+        let deadline = Date().addingTimeInterval(30)
+        while Date() < deadline {
+            try Task.checkCancellation()
+            if let match = takeMatch(predicate) {
+                return match
+            }
+            try await waitForData(until: deadline)
+        }
+        throw PipelineError.asrUnavailable("sensevoice_timeout")
+    }
+
+    private func takeMatch(_ predicate: ([String: Any]) -> Bool) -> [String: Any]? {
+        lock.lock()
+        defer { lock.unlock() }
+        if let index = buffered.firstIndex(where: predicate) {
+            return buffered.remove(at: index)
+        }
+        return nil
+    }
+
+    private func waitForData(until deadline: Date) async throws {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            lock.lock()
+            continuations.append(continuation)
+            lock.unlock()
+            // Safety net: wake up even if no data arrives, so the outer
+            // deadline loop can re-check and eventually time out.
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                self?.resumeWaiters()
+            }
+        }
+    }
+
+    private func startReadingIfNeeded() {
+        lock.lock()
+        guard !readerStarted else {
+            lock.unlock()
+            return
+        }
+        readerStarted = true
+        lock.unlock()
+
+        handle.readabilityHandler = { [weak self] handle in
+            guard let self else {
+                return
+            }
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else {
+                return
+            }
+            self.ingest(chunk)
+        }
+    }
+
+    private func ingest(_ chunk: Data) {
+        lock.lock()
+        leftover.append(chunk)
+        while let newlineIndex = leftover.firstIndex(of: 0x0A) {
+            let lineData = leftover.subdata(in: leftover.startIndex..<newlineIndex)
+            leftover.removeSubrange(leftover.startIndex...newlineIndex)
+            if let object = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any] {
+                buffered.append(object)
+            }
+        }
+        lock.unlock()
+        resumeWaiters()
+    }
+
+    private func resumeWaiters() {
+        lock.lock()
+        let waiters = continuations
+        continuations.removeAll()
+        lock.unlock()
+        for waiter in waiters {
+            waiter.resume()
+        }
+    }
+}
+#endif

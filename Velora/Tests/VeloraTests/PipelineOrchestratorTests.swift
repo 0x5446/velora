@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Velora
 
-@Test func translatePipelineDisplaysBilingualReviewButDefaultsToChineseInsertText() async throws {
+@Test func translatePipelineInsertsBilingualBlockByDefault() async throws {
     let pipeline = PipelineOrchestrator.testPipeline()
 
     let result = try await pipeline.run(
@@ -16,15 +16,72 @@ import Testing
         )
     )
 
-    #expect(result.finalText == "明天上午十点我和 Alex 开会，帮我确认一下 agenda。")
+    // Hard rule: inserted text is single-language (target). The bilingual
+    // block exists only in displayText for the review overlay.
+    #expect(result.finalText == result.translation?.targetText)
+    #expect(result.finalText.contains("I have a meeting with Alex"))
+    #expect(!result.finalText.contains("原文:"))
     #expect(result.translation?.displayText.contains("原文:") == true)
-    #expect(result.translation?.displayText.contains("译文:") == true)
-    #expect(result.finalText.contains("明天上午十点"))
-    #expect(result.translation?.targetText.contains("I have a meeting with Alex") == true)
-    #expect(result.translation?.glossaryHits.contains("Alex") == true)
+    #expect(result.translation?.displayText.contains("明天上午十点") == true)
+    #expect(result.translation?.glossaryHits.contains("agenda") == true)
     #expect(result.trace.stages.map(\.name).contains("asr_finalize"))
-    #expect(result.trace.stages.map(\.name).contains("translation_reconcile"))
+    #expect(result.trace.stages.map(\.name).contains("compose_bilingual"))
+    #expect(result.trace.stages.map(\.name).contains("translation_fallback"))
     #expect(result.trace.releaseToInsertMS >= 0)
+}
+
+@Test func composeEmittedTargetSkipsTranslationFallback() async throws {
+    let pipeline = PipelineOrchestrator(
+        asrEngine: FakeASREngine(),
+        contextProvider: StaticContextProvider(),
+        memoryStore: InMemoryHotwordStore(),
+        textEngine: ScriptedComposeEngine(targetText: "Hello from compose."),
+        translationEngine: FailingTranslationEngine(),
+        insertionEngine: NoopInsertionEngine()
+    )
+
+    let result = try await pipeline.run(
+        PipelineRunRequest(
+            platform: .macOS,
+            mode: .translate,
+            sampleText: "你好，来自单次调用",
+            sourceLanguage: "zh",
+            targetLanguage: "en",
+            insertPolicy: .bilingual
+        )
+    )
+
+    #expect(!result.trace.stages.map(\.name).contains("translation_fallback"))
+    #expect(result.translation?.targetText == "Hello from compose.")
+    #expect(result.finalText.contains("Hello from compose."))
+    #expect(!result.reviewRequired)
+}
+
+@Test func translationFallbackFailureDegradesInsteadOfThrowing() async throws {
+    let pipeline = PipelineOrchestrator(
+        asrEngine: FakeASREngine(),
+        contextProvider: StaticContextProvider(),
+        memoryStore: InMemoryHotwordStore(),
+        textEngine: RuleBasedTextIntelligenceEngine(),
+        translationEngine: FailingTranslationEngine(),
+        insertionEngine: NoopInsertionEngine()
+    )
+
+    let result = try await pipeline.run(
+        PipelineRunRequest(
+            platform: .macOS,
+            mode: .translate,
+            sampleText: "翻译引擎完全不可用时也不能丢掉规则结果",
+            sourceLanguage: "zh",
+            targetLanguage: "en",
+            insertPolicy: .bilingual
+        )
+    )
+
+    #expect(result.translation == nil)
+    #expect(result.reviewRequired)
+    #expect(result.finalText == "翻译引擎完全不可用时也不能丢掉规则结果。")
+    #expect(result.compose.warnings.contains { $0.hasPrefix("translation_fallback_error") })
 }
 
 @Test func hotwordCorrectionRunsBeforeTranslation() async throws {
@@ -86,7 +143,8 @@ import Testing
     )
 
     #expect(result.insertion == nil)
-    #expect(result.finalText == "先展示原文和译文，用户确认以后再上屏。")
+    #expect(result.finalText == result.translation?.targetText)
+    #expect(result.translation?.displayText.contains("先展示原文和译文，用户确认以后再上屏。") == true)
     #expect(result.translation?.displayText.contains("原文:") == true)
     #expect(result.translation?.displayText.contains("译文:") == true)
 }
@@ -133,21 +191,38 @@ import Testing
     #expect(result.translation?.displayText.contains("译文:") == true)
 }
 
-@Test func polishPipelineReturnsPolishedTextWithoutTranslation() async throws {
+@Test func inputModeAlwaysRunsTieredPolish() async throws {
     let pipeline = PipelineOrchestrator.testPipeline()
 
     let result = try await pipeline.run(
         PipelineRunRequest(
             platform: .macOS,
-            mode: .polish,
+            mode: .input,
             sampleText: "  please   confirm the agenda  ",
             sourceLanguage: "en"
         )
     )
 
-    #expect(result.finalText == "please confirm the agenda。")
-    #expect(result.polish != nil)
+    #expect(result.finalText == "please confirm the agenda.")
+    #expect(result.compose.engine == "rules")
     #expect(result.translation == nil)
+    #expect(!result.reviewRequired)
+    #expect(result.trace.stages.map(\.name).contains("compose"))
+}
+
+@Test func inputModeUsesChineseTerminalPunctuationForChineseText() async throws {
+    let pipeline = PipelineOrchestrator.testPipeline()
+
+    let result = try await pipeline.run(
+        PipelineRunRequest(
+            platform: .macOS,
+            mode: .input,
+            sampleText: "明天上午十点开会",
+            sourceLanguage: "zh"
+        )
+    )
+
+    #expect(result.finalText == "明天上午十点开会。")
 }
 
 @Test func pipelineAcceptsAudioPathWithoutSampleText() async throws {
@@ -156,7 +231,7 @@ import Testing
     let result = try await pipeline.run(
         PipelineRunRequest(
             platform: .macOS,
-            mode: .dictate,
+            mode: .input,
             sampleText: "",
             audioPath: "/tmp/velora-test.caf",
             sourceLanguage: "en"
@@ -180,7 +255,7 @@ import Testing
     let result = try await pipeline.run(
         PipelineRunRequest(
             platform: .macOS,
-            mode: .dictate,
+            mode: .input,
             sampleText: "please confirm the agenda",
             sourceLanguage: "en",
             insertionStrategy: .pasteboard
@@ -314,5 +389,25 @@ private struct RecordingInsertionEngine: InsertionEngine {
             inserted: true,
             latencyMS: 7
         )
+    }
+}
+
+private struct ScriptedComposeEngine: TextIntelligenceEngine {
+    var targetText: String?
+
+    func compose(_ request: ComposeRequest) async throws -> ComposeResult {
+        ComposeResult(
+            polishedText: VeloraTextComposer.cleaned(request.text),
+            targetText: request.mode == .translate ? targetText : nil,
+            confidence: 0.9,
+            reviewRequired: false,
+            engine: "scripted"
+        )
+    }
+}
+
+private struct FailingTranslationEngine: TranslationEngine {
+    func translate(_ request: LocalTranslationRequest) async throws -> LocalTranslationOutput {
+        throw PipelineError.localModelUnavailable("test_translation_engine_down")
     }
 }

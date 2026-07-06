@@ -1,0 +1,67 @@
+{
+  "clips": [
+    {
+      "id": "en_jfk_real",
+      "file": "/opt/homebrew/Cellar/whisper-cpp/1.9.1/share/whisper-cpp/jfk.wav",
+      "lang": "en",
+      "expected": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+      "entities": []
+    },
+    {
+      "id": "en_short",
+      "voice": "Samantha",
+      "lang": "en",
+      "text": "Please confirm the agenda for tomorrow's meeting with Alex.",
+      "expected": "Please confirm the agenda for tomorrow's meeting with Alex",
+      "entities": ["agenda", "Alex"]
+    },
+    {
+      "id": "en_filler",
+      "voice": "Samantha",
+      "lang": "en",
+      "text": "So basically we need to ship the new release next Thursday and John will write the release notes.",
+      "expected": "So basically we need to ship the new release next Thursday and John will write the release notes",
+      "entities": ["Thursday", "John", "release notes"]
+    },
+    {
+      "id": "zh_short",
+      "voice": "Tingting",
+      "lang": "zh",
+      "text": "明天上午十点开会，帮我确认一下议程。",
+      "expected": "明天上午十点开会帮我确认一下议程",
+      "entities": []
+    },
+    {
+      "id": "zh_medium",
+      "voice": "Tingting",
+      "lang": "zh",
+      "text": "这个功能用户点了之后没有反应，你看一下是不是接口超时了，顺便把日志发给我。",
+      "expected": "这个功能用户点了之后没有反应你看一下是不是接口超时了顺便把日志发给我",
+      "entities": []
+    },
+    {
+      "id": "zh_long",
+      "voice": "Tingting",
+      "lang": "zh",
+      "text": "下周版本发布之前，我们需要把所有的回归测试跑完，然后把发布说明整理好，发给产品和运营同事确认。",
+      "expected": "下周版本发布之前我们需要把所有的回归测试跑完然后把发布说明整理好发给产品和运营同事确认",
+      "entities": []
+    },
+    {
+      "id": "mixed_terms",
+      "voice": "Tingting",
+      "lang": "zh",
+      "text": "帮我看一下 prompt injection 的防护，Velora 明天的 agenda 也要定下来。",
+      "expected": "帮我看一下prompt injection的防护Velora明天的agenda也要定下来",
+      "entities": ["prompt injection", "Velora", "agenda"]
+    },
+    {
+      "id": "mixed_short",
+      "voice": "Tingting",
+      "lang": "zh",
+      "text": "这个 bug 我今天晚上修，明天发 release。",
+      "expected": "这个bug我今天晚上修明天发release",
+      "entities": ["bug", "release"]
+    }
+  ]
+}

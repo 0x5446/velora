@@ -2,20 +2,19 @@ import Foundation
 import Testing
 @testable import Velora
 
-@Test func runtimeSettingsDefaultToTranslateBilingualFastPath() {
+@Test func runtimeSettingsDefaultToInputModeFastPath() {
     let settings = VeloraRuntimeSettings.defaults(
         environment: ["VELORA_WHISPER_MODE": "accurate"]
     )
 
-    #expect(settings.mode == .translate)
+    #expect(settings.mode == .input)
     #expect(settings.sourceLanguage == "zh")
     #expect(settings.targetLanguage == "en")
-    #expect(settings.insertPolicy == .bilingual)
+    #expect(settings.insertPolicy == .targetOnly)
     #expect(settings.preferredInsertLanguage == "zh")
     #expect(settings.asrModelMode == .accurate)
-    #expect(settings.effectiveTargetLanguage == "en")
-    #expect(settings.displaySummary.contains("mode=translate"))
-    #expect(settings.displaySummary.contains("zh->en"))
+    #expect(settings.effectiveTargetLanguage == nil)
+    #expect(settings.displaySummary.contains("mode=input"))
 }
 
 @Test func runtimeSettingsStoreRoundTripsPersistedValues() throws {
@@ -30,7 +29,7 @@ import Testing
     )
 
     let saved = VeloraRuntimeSettings(
-        mode: .polish,
+        mode: .translate,
         sourceLanguage: "en",
         targetLanguage: "ja",
         insertPolicy: .targetOnly,
@@ -40,7 +39,22 @@ import Testing
     store.save(saved)
 
     #expect(store.load() == saved)
-    #expect(store.load().effectiveTargetLanguage == nil)
+    #expect(store.load().effectiveTargetLanguage == "ja")
+}
+
+@Test func runtimeSettingsStoreMapsLegacyStoredModesToInput() throws {
+    let suiteName = uniqueDefaultsSuiteName()
+    let defaults = try temporaryUserDefaults(suiteName: suiteName)
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    defaults.set("polish", forKey: "velora.runtime.mode")
+    let store = VeloraSettingsStore(
+        defaults: defaults,
+        environment: [:],
+        notificationCenter: NotificationCenter()
+    )
+
+    #expect(store.load().mode == .input)
 }
 
 @Test func runtimeSettingsStorePostsChangeNotificationsOnlyForRealChanges() throws {
@@ -63,15 +77,15 @@ import Testing
     ) { notification in
         counter.increment()
         let settings = notification.userInfo?[VeloraSettingsStore.notificationSettingsKey] as? VeloraRuntimeSettings
-        #expect(settings?.mode == .dictate)
+        #expect(settings?.mode == .translate)
     }
     defer { notificationCenter.removeObserver(observer) }
 
     store.update { settings in
-        settings.mode = .dictate
+        settings.mode = .translate
     }
     store.update { settings in
-        settings.mode = .dictate
+        settings.mode = .translate
     }
 
     #expect(counter.value == 1)

@@ -20,6 +20,7 @@ Models/
 
 # Swift Package Manager and build outputs
 .build/
+.build-xcode/
 **/.build/
 .swiftpm/
 Packages/

@@ -28,6 +28,10 @@ public enum VeloraErrorPresenter {
     }
 
     private static func asrMessage(reason: String) -> String {
+        if reason == "no_speech_detected" {
+            return "没有听到清晰的人声。请靠近麦克风再说一次。"
+        }
+
         if reason == "apple_speech_disabled_siri_dictation" {
             return "Apple Speech 当前不可用。请开启系统 Siri/听写，或切换到 whisper.cpp 本地 ASR。"
         }

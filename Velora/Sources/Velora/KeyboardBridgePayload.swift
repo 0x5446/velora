@@ -14,6 +14,13 @@ public struct KeyboardBridgePayload: Codable, Sendable, Equatable {
     public var insertText: String
     public var insertPolicy: InsertPolicy
     public var warnings: [String]
+    /// Optional for backward compatibility with payloads written before the
+    /// review contract existed; use `needsReview` when reading.
+    public var reviewRequired: Bool?
+
+    public var needsReview: Bool {
+        reviewRequired ?? false
+    }
 
     public init(
         id: UUID = UUID(),
@@ -28,7 +35,8 @@ public struct KeyboardBridgePayload: Codable, Sendable, Equatable {
         displayText: String,
         insertText: String,
         insertPolicy: InsertPolicy,
-        warnings: [String] = []
+        warnings: [String] = [],
+        reviewRequired: Bool? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -43,6 +51,7 @@ public struct KeyboardBridgePayload: Codable, Sendable, Equatable {
         self.insertText = insertText
         self.insertPolicy = insertPolicy
         self.warnings = warnings
+        self.reviewRequired = reviewRequired
     }
 
     public var isTranslation: Bool {
@@ -71,7 +80,8 @@ public struct KeyboardBridgePayload: Codable, Sendable, Equatable {
                 displayText: translation.displayText,
                 insertText: result.finalText,
                 insertPolicy: translation.mode.insertPolicy,
-                warnings: translation.warnings
+                warnings: translation.warnings,
+                reviewRequired: result.reviewRequired
             )
         }
 
@@ -86,7 +96,8 @@ public struct KeyboardBridgePayload: Codable, Sendable, Equatable {
             displayText: result.finalText,
             insertText: result.finalText,
             insertPolicy: .targetOnly,
-            warnings: result.correction.warnings
+            warnings: result.correction.warnings + result.compose.warnings,
+            reviewRequired: result.reviewRequired
         )
     }
 }

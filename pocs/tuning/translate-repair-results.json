@@ -1,0 +1,58 @@
+[
+ {
+  "case": "soft_should_be",
+  "ok": true,
+  "ms": 801,
+  "polished": "预算大概八万。",
+  "target": "The budget is about 80,000."
+ },
+ {
+  "case": "casual_switch",
+  "ok": true,
+  "ms": 644,
+  "polished": "周五上午开会吧。",
+  "target": "Let's meet Friday morning."
+ },
+ {
+  "case": "three_way",
+  "ok": true,
+  "ms": 658,
+  "polished": "发给小张。",
+  "target": "Send it to Xiao Zhang."
+ },
+ {
+  "case": "time_repair",
+  "ok": true,
+  "ms": 884,
+  "polished": "会议定在周四下午三点。",
+  "target": "The meeting is set for 3:00 PM on Thursday."
+ },
+ {
+  "case": "restate",
+  "ok": true,
+  "ms": 694,
+  "polished": "前面那个方案我觉得可以。",
+  "target": "I think the previous plan works."
+ },
+ {
+  "case": "no_repair_quote",
+  "ok": true,
+  "ms": 971,
+  "polished": "他说的不是周三，是周四，你确认一下。",
+  "target": "He said it's Thursday, not Wednesday. Please double-check."
+ },
+ {
+  "case": "no_repair_negation",
+  "ok": true,
+  "ms": 877,
+  "polished": "我不是本地人，是从北京过来的。",
+  "target": "I'm not a local person; I came from Beijing."
+ },
+ {
+  "case": "no_repair_clean",
+  "ok": true,
+  "ms": 1080,
+  "polished": "明天上午十点开会，帮我确认一下议程。",
+  "target": "There is a meeting at 10 a.m. tomorrow. Please confirm the agenda."
+ }
+]

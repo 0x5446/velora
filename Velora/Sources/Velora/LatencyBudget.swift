@@ -5,10 +5,34 @@ public enum VeloraPlatform: String, Codable, Sendable, Equatable {
     case iOS = "ios"
 }
 
-public enum DictationMode: String, Codable, Sendable, Equatable {
-    case dictate
-    case polish
+public enum DictationMode: String, Codable, Sendable, Equatable, CaseIterable {
+    case input
     case translate
+
+    /// Accepts legacy stored/CLI values: dictate/polish collapse into input.
+    public static func normalize(_ raw: String) -> DictationMode? {
+        switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "input", "dictate", "polish":
+            return .input
+        case "translate":
+            return .translate
+        default:
+            return nil
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        guard let mode = DictationMode.normalize(raw) else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unknown DictationMode value: \(raw)"
+                )
+            )
+        }
+        self = mode
+    }
 }
 
 public struct LatencyStage: Codable, Sendable, Equatable {
@@ -80,7 +104,7 @@ public enum LatencyBudget {
     public static let requiredArchitecture = [
         "Prewarm ASR and text engines before recording starts.",
         "Run context capture and hotword ranking while the user is speaking.",
-        "Use streaming ASR partials and speculative correction before release.",
+        "Use streaming ASR partials and speculative compose before release.",
         "Keep large LLM generation off the default critical path.",
         "Insert first, then offer background improvement when quality work is slow.",
         "Record per-stage latency for every session.",
@@ -116,64 +140,44 @@ public enum LatencyBudget {
             note: "Partial transcript continuously updated."
         ),
         LatencyStage(
-            name: "speculative_correction",
+            name: "speculative_compose",
             durationMS: 0,
             phase: "during_recording",
             critical: false,
-            note: "Draft correction starts from partial transcript."
+            note: "Draft compose (polish + optional target language) starts from partial transcript."
         ),
     ]
 
     public static let defaultScenarios = [
         LatencyScenario(
-            name: "macos_dictate_fast_path",
+            name: "macos_input_fast_path",
             platform: .macOS,
-            mode: .dictate,
-            targetP50MS: 700,
-            targetP95MS: 1_200,
+            mode: .input,
+            targetP50MS: 800,
+            targetP95MS: 1_300,
             preReleaseStages: commonPreReleaseStages,
             releaseStages: [
                 LatencyStage(name: "vad_flush", durationMS: 30, phase: "after_release", critical: true, note: "Close final audio segment."),
-                LatencyStage(name: "asr_finalize", durationMS: 260, phase: "after_release", critical: true, note: "Finalize streaming ASR."),
-                LatencyStage(name: "correction_reconcile", durationMS: 90, phase: "after_release", critical: true, note: "Apply final hotword-aware diff."),
+                LatencyStage(name: "asr_finalize", durationMS: 300, phase: "after_release", critical: true, note: "Finalize streaming ASR."),
+                LatencyStage(name: "asr_hotword_correction", durationMS: 60, phase: "after_release", critical: true, note: "Hotword pass inside the ASR capability boundary."),
+                LatencyStage(name: "compose", durationMS: 250, phase: "after_release", critical: true, note: "Mandatory tiered polish; LLM must return within deadline or rules win."),
                 LatencyStage(name: "render_insert_text", durationMS: 8, phase: "after_release", critical: true, note: "Build insertion payload."),
                 LatencyStage(name: "insert_text", durationMS: 36, phase: "after_release", critical: true, note: "IMK/AX/pasteboard insertion."),
             ],
             coldStartPenaltyMS: 1_400
         ),
         LatencyScenario(
-            name: "macos_polish_fast_path",
-            platform: .macOS,
-            mode: .polish,
-            targetP50MS: 900,
-            targetP95MS: 1_500,
-            preReleaseStages: commonPreReleaseStages + [
-                LatencyStage(name: "speculative_polish", durationMS: 0, phase: "during_recording", critical: false, note: "Run on partial transcript when possible."),
-            ],
-            releaseStages: [
-                LatencyStage(name: "vad_flush", durationMS: 30, phase: "after_release", critical: true, note: "Close final audio segment."),
-                LatencyStage(name: "asr_finalize", durationMS: 260, phase: "after_release", critical: true, note: "Finalize streaming ASR."),
-                LatencyStage(name: "correction_reconcile", durationMS: 90, phase: "after_release", critical: true, note: "Apply final hotword-aware diff."),
-                LatencyStage(name: "polish_reconcile", durationMS: 170, phase: "after_release", critical: true, note: "Small local model or rules only."),
-                LatencyStage(name: "render_insert_text", durationMS: 8, phase: "after_release", critical: true, note: "Build insertion payload."),
-                LatencyStage(name: "insert_text", durationMS: 36, phase: "after_release", critical: true, note: "IMK/AX/pasteboard insertion."),
-            ],
-            coldStartPenaltyMS: 1_800
-        ),
-        LatencyScenario(
             name: "macos_translate_fast_path",
             platform: .macOS,
             mode: .translate,
-            targetP50MS: 1_100,
+            targetP50MS: 1_000,
             targetP95MS: 1_800,
-            preReleaseStages: commonPreReleaseStages + [
-                LatencyStage(name: "speculative_translation", durationMS: 0, phase: "during_recording", critical: false, note: "Prepare target language draft from partial."),
-            ],
+            preReleaseStages: commonPreReleaseStages,
             releaseStages: [
                 LatencyStage(name: "vad_flush", durationMS: 30, phase: "after_release", critical: true, note: "Close final audio segment."),
-                LatencyStage(name: "asr_finalize", durationMS: 260, phase: "after_release", critical: true, note: "Finalize streaming ASR."),
-                LatencyStage(name: "correction_reconcile", durationMS: 90, phase: "after_release", critical: true, note: "Correct source before translation."),
-                LatencyStage(name: "translation_reconcile", durationMS: 260, phase: "after_release", critical: true, note: "Local translation final pass."),
+                LatencyStage(name: "asr_finalize", durationMS: 300, phase: "after_release", critical: true, note: "Finalize streaming ASR."),
+                LatencyStage(name: "asr_hotword_correction", durationMS: 60, phase: "after_release", critical: true, note: "Hotword pass inside the ASR capability boundary."),
+                LatencyStage(name: "compose_bilingual", durationMS: 420, phase: "after_release", critical: true, note: "Single LLM call emits polished source plus target language."),
                 LatencyStage(name: "render_bilingual_text", durationMS: 12, phase: "after_release", critical: true, note: "Source + target render."),
                 LatencyStage(name: "insert_text", durationMS: 42, phase: "after_release", critical: true, note: "IMK/AX/pasteboard insertion."),
             ],
@@ -191,8 +195,8 @@ public enum LatencyBudget {
             releaseStages: [
                 LatencyStage(name: "vad_flush", durationMS: 40, phase: "after_release", critical: true, note: "Close final audio segment."),
                 LatencyStage(name: "asr_finalize", durationMS: 360, phase: "after_release", critical: true, note: "Finalize mobile ASR."),
-                LatencyStage(name: "correction_reconcile", durationMS: 120, phase: "after_release", critical: true, note: "Apply final hotword-aware diff."),
-                LatencyStage(name: "translation_reconcile", durationMS: 360, phase: "after_release", critical: true, note: "Local translation final pass."),
+                LatencyStage(name: "asr_hotword_correction", durationMS: 80, phase: "after_release", critical: true, note: "Hotword pass inside the ASR capability boundary."),
+                LatencyStage(name: "compose_bilingual", durationMS: 560, phase: "after_release", critical: true, note: "Single call emits polished source plus target language."),
                 LatencyStage(name: "write_app_group_result", durationMS: 30, phase: "after_release", critical: true, note: "Make result visible to keyboard."),
                 LatencyStage(name: "keyboard_insert_text", durationMS: 90, phase: "after_release", critical: true, note: "User returns and taps insert."),
             ],
@@ -237,8 +241,7 @@ public enum LatencyBudget {
         }
 
         let modeExtra: Int = switch scenario.mode {
-        case .dictate: 80
-        case .polish: 140
+        case .input: 120
         case .translate: 180
         }
 

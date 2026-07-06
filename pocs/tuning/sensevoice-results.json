@@ -1,0 +1,642 @@
+[
+ {
+  "clip": "aishell_BAC009S0003W0377",
+  "corpus": "aishell1",
+  "dur": 6.17,
+  "wall_ms": 62,
+  "cer": 0.1111,
+  "text": "北京举办冬奥会和夏奥会期间相隔14年。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0472",
+  "corpus": "aishell1",
+  "dur": 6.94,
+  "wall_ms": 72,
+  "cer": 0.1,
+  "text": "5岁男童家门口玩耍时，失踪已被陌生女子拐走。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0399",
+  "corpus": "aishell1",
+  "dur": 5.37,
+  "wall_ms": 58,
+  "cer": 0.2,
+  "text": "万隆雪厂上个学季客流量翻了一番。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0419",
+  "corpus": "aishell1",
+  "dur": 4.98,
+  "wall_ms": 54,
+  "cer": 0.0,
+  "text": "自己以往拍剧对于野外如厕都习惯了。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0303",
+  "corpus": "aishell1",
+  "dur": 3.25,
+  "wall_ms": 38,
+  "cer": 0.0,
+  "text": "比如有参观者要合照。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0455",
+  "corpus": "aishell1",
+  "dur": 3.7,
+  "wall_ms": 42,
+  "cer": 0.1111,
+  "text": "与园方协商赔偿问题。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0213",
+  "corpus": "aishell1",
+  "dur": 4.34,
+  "wall_ms": 47,
+  "cer": 0.0,
+  "text": "但依然有多个部门未公布。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0199",
+  "corpus": "aishell1",
+  "dur": 4.63,
+  "wall_ms": 47,
+  "cer": 0.0,
+  "text": "所有的利益在一个特定的圈子里来分配。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0368",
+  "corpus": "aishell1",
+  "dur": 4.19,
+  "wall_ms": 44,
+  "cer": 0.0,
+  "text": "不办一届淘宝亚运会，怎么说得过去？"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0235",
+  "corpus": "aishell1",
+  "dur": 3.69,
+  "wall_ms": 39,
+  "cer": 0.0,
+  "text": "最重要的一点是要改革。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0328",
+  "corpus": "aishell1",
+  "dur": 5.68,
+  "wall_ms": 57,
+  "cer": 0.25,
+  "text": "而自动化生产模式可完成2300件。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0171",
+  "corpus": "aishell1",
+  "dur": 4.86,
+  "wall_ms": 51,
+  "cer": 0.1429,
+  "text": "但这不影响房企出晚日记的延续。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0297",
+  "corpus": "aishell1",
+  "dur": 2.46,
+  "wall_ms": 30,
+  "cer": 0.4,
+  "text": "演讲者温职。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0321",
+  "corpus": "aishell1",
+  "dur": 3.68,
+  "wall_ms": 38,
+  "cer": 0.0,
+  "text": "有效保护消防员的人身安全。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0490",
+  "corpus": "aishell1",
+  "dur": 7.48,
+  "wall_ms": 73,
+  "cer": 0.0952,
+  "text": "杜宏期待将来能够通过解冻、移址等步骤死而复生。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0213",
+  "corpus": "aishell1",
+  "dur": 6.33,
+  "wall_ms": 65,
+  "cer": 0.0625,
+  "text": "政企兴奋痼疾难消，产业垄断有待破除。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0418",
+  "corpus": "aishell1",
+  "dur": 4.65,
+  "wall_ms": 50,
+  "cer": 0.0769,
+  "text": "4月初，公布怀有小周周的喜讯。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0320",
+  "corpus": "aishell1",
+  "dur": 4.54,
+  "wall_ms": 49,
+  "cer": 0.0,
+  "text": "提供一站式的机器换人解决方案。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0134",
+  "corpus": "aishell1",
+  "dur": 7.29,
+  "wall_ms": 72,
+  "cer": 0.0,
+  "text": "为改善居住条件，再次申请贷款购买普通商品住房。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0453",
+  "corpus": "aishell1",
+  "dur": 4.83,
+  "wall_ms": 54,
+  "cer": 0.1429,
+  "text": "5岁男童医院看牙2小时后身亡。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0310",
+  "corpus": "aishell1",
+  "dur": 4.11,
+  "wall_ms": 47,
+  "cer": 0.0,
+  "text": "据机器人服务员的生产厂家介绍。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0131",
+  "corpus": "aishell1",
+  "dur": 4.41,
+  "wall_ms": 48,
+  "cer": 0.0,
+  "text": "显示出了极强的威力。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0142",
+  "corpus": "aishell1",
+  "dur": 4.52,
+  "wall_ms": 49,
+  "cer": 0.0,
+  "text": "甚至在房企未来战略布局中。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0166",
+  "corpus": "aishell1",
+  "dur": 5.14,
+  "wall_ms": 54,
+  "cer": 0.0,
+  "text": "正如一位触网营销的操盘手所说。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0354",
+  "corpus": "aishell1",
+  "dur": 7.27,
+  "wall_ms": 71,
+  "cer": 0.3478,
+  "text": "洛杉矶曾在1932年和1984年两度举办奥运会。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0233",
+  "corpus": "aishell1",
+  "dur": 3.84,
+  "wall_ms": 44,
+  "cer": 0.0,
+  "text": "垄断会导致市场竞争失灵。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0198",
+  "corpus": "aishell1",
+  "dur": 7.6,
+  "wall_ms": 75,
+  "cer": 0.0,
+  "text": "卫生行政主管部门要进一步强化食品安全标准公开。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0482",
+  "corpus": "aishell1",
+  "dur": 6.87,
+  "wall_ms": 69,
+  "cer": 0.1111,
+  "text": "5岁男童活泼健康，遭邻去嫉妒，被拐走掐死。"
+ },
+ {
+  "clip": "aishell_BAC009S0002W0194",
+  "corpus": "aishell1",
+  "dur": 2.87,
+  "wall_ms": 35,
+  "cer": 0.0,
+  "text": "而是一个竞争性的产品。"
+ },
+ {
+  "clip": "aishell_BAC009S0003W0487",
+  "corpus": "aishell1",
+  "dur": 7.68,
+  "wall_ms": 76,
+  "cer": 0.05,
+  "text": "一半品种都在下跌。本报记者刘旭发自湖北金春。"
+ },
+ {
+  "clip": "ascend_00308",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 43,
+  "cer": 0.4074,
+  "text": "那taxde system就像是说唉，他提早帮我们。"
+ },
+ {
+  "clip": "ascend_00939",
+  "corpus": "ascend",
+  "dur": 3.2,
+  "wall_ms": 37,
+  "cer": 0.3158,
+  "text": "但是你们你不觉得平时也有很多定腰感吗？"
+ },
+ {
+  "clip": "ascend_01014",
+  "corpus": "ascend",
+  "dur": 3.47,
+  "wall_ms": 40,
+  "cer": 0.0,
+  "text": "另一个呢就是responsibility的问题。"
+ },
+ {
+  "clip": "ascend_01076",
+  "corpus": "ascend",
+  "dur": 3.34,
+  "wall_ms": 39,
+  "cer": 0.2581,
+  "text": "Thoseose kid很多 my friends in my generation。"
+ },
+ {
+  "clip": "ascend_00712",
+  "corpus": "ascend",
+  "dur": 6.0,
+  "wall_ms": 62,
+  "cer": 0.0526,
+  "text": "但我觉得three point是一个非常efficient的一个方式去得分。"
+ },
+ {
+  "clip": "ascend_00631",
+  "corpus": "ascend",
+  "dur": 2.06,
+  "wall_ms": 28,
+  "cer": 0.1538,
+  "text": "make friends to."
+ },
+ {
+  "clip": "ascend_00233",
+  "corpus": "ascend",
+  "dur": 3.44,
+  "wall_ms": 38,
+  "cer": 0.3636,
+  "text": "对，台湾的台湾大学national台湾unity面。"
+ },
+ {
+  "clip": "ascend_01035",
+  "corpus": "ascend",
+  "dur": 10.02,
+  "wall_ms": 95,
+  "cer": 0.1833,
+  "text": "但是如果你就是单纯的sell这个tenology，就是说告诉他就是我的我的self driving这个 function是perfect。"
+ },
+ {
+  "clip": "ascend_01048",
+  "corpus": "ascend",
+  "dur": 6.51,
+  "wall_ms": 71,
+  "cer": 0.1429,
+  "text": "你不能去把它放在真的环境下去测试它。因为这个万一那个sit happen怎么办？"
+ },
+ {
+  "clip": "ascend_01068",
+  "corpus": "ascend",
+  "dur": 7.44,
+  "wall_ms": 74,
+  "cer": 0.0263,
+  "text": "当然我小时候我也没有smart phone，但是呢我是小时候比较早接触的那个电脑。"
+ },
+ {
+  "clip": "ascend_00947",
+  "corpus": "ascend",
+  "dur": 6.8,
+  "wall_ms": 67,
+  "cer": 0.3667,
+  "text": "就是会有很多呃，比如说跟卢明来聚会，一起吃饭，然后要么就。"
+ },
+ {
+  "clip": "ascend_00138",
+  "corpus": "ascend",
+  "dur": 3.05,
+  "wall_ms": 35,
+  "cer": 0.0435,
+  "text": "嗯，所以你现在还是比较focus在找工作这件事。"
+ },
+ {
+  "clip": "ascend_01131",
+  "corpus": "ascend",
+  "dur": 3.49,
+  "wall_ms": 38,
+  "cer": 0.5769,
+  "text": "然后再建一个 뭐都我去 opt这."
+ },
+ {
+  "clip": "ascend_00337",
+  "corpus": "ascend",
+  "dur": 5.16,
+  "wall_ms": 53,
+  "cer": 0.0625,
+  "text": "就是user去会去respon一些就是interesting的。"
+ },
+ {
+  "clip": "ascend_00698",
+  "corpus": "ascend",
+  "dur": 5.44,
+  "wall_ms": 56,
+  "cer": 0.1,
+  "text": "那个第一是michael jordan。"
+ },
+ {
+  "clip": "ascend_00193",
+  "corpus": "ascend",
+  "dur": 3.77,
+  "wall_ms": 40,
+  "cer": 0.1667,
+  "text": "系 like hot pot."
+ },
+ {
+  "clip": "ascend_01213",
+  "corpus": "ascend",
+  "dur": 3.06,
+  "wall_ms": 32,
+  "cer": 0.3214,
+  "text": "然后他可能会re your personal。"
+ },
+ {
+  "clip": "ascend_00606",
+  "corpus": "ascend",
+  "dur": 8.4,
+  "wall_ms": 81,
+  "cer": 0.4146,
+  "text": "然后不告告诉你是我最胖的时候 because I do not work around and just stay."
+ },
+ {
+  "clip": "ascend_00706",
+  "corpus": "ascend",
+  "dur": 2.89,
+  "wall_ms": 34,
+  "cer": 0.1053,
+  "text": "因为他的得分方式非常eicient。"
+ },
+ {
+  "clip": "ascend_00404",
+  "corpus": "ascend",
+  "dur": 3.9,
+  "wall_ms": 42,
+  "cer": 0.087,
+  "text": "那我当初其实是我本科是一background。"
+ },
+ {
+  "clip": "ascend_00489",
+  "corpus": "ascend",
+  "dur": 2.64,
+  "wall_ms": 33,
+  "cer": 0.25,
+  "text": "我记得学校那个去那边。"
+ },
+ {
+  "clip": "ascend_00425",
+  "corpus": "ascend",
+  "dur": 6.44,
+  "wall_ms": 66,
+  "cer": 0.0833,
+  "text": "然后在打算申请graduate school的时候，我考虑过挺多 majorjor的。"
+ },
+ {
+  "clip": "ascend_00259",
+  "corpus": "ascend",
+  "dur": 3.92,
+  "wall_ms": 42,
+  "cer": 0.2,
+  "text": "那你现在住在 Hong框大概住了多久？"
+ },
+ {
+  "clip": "ascend_00269",
+  "corpus": "ascend",
+  "dur": 5.78,
+  "wall_ms": 59,
+  "cer": 0.129,
+  "text": "就是像那些就是没有登line的时候，也不会那么stress。"
+ },
+ {
+  "clip": "ascend_00150",
+  "corpus": "ascend",
+  "dur": 2.76,
+  "wall_ms": 32,
+  "cer": 0.1111,
+  "text": "想过，但是因为这算project有点多。"
+ },
+ {
+  "clip": "ascend_00920",
+  "corpus": "ascend",
+  "dur": 3.84,
+  "wall_ms": 42,
+  "cer": 0.0,
+  "text": "其实我那时候非常的urgent，就是我到了。"
+ },
+ {
+  "clip": "ascend_00871",
+  "corpus": "ascend",
+  "dur": 3.36,
+  "wall_ms": 39,
+  "cer": 0.16,
+  "text": "You can wear your clothes."
+ },
+ {
+  "clip": "ascend_01182",
+  "corpus": "ascend",
+  "dur": 4.01,
+  "wall_ms": 44,
+  "cer": 0.3333,
+  "text": "那图像识别其实上学上个ma我们。"
+ },
+ {
+  "clip": "ascend_01055",
+  "corpus": "ascend",
+  "dur": 11.34,
+  "wall_ms": 98,
+  "cer": 0.0,
+  "text": "好，那我们现在开始我们第二个topic，就是你认为你就是你认为children应不应该有自己的smart phone。"
+ },
+ {
+  "clip": "ascend_00888",
+  "corpus": "ascend",
+  "dur": 5.54,
+  "wall_ms": 57,
+  "cer": 0.2812,
+  "text": "不能去desecide呃，你今天想要穿什么衣服，明天想要穿什么衣服，每天都穿一样。"
+ },
+ {
+  "clip": "libri_2830-3980-0053",
+  "corpus": "librispeech",
+  "dur": 5.01,
+  "wall_ms": 54,
+  "cer": 0.0,
+  "text": "At the same time, Paul confirms our creed that Christ is very God."
+ },
+ {
+  "clip": "libri_6829-68769-0005",
+  "corpus": "librispeech",
+  "dur": 6.72,
+  "wall_ms": 68,
+  "cer": 0.0,
+  "text": "He was soft hearted and impetuous, said Beth. And being in love, he didn't stop to count the cost."
+ },
+ {
+  "clip": "libri_7127-75947-0034",
+  "corpus": "librispeech",
+  "dur": 2.96,
+  "wall_ms": 35,
+  "cer": 0.0,
+  "text": "It seems the king will not consent to it."
+ },
+ {
+  "clip": "libri_6829-68769-0000",
+  "corpus": "librispeech",
+  "dur": 11.7,
+  "wall_ms": 104,
+  "cer": 0.0299,
+  "text": "Kenneth and Beth refrained from telling the other girls or Uncle John of old Will Roger's visit. But they got Mr. Watson in the library and questioned him closely about the penalty for forging a check."
+ },
+ {
+  "clip": "libri_2094-142345-0046",
+  "corpus": "librispeech",
+  "dur": 1.91,
+  "wall_ms": 27,
+  "cer": 0.0952,
+  "text": "My delight in your kitchen."
+ },
+ {
+  "clip": "libri_8224-274381-0011",
+  "corpus": "librispeech",
+  "dur": 6.48,
+  "wall_ms": 65,
+  "cer": 0.0,
+  "text": "His conduct and presence of mind in this emergence appeared conspicuous."
+ },
+ {
+  "clip": "libri_8230-279154-0011",
+  "corpus": "librispeech",
+  "dur": 6.25,
+  "wall_ms": 64,
+  "cer": 0.0,
+  "text": "Some images, like some sensations, feel very familiar while others feel strange."
+ },
+ {
+  "clip": "libri_6930-76324-0024",
+  "corpus": "librispeech",
+  "dur": 4.05,
+  "wall_ms": 45,
+  "cer": 0.0,
+  "text": "They say illumination by candlelight is the prettiest in the world."
+ },
+ {
+  "clip": "libri_1995-1826-0020",
+  "corpus": "librispeech",
+  "dur": 6.12,
+  "wall_ms": 62,
+  "cer": 0.0,
+  "text": "Miss Taylor did not know much about Cotton, but at least one more remark seemed called for."
+ },
+ {
+  "clip": "libri_4446-2273-0035",
+  "corpus": "librispeech",
+  "dur": 6.15,
+  "wall_ms": 62,
+  "cer": 0.0,
+  "text": "Bartley leaned over her shoulder without touching her and whispered in her ear. You are giving me a chance, yes."
+ },
+ {
+  "clip": "libri_8463-294828-0000",
+  "corpus": "librispeech",
+  "dur": 3.62,
+  "wall_ms": 40,
+  "cer": 0.1923,
+  "text": "Chapter 3, as master wishes."
+ },
+ {
+  "clip": "libri_1320-122612-0009",
+  "corpus": "librispeech",
+  "dur": 3.88,
+  "wall_ms": 42,
+  "cer": 0.0,
+  "text": "It would have been more wonderful had he spoken without a bidding."
+ },
+ {
+  "clip": "libri_8224-274384-0012",
+  "corpus": "librispeech",
+  "dur": 18.73,
+  "wall_ms": 168,
+  "cer": 0.0054,
+  "text": "If any still retained ranco against him in his present condition, they passed in silence while his well wishers more generous than prudent, accompanied his march with tears with acclamations and with prayers for his safety."
+ },
+ {
+  "clip": "libri_7021-79759-0004",
+  "corpus": "librispeech",
+  "dur": 24.47,
+  "wall_ms": 225,
+  "cer": 0.0081,
+  "text": "Without going to any such extreme as this, we can easily see on reflection how vast an influence on the ideas and conceptions, as well as on the principles of action in mature years must be exerted by the nature and character of the images which the period of infancy and childhood impress upon the mind."
+ },
+ {
+  "clip": "libri_5105-28240-0015",
+  "corpus": "librispeech",
+  "dur": 8.53,
+  "wall_ms": 81,
+  "cer": 0.0273,
+  "text": "For some moments, he seemed perfectly stupefied and then recovering himself, he began to overwhelm the count with a torrent of questions."
+ },
+ {
+  "clip": "libri_1320-122617-0023",
+  "corpus": "librispeech",
+  "dur": 7.82,
+  "wall_ms": 77,
+  "cer": 0.0263,
+  "text": "Us, who had already approached the door in readiness to lead the way, now recoiled and placed himself once more in the bottom of the lodge."
+ },
+ {
+  "clip": "libri_260-123440-0002",
+  "corpus": "librispeech",
+  "dur": 14.71,
+  "wall_ms": 130,
+  "cer": 0.0,
+  "text": "It was the white rabbit returning, splendidly dressed with a pair of white kid gloves in one hand and a large fan in the other. He came trotting along in a great hurry, muttering to himself as he came. Oh, the duchess, the duchess."
+ },
+ {
+  "clip": "libri_5142-33396-0044",
+  "corpus": "librispeech",
+  "dur": 4.86,
+  "wall_ms": 50,
+  "cer": 0.0164,
+  "text": "I'm stiff with long sitting. He said, I itch for a fight. I turned to the farmer."
+ },
+ {
+  "clip": "libri_5683-32879-0001",
+  "corpus": "librispeech",
+  "dur": 3.66,
+  "wall_ms": 38,
+  "cer": 0.0,
+  "text": "Well, she was better, though she had had a bad night."
+ },
+ {
+  "clip": "libri_2094-142345-0039",
+  "corpus": "librispeech",
+  "dur": 6.28,
+  "wall_ms": 63,
+  "cer": 0.0233,
+  "text": "I've strong assurance that no evil will happen to you and my uncle and the children from anything I have done."
+ }
+]

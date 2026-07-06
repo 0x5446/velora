@@ -147,98 +147,59 @@ public struct InMemoryHotwordStore: MemoryStore {
             score: 7.0,
             reasons: ["input_product_term"]
         ),
+        // 研发场景高频 ASR 同音误识。评测证实（pocs/tuning/homophone_eval.py）：
+        // 这类"错字序列自身通顺"的术语错误，LLM 无论 prompt 怎么写都修不动，
+        // 只能靠确定性热词层；SQLite 记忆系统落地后由用户纠错自动积累。
+        HotwordCandidate(
+            term: "发不说明",
+            replacement: "发布说明",
+            score: 6.9,
+            reasons: ["asr_homophone_term"]
+        ),
+        HotwordCandidate(
+            term: "疑程",
+            replacement: "议程",
+            score: 6.9,
+            reasons: ["asr_homophone_term"]
+        ),
+        HotwordCandidate(
+            term: "回归册是",
+            replacement: "回归测试",
+            score: 6.9,
+            reasons: ["asr_homophone_term"]
+        ),
     ]
 }
 
 public struct RuleBasedTextIntelligenceEngine: TextIntelligenceEngine {
     public init() {}
 
-    public func correct(_ request: CorrectionRequest) async throws -> CorrectionResult {
-        var corrected = request.text
-        var edits: [TextEdit] = []
-
-        for hotword in request.hotwords {
-            guard hotword.term != hotword.replacement else {
-                continue
-            }
-
-            let ranges = corrected.ranges(of: hotword.term, options: [.caseInsensitive])
-            guard !ranges.isEmpty else {
-                continue
-            }
-
-            corrected = corrected.replacingOccurrences(
-                of: hotword.term,
-                with: hotword.replacement,
-                options: [.caseInsensitive]
-            )
-            edits.append(
-                TextEdit(
-                    from: hotword.term,
-                    to: hotword.replacement,
-                    reason: "selected_hotword",
-                    confidence: min(0.96, max(0.72, hotword.score / 10.0))
-                )
-            )
-        }
-
-        corrected = normalizeSpacingAndTerminalPunctuation(corrected)
-
-        return CorrectionResult(
-            correctedText: corrected,
-            edits: edits,
-            selectedHotwords: request.hotwords,
-            confidence: edits.isEmpty ? 0.86 : 0.91,
-            reviewRequired: false
-        )
-    }
-
-    public func polish(_ request: PolishRequest) async throws -> PolishResult {
-        let cleaned = normalizeSpacingAndTerminalPunctuation(request.text)
-        let finalText: String
-
+    public func compose(_ request: ComposeRequest) async throws -> ComposeResult {
+        let stripped = VeloraTextComposer.strippedFillers(request.text, sourceLanguage: request.sourceLanguage)
+        let polished: String
         switch request.style {
         case "bullet", "bullets", "list":
-            finalText = cleaned
-                .split(separator: "，")
-                .map { "- \($0.trimmingCharacters(in: .whitespacesAndNewlines))" }
-                .joined(separator: "\n")
-        case "email":
-            finalText = cleaned
+            polished = VeloraTextComposer.bulleted(stripped)
         default:
-            finalText = cleaned
+            polished = VeloraTextComposer.cleaned(stripped)
         }
 
-        return PolishResult(
-            finalText: finalText,
-            edits: finalText == request.text ? [] : [
+        return ComposeResult(
+            polishedText: polished,
+            targetText: nil,
+            edits: polished == request.text ? [] : [
                 TextEdit(
                     from: request.text,
-                    to: finalText,
+                    to: polished,
                     reason: "rule_based_polish",
                     confidence: 0.82
                 ),
             ],
+            glossaryHits: VeloraTextComposer.glossaryHits(in: [polished], glossary: request.glossary),
             confidence: 0.84,
-            reviewRequired: false
+            reviewRequired: false,
+            engine: "rules"
         )
-    }
-
-    private func normalizeSpacingAndTerminalPunctuation(_ input: String) -> String {
-        let collapsed = input
-            .split(whereSeparator: \.isWhitespace)
-            .joined(separator: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard let last = collapsed.last else {
-            return collapsed
-        }
-
-        if [".", "!", "?", "。", "！", "？"].contains(String(last)) {
-            return collapsed
-        }
-
-        return collapsed + "。"
     }
 }
 
@@ -302,17 +263,3 @@ public struct NoopInsertionEngine: InsertionEngine {
     }
 }
 
-extension String {
-    fileprivate func ranges(of searchString: String, options: String.CompareOptions = []) -> [Range<String.Index>] {
-        var ranges: [Range<String.Index>] = []
-        var searchStartIndex = startIndex
-
-        while searchStartIndex < endIndex,
-              let range = self.range(of: searchString, options: options, range: searchStartIndex..<endIndex) {
-            ranges.append(range)
-            searchStartIndex = range.upperBound
-        }
-
-        return ranges
-    }
-}

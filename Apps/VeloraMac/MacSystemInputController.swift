@@ -21,61 +21,83 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let dictationController = MacDictationController()
     private let hotKeyCenter = MacGlobalHotKeyCenter()
     private var statusItem: NSStatusItem?
-    private var hotKeyObserver: NSObjectProtocol?
+    private var settingsWindow: NSWindow?
+    private var observers: [NSObjectProtocol] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Menu-bar utility: no Dock icon, no main menu. The status item plus
+        // the global hotkeys are the entire product surface.
+        NSApp.setActivationPolicy(.accessory)
         configureStatusItem()
         registerHotKeys()
-        hotKeyObserver = NotificationCenter.default.addObserver(
+        // Prewarm at launch so the resident SenseVoice model and Ollama are
+        // warm before the first Fn press — the whole point of the sidecar.
+        dictationController.prewarmModelMode()
+
+        let center = NotificationCenter.default
+        observers.append(center.addObserver(
             forName: MacHotKeyStore.didChangeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.registerHotKeys()
-                self?.refreshStatusMenu()
             }
-        }
+        })
+        observers.append(center.addObserver(
+            forName: MacDictationController.captureStateDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshStatusIcon()
+            }
+        })
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         dictationController.invalidate()
         hotKeyCenter.unregister()
-        if let hotKeyObserver {
-            NotificationCenter.default.removeObserver(hotKeyObserver)
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
         }
+        observers.removeAll()
     }
 
     private func configureStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.title = MacProductCopy.name
-        item.button?.toolTip = "\(MacProductCopy.name) - \(MacProductCopy.subtitle)"
-
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        item.button?.toolTip = "\(MacProductCopy.name) · \(MacProductCopy.subtitle)"
         let menu = NSMenu()
         menu.delegate = self
-        menu.addItem(NSMenuItem(title: "开始/停止录音 (\(MacProductCopy.hotKey))", action: #selector(toggleRecording), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "开始翻译 (\(MacProductCopy.translateHotKey))", action: #selector(toggleTranslation), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "确认并上屏", action: #selector(confirmPendingReview), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "取消待确认文本", action: #selector(cancelPendingReview), keyEquivalent: ""))
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "听写模式", action: #selector(useDictateMode), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "润色模式", action: #selector(usePolishMode), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "翻译模式", action: #selector(useTranslateMode), keyEquivalent: ""))
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "ASR 快速模型", action: #selector(useFastASRModel), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "ASR 准确模型", action: #selector(useAccurateASRModel), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "ASR 兜底模型", action: #selector(useFallbackASRModel), keyEquivalent: ""))
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "插入探针文本", action: #selector(insertProbeText), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "检查无障碍权限", action: #selector(checkAccessibilityPermission), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "打开无障碍设置", action: #selector(openAccessibilitySettings), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "显示 Velora 窗口", action: #selector(showMainWindow), keyEquivalent: ""))
         item.menu = menu
         statusItem = item
+        refreshStatusIcon()
+    }
+
+    private func refreshStatusIcon() {
+        guard let button = statusItem?.button else {
+            return
+        }
+        let symbol = dictationController.isRecordingActive ? "record.circle" : "waveform"
+        if let image = NSImage(systemSymbolName: symbol, accessibilityDescription: MacProductCopy.name) {
+            button.image = image
+            button.title = ""
+        } else {
+            button.image = nil
+            button.title = MacProductCopy.name
+        }
     }
 
     private func registerHotKeys() {
         let preferences = MacHotKeyStore.shared.load()
+        // While a capture flow is active, bare Fn stops it immediately instead
+        // of waiting out the Fn⇧ disambiguation delay — that delay would be
+        // charged straight to release-to-insert.
+        hotKeyCenter.prefersImmediateBareFunction = { [weak self] in
+            MainActor.assumeIsolated {
+                self?.dictationController.isCaptureBusy ?? false
+            }
+        }
         do {
             try hotKeyCenter.register(preferences: preferences) { [weak self] invocation in
                 Task { @MainActor in
@@ -97,22 +119,77 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    private func refreshStatusMenu() {
-        guard let menu = statusItem?.menu else {
-            return
+    /// The status menu is rebuilt on every open: items are contextual
+    /// (recording / pending review / missing permission), so static wiring
+    /// would immediately go stale.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        let hotKeys = MacHotKeyStore.shared.load()
+
+        if !AXIsProcessTrusted() {
+            let warning = menuItem("需要无障碍权限才能上屏…", #selector(openAccessibilitySettings))
+            warning.image = NSImage(
+                systemSymbolName: "exclamationmark.triangle.fill",
+                accessibilityDescription: nil
+            )
+            menu.addItem(warning)
+            menu.addItem(.separator())
         }
-        menu.item(at: 0)?.title = "开始/停止录音 (\(MacProductCopy.hotKey))"
-        menu.item(at: 1)?.title = "开始翻译 (\(MacProductCopy.translateHotKey))"
+
+        if dictationController.hasPendingReview {
+            menu.addItem(menuItem("确认并上屏（\(hotKeys.captureDisplayName)）", #selector(confirmPendingReview)))
+            menu.addItem(menuItem("放弃本次结果（esc）", #selector(cancelPendingReview)))
+        } else if dictationController.isRecordingActive {
+            menu.addItem(menuItem("完成并上屏（\(hotKeys.captureDisplayName)）", #selector(toggleRecording)))
+            menu.addItem(menuItem("取消本次录音（esc）", #selector(cancelActiveCapture)))
+        } else {
+            menu.addItem(menuItem("开始听写（\(hotKeys.captureDisplayName)）", #selector(toggleRecording)))
+            menu.addItem(menuItem("开始翻译（\(hotKeys.translateDisplayName)）", #selector(toggleTranslation)))
+        }
+
+        menu.addItem(.separator())
+        menu.addItem(menuItem("设置…", #selector(showSettingsWindow), key: ","))
+        if MacDeveloperModeStore.shared.isEnabled {
+            menu.addItem(developerMenuItem())
+        }
+        menu.addItem(menuItem("退出 \(MacProductCopy.name)", #selector(quitVelora), key: "q"))
     }
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
+    private func menuItem(_ title: String, _ action: Selector, key: String = "") -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        item.target = self
+        return item
+    }
+
+    private func developerMenuItem() -> NSMenuItem {
         let settings = VeloraSettingsStore.shared.load()
-        menu.item(withTitle: "听写模式")?.state = settings.mode == .dictate ? .on : .off
-        menu.item(withTitle: "润色模式")?.state = settings.mode == .polish ? .on : .off
-        menu.item(withTitle: "翻译模式")?.state = settings.mode == .translate ? .on : .off
-        menu.item(withTitle: "ASR 快速模型")?.state = settings.asrModelMode == .fast ? .on : .off
-        menu.item(withTitle: "ASR 准确模型")?.state = settings.asrModelMode == .accurate ? .on : .off
-        menu.item(withTitle: "ASR 兜底模型")?.state = settings.asrModelMode == .fallback ? .on : .off
+        let submenu = NSMenu()
+
+        let input = menuItem("输入模式", #selector(useInputMode))
+        input.state = settings.mode == .input ? .on : .off
+        let translate = menuItem("翻译模式", #selector(useTranslateMode))
+        translate.state = settings.mode == .translate ? .on : .off
+        submenu.addItem(input)
+        submenu.addItem(translate)
+        submenu.addItem(.separator())
+
+        let fast = menuItem("ASR 快速模型", #selector(useFastASRModel))
+        fast.state = settings.asrModelMode == .fast ? .on : .off
+        let accurate = menuItem("ASR 准确模型", #selector(useAccurateASRModel))
+        accurate.state = settings.asrModelMode == .accurate ? .on : .off
+        let fallback = menuItem("ASR 兜底模型", #selector(useFallbackASRModel))
+        fallback.state = settings.asrModelMode == .fallback ? .on : .off
+        submenu.addItem(fast)
+        submenu.addItem(accurate)
+        submenu.addItem(fallback)
+        submenu.addItem(.separator())
+
+        submenu.addItem(menuItem("插入探针文本", #selector(insertProbeText)))
+        submenu.addItem(menuItem("检查无障碍权限", #selector(checkAccessibilityPermission)))
+
+        let item = NSMenuItem(title: "开发者", action: nil, keyEquivalent: "")
+        item.submenu = submenu
+        return item
     }
 
     @objc private func toggleRecording() {
@@ -135,12 +212,8 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         dictationController.cancelPendingReview()
     }
 
-    @objc private func useDictateMode() {
-        dictationController.setMode(.dictate)
-    }
-
-    @objc private func usePolishMode() {
-        dictationController.setMode(.polish)
+    @objc private func useInputMode() {
+        dictationController.setMode(.input)
     }
 
     @objc private func useTranslateMode() {
@@ -173,14 +246,39 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         dictationController.checkAccessibilityPermission()
     }
 
-    @objc private func showMainWindow() {
+    @objc private func cancelActiveCapture() {
+        dictationController.cancelActiveCapture()
+    }
+
+    @objc private func quitVelora() {
+        NSApp.terminate(nil)
+    }
+
+    @objc private func showSettingsWindow() {
+        if settingsWindow == nil {
+            let hosting = NSHostingController(rootView: MacSettingsView())
+            hosting.sizingOptions = .preferredContentSize
+            let window = NSWindow(contentViewController: hosting)
+            window.title = "\(MacProductCopy.name) 设置"
+            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
+        }
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.windows.first?.makeKeyAndOrderFront(nil)
+        if settingsWindow?.isMiniaturized == true {
+            settingsWindow?.deminiaturize(nil)
+        }
+        settingsWindow?.makeKeyAndOrderFront(nil)
     }
 }
 
 @MainActor
 final class MacDictationController {
+    /// Posted whenever recording starts or stops so the status-bar icon can
+    /// mirror capture state without polling.
+    static let captureStateDidChangeNotification = Notification.Name("app.velora.captureState.didChange")
+
     private let settingsStore = VeloraSettingsStore.shared
     private let audioService = MacAudioCaptureService()
     private let floatingPanel = MacFloatingStatusPanelController()
@@ -190,14 +288,53 @@ final class MacDictationController {
         },
         onCancel: { [weak self] in
             self?.cancelPendingReview()
+        },
+        onRetranslate: { [weak self] in
+            self?.retranslatePendingReview()
         }
     )
-    private var isRecording = false
+    private var isRecording = false {
+        didSet {
+            guard oldValue != isRecording else {
+                return
+            }
+            NotificationCenter.default.post(name: Self.captureStateDidChangeNotification, object: nil)
+        }
+    }
     private var currentClipStartedAt: Date?
     private var activeSettings: VeloraRuntimeSettings?
     private var pendingReview: MacPendingTranslationReview?
     private var recordingStartTask: Task<Void, Never>?
     private var pipelineTask: Task<Void, Never>?
+    private var pipelineGeneration = 0
+    private var recordingGeneration = 0
+    private var lastInsertion: MacLastInsertionRecord?
+    private var undoMonitor: Any?
+    private var undoWatchExpiry: Task<Void, Never>?
+    private var contextPrepTask: Task<MacPreparedPipelineContext?, Never>?
+    /// Persistent hotword memory (Phase 2). Seeded once from the demo term
+    /// set, then grows from the correction journal. Nil only if the store
+    /// cannot open — we then fall back to the in-memory demo terms.
+    private let memoryStore: SQLiteMemoryStore? = {
+        let store = SQLiteMemoryStore.defaultStore()
+        store?.seedIfEmpty(InMemoryHotwordStore.defaultTerms)
+        return store
+    }()
+
+    private var activeMemoryStore: any MemoryStore {
+        memoryStore ?? InMemoryHotwordStore()
+    }
+
+    private func ingestJournalIncrementally() {
+        guard let memoryStore,
+              let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return
+        }
+        let journal = directory.appendingPathComponent("Velora/corrections.jsonl")
+        Task.detached(priority: .utility) {
+            memoryStore.ingestCorrectionJournal(at: journal)
+        }
+    }
     private var globalEscapeMonitor: Any?
     private var localEscapeMonitor: Any?
     private lazy var escapeHotKeyCenter = MacEscapeHotKeyCenter { [weak self] in
@@ -228,6 +365,24 @@ final class MacDictationController {
         escapeEventTap.invalidate()
         recordingStartTask?.cancel()
         pipelineTask?.cancel()
+        contextPrepTask?.cancel()
+        stopUndoWatch()
+    }
+
+    var isCaptureBusy: Bool {
+        isRecording || recordingStartTask != nil
+    }
+
+    var isRecordingActive: Bool {
+        isRecording
+    }
+
+    var hasPendingReview: Bool {
+        pendingReview != nil
+    }
+
+    func cancelActiveCapture() {
+        _ = cancelActiveFlow()
     }
 
     func toggleRecordingFromHotKey() {
@@ -239,6 +394,9 @@ final class MacDictationController {
         if isRecording {
             stopAndRunPipeline()
         } else {
+            settingsStore.update { settings in
+                settings.mode = .input
+            }
             startRecording()
         }
     }
@@ -318,9 +476,20 @@ final class MacDictationController {
         floatingPanel.hide(after: 1.2)
     }
 
+    /// SenseVoice is the primary ASR engine (18× faster, better CER on real
+    /// speech — see docs/ASR_POLISH_TUNING_REPORT.md §3.4); whisper.cpp is the
+    /// automatic fallback when the sidecar assets aren't installed. Held for
+    /// the whole controller lifetime so the resident model stays warm.
+    private let senseVoiceEngine: SenseVoiceASREngine? = SenseVoiceASREngine.Configuration
+        .resolvedDefault()
+        .map(SenseVoiceASREngine.init)
+
     func prewarmModelMode(_ mode: WhisperModelMode? = nil) {
         let mode = mode ?? settingsStore.load().asrModelMode
-        Task {
+        Task { [senseVoiceEngine] in
+            if let senseVoiceEngine {
+                try? await senseVoiceEngine.prewarm()
+            }
             _ = await LocalModelPrewarmer.prewarmForMac(
                 whisper: .configuration(for: mode)
             )
@@ -347,6 +516,15 @@ final class MacDictationController {
                     phase: .review,
                     title: "已复制，等待授权",
                     detail: "给 \(MacProductCopy.name) 开启无障碍权限后重启 App，再试一次。",
+                    startedAt: nil
+                )
+            )
+        case .targetUnavailable:
+            floatingPanel.show(
+                MacFloatingStatus(
+                    phase: .review,
+                    title: "目标应用不可用，已复制",
+                    detail: "结果已在剪贴板，请手动粘贴。",
                     startedAt: nil
                 )
             )
@@ -381,7 +559,9 @@ final class MacDictationController {
     }
 
     func confirmPendingReview() {
-        confirmPendingReview(selection: .preferred)
+        // Plain confirm (hotkey / menu) honors the side the user picked in
+        // settings; the overlay buttons remain a per-utterance override.
+        confirmPendingReview(selection: pendingReview?.preferredSelection ?? .target)
     }
 
     func confirmPendingReview(selection: MacTranslationReviewSelection) {
@@ -390,18 +570,45 @@ final class MacDictationController {
             return
         }
 
+        let insertText = reviewPanel.editedText(for: selection)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !insertText.isEmpty else {
+            floatingPanel.show(
+                MacFloatingStatus(phase: .error, title: "内容为空，未上屏", detail: "", startedAt: nil)
+            )
+            return
+        }
+
+        // User edits in the overlay are the highest-quality learning signal:
+        // capture the diff locally so the memory layer (Phase 2) can grow
+        // hotwords and glossary pairs from real corrections.
+        MacCorrectionJournal.recordIfEdited(
+            review: review,
+            editedSource: reviewPanel.editedSource,
+            editedTarget: reviewPanel.editedTarget,
+            insertedSelection: selection
+        )
+
         pendingReview = nil
         reviewPanel.hide()
         refreshEscapeCancellationState()
-        let insertText = review.insertText(for: selection)
         let outcome = MacPasteboardInserter.insert(insertText, target: review.target)
         switch outcome {
         case .inserted:
+            lastInsertion = MacLastInsertionRecord(
+                finalText: insertText,
+                asrText: review.asrText,
+                appliedEdits: review.appliedEdits,
+                targetBundleID: review.target?.bundleIdentifier,
+                mode: .translate,
+                at: Date()
+            )
+            startUndoWatch()
             floatingPanel.show(
                 MacFloatingStatus(
                     phase: .inserted,
                     title: "已上屏",
-                    detail: "\(review.displayName(for: selection)) · \(insertText.oneLinePreview(maxLength: 96))",
+                    detail: "\(selection == .source ? "原文" : "译文") · \(insertText.oneLinePreview(maxLength: 96))",
                     startedAt: nil
                 )
             )
@@ -412,6 +619,15 @@ final class MacDictationController {
                     phase: .review,
                     title: "已复制，等待授权",
                     detail: "给 \(MacProductCopy.name) 开启无障碍权限后重启 App，再试一次。",
+                    startedAt: nil
+                )
+            )
+        case .targetUnavailable:
+            floatingPanel.show(
+                MacFloatingStatus(
+                    phase: .review,
+                    title: "目标应用不可用，已复制",
+                    detail: "原目标窗口无法唤回。结果已在剪贴板，请手动粘贴。",
                     startedAt: nil
                 )
             )
@@ -477,6 +693,8 @@ final class MacDictationController {
     private func cancelRecording() {
         recordingStartTask?.cancel()
         recordingStartTask = nil
+        contextPrepTask?.cancel()
+        contextPrepTask = nil
         isRecording = false
         activeSettings = nil
         audioService.setLevelHandler(nil)
@@ -498,6 +716,8 @@ final class MacDictationController {
     private func startRecording() {
         let settings = settingsStore.load()
         recordingStartTask?.cancel()
+        recordingGeneration += 1
+        let generation = recordingGeneration
         activeSettings = settings
         refreshEscapeCancellationState()
         floatingPanel.show(
@@ -509,6 +729,28 @@ final class MacDictationController {
             )
         )
 
+        // Latency-budget contract: context capture and hotword ranking run
+        // DURING recording (the user is still speaking — this time is free),
+        // so the after-release critical path starts straight at ASR.
+        contextPrepTask?.cancel()
+        ingestJournalIncrementally()
+        let memoryStore = activeMemoryStore
+        contextPrepTask = Task {
+            let probeRequest = PipelineRunRequest(
+                platform: .macOS,
+                mode: settings.mode,
+                sampleText: "",
+                sourceLanguage: settings.sourceLanguage,
+                targetLanguage: settings.effectiveTargetLanguage
+            )
+            let snapshot = await MacContextProvider().currentSnapshot(for: probeRequest)
+            guard !Task.isCancelled else {
+                return nil
+            }
+            let hotwords = (try? await memoryStore.rankHotwords(for: snapshot, limit: 12)) ?? []
+            return MacPreparedPipelineContext(snapshot: snapshot, hotwords: hotwords)
+        }
+
         recordingStartTask = Task {
             do {
                 audioService.setLevelHandler { [weak self] level in
@@ -517,7 +759,7 @@ final class MacDictationController {
                     }
                 }
                 let url = try await audioService.start()
-                guard !Task.isCancelled else {
+                guard !Task.isCancelled, generation == recordingGeneration else {
                     if let clip = audioService.stop() {
                         try? FileManager.default.removeItem(at: clip.url)
                     }
@@ -537,6 +779,9 @@ final class MacDictationController {
                 )
                 _ = url
             } catch {
+                guard generation == recordingGeneration else {
+                    return
+                }
                 recordingStartTask = nil
                 isRecording = false
                 activeSettings = nil
@@ -587,17 +832,30 @@ final class MacDictationController {
             )
         )
 
+        let contextTask = contextPrepTask
+        contextPrepTask = nil
         pipelineTask?.cancel()
+        pipelineGeneration += 1
+        let generation = pipelineGeneration
         pipelineTask = Task {
             let releaseTime = ContinuousClock.now
+            // Harvest the during-recording preparation; falls back to live
+            // capture inside the pipeline when unavailable (e.g. instant stop).
+            let prepared = await contextTask?.value
             defer {
-                pipelineTask = nil
+                // Only the newest pipeline may clear shared state; a cancelled
+                // predecessor finishing late must not wipe its successor.
+                if generation == pipelineGeneration {
+                    pipelineTask = nil
+                }
                 refreshEscapeCancellationState()
                 try? FileManager.default.removeItem(at: clip.url)
             }
             do {
-                let reviewBeforeInsert = settings.mode == .translate
-                let result = try await makePipeline(for: settings).run(
+                // Insertion is driven here (not inside the pipeline) so both
+                // modes get target-app protection: we re-activate the app the
+                // user was in at release time before posting Cmd+V.
+                let result = try await makePipeline(for: settings, prepared: prepared).run(
                     PipelineRunRequest(
                         platform: .macOS,
                         mode: settings.mode,
@@ -607,14 +865,54 @@ final class MacDictationController {
                         targetLanguage: settings.effectiveTargetLanguage,
                         insertPolicy: settings.insertPolicy,
                         preferredInsertLanguage: settings.preferredInsertLanguage,
-                        insertionStrategy: reviewBeforeInsert ? .none : .pasteboard
+                        insertionStrategy: .none
                     )
                 )
                 guard !Task.isCancelled else {
                     return
                 }
-                let elapsedMS = releaseTime.duration(to: ContinuousClock.now).milliseconds
-                if reviewBeforeInsert {
+
+                // Retry-redictation detection: quick re-recording of highly
+                // similar content within the window is negative feedback on
+                // the previous output. Deterministic (time + mode + edit
+                // distance) — no model in this loop, misses are acceptable,
+                // false positives are not.
+                if let previous = lastInsertion,
+                   Date().timeIntervalSince(previous.at) <= 30,
+                   previous.mode == settings.mode {
+                    let similarity = VeloraTextSimilarity.normalizedSimilarity(result.asr.text, previous.asrText)
+                    if similarity >= 0.55 {
+                        MacCorrectionJournal.recordRetryRedictation(
+                            previous: previous,
+                            newASRText: result.asr.text,
+                            similarity: similarity
+                        )
+                        lastInsertion = nil
+                    }
+                }
+
+                // Translate mode with no translation at all (compose and the
+                // fallback engine both failed): never auto-paste source-only
+                // text into the target app — copy it and say why.
+                if settings.mode == .translate, result.translation == nil {
+                    MacClipboard.write(result.finalText)
+                    floatingPanel.show(
+                        MacFloatingStatus(
+                            phase: .error,
+                            title: "译文不可用，原文已复制",
+                            detail: result.compose.warnings.joined(separator: ","),
+                            startedAt: nil
+                        )
+                    )
+                    return
+                }
+
+                // Translate ALWAYS goes through the confirmation overlay
+                // (product decision 2026-07-05): translated output cannot be
+                // self-checked by the user mid-flight, so the user decides —
+                // not model confidence. Input mode stays direct-insert.
+                if settings.mode == .translate {
+                    let elapsedMS = releaseTime.duration(to: ContinuousClock.now).milliseconds
                     presentTranslationReview(
                         result: result,
                         elapsedMS: elapsedMS,
@@ -624,23 +922,76 @@ final class MacDictationController {
                     return
                 }
 
-                let inserted = result.insertion?.inserted == true
-                let detail = inserted
-                    ? "wall_ms=\(elapsedMS) \(result.finalText.oneLinePreview(maxLength: 96))"
-                    : "结果已复制，需开启无障碍权限后才能自动上屏。\(MacProductCopy.name) 菜单 -> 打开无障碍设置。\(result.finalText.oneLinePreview(maxLength: 56))"
-                floatingPanel.show(
-                    MacFloatingStatus(
-                        phase: inserted ? .inserted : .review,
-                        title: inserted ? "已上屏" : "已复制，等待授权",
-                        detail: detail,
-                        startedAt: nil
+                let insertStart = ContinuousClock.now
+                let outcome = MacPasteboardInserter.insert(result.finalText, target: insertionTarget)
+                let insertMS = insertStart.duration(to: ContinuousClock.now).milliseconds
+                // wall_ms is release-to-insert including the real paste work;
+                // computing it before insertion would hide the protection cost.
+                let elapsedMS = releaseTime.duration(to: ContinuousClock.now).milliseconds
+                switch outcome {
+                case .inserted:
+                    lastInsertion = MacLastInsertionRecord(
+                        finalText: result.finalText,
+                        asrText: result.asr.text,
+                        appliedEdits: result.correction.edits + result.compose.edits,
+                        targetBundleID: insertionTarget?.bundleIdentifier,
+                        mode: settings.mode,
+                        at: Date()
                     )
-                )
-                if inserted {
+                    startUndoWatch()
+                    let warningsSuffix = result.compose.warnings.isEmpty
+                        ? ""
+                        : " ⚠︎\(result.compose.warnings.joined(separator: ","))"
+                    floatingPanel.show(
+                        MacFloatingStatus(
+                            phase: .inserted,
+                            title: "已上屏",
+                            detail: "wall_ms=\(elapsedMS) insert_ms=\(insertMS)\(warningsSuffix) \(result.finalText.oneLinePreview(maxLength: 96))",
+                            startedAt: nil
+                        )
+                    )
                     floatingPanel.hide(after: 1.0)
+                case .copiedNeedsAccessibility:
+                    floatingPanel.show(
+                        MacFloatingStatus(
+                            phase: .review,
+                            title: "已复制，等待授权",
+                            detail: "结果已复制，需开启无障碍权限后才能自动上屏。\(MacProductCopy.name) 菜单 -> 打开无障碍设置。\(result.finalText.oneLinePreview(maxLength: 56))",
+                            startedAt: nil
+                        )
+                    )
+                case .targetUnavailable:
+                    floatingPanel.show(
+                        MacFloatingStatus(
+                            phase: .review,
+                            title: "目标应用不可用，已复制",
+                            detail: "原目标窗口无法唤回。结果已在剪贴板，请手动粘贴。\(result.finalText.oneLinePreview(maxLength: 56))",
+                            startedAt: nil
+                        )
+                    )
+                case .failedToWrite:
+                    floatingPanel.show(
+                        MacFloatingStatus(
+                            phase: .error,
+                            title: "上屏失败",
+                            detail: "pasteboard_write_failed \(result.finalText.oneLinePreview(maxLength: 72))",
+                            startedAt: nil
+                        )
+                    )
                 }
             } catch is CancellationError {
                 return
+            } catch PipelineError.asrUnavailable("no_speech_detected") {
+                // Silence is a normal outcome, not a failure — quiet hint only.
+                floatingPanel.show(
+                    MacFloatingStatus(
+                        phase: .idle,
+                        title: "没有听到声音",
+                        detail: "",
+                        startedAt: nil
+                    )
+                )
+                floatingPanel.hide(after: 1.6)
             } catch {
                 floatingPanel.show(
                     MacFloatingStatus(
@@ -673,51 +1024,173 @@ final class MacDictationController {
             return
         }
 
+        let preferredSelection: MacTranslationReviewSelection =
+            TranslationLanguageResolver.normalizedLanguage(preferredInsertLanguage)
+                == TranslationLanguageResolver.normalizedLanguage(translation.mode.sourceLanguage)
+            ? .source
+            : .target
         let review = MacPendingTranslationReview(
             sourceText: translation.correctedSourceText,
             targetText: translation.targetText,
             sourceLanguage: translation.mode.sourceLanguage,
             targetLanguage: translation.mode.targetLanguage,
-            preferredInsertLanguage: preferredInsertLanguage,
-            defaultInsertText: result.finalText,
-            modeSummary: "\(translation.mode.sourceLanguage)->\(translation.mode.targetLanguage)",
+            modeSummary: "\(TranslationLanguageResolver.displayName(for: translation.mode.sourceLanguage)) → \(TranslationLanguageResolver.displayName(for: translation.mode.targetLanguage))",
             latencyDetail: "wall_ms=\(elapsedMS)",
-            target: target
+            warnings: translation.warnings,
+            asrText: result.asr.text,
+            appliedEdits: result.correction.edits + result.compose.edits,
+            target: target,
+            preferredSelection: preferredSelection
         )
         pendingReview = review
         refreshEscapeCancellationState()
         reviewPanel.show(review)
-        floatingPanel.show(
-                MacFloatingStatus(
-                    phase: .review,
-                    title: "等待确认",
-                    detail: "\(review.latencyDetail) · 默认上屏 \(review.preferredLanguageDisplayName)",
-                    startedAt: nil
+    }
+
+    private func retranslatePendingReview() {
+        guard let review = pendingReview else {
+            return
+        }
+
+        let editedSource = reviewPanel.editedSource.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !editedSource.isEmpty else {
+            return
+        }
+
+        reviewPanel.setRetranslating(true)
+        Task { [weak self] in
+            defer {
+                self?.reviewPanel.setRetranslating(false)
+            }
+            do {
+                let output = try await OllamaTranslationEngine().translate(
+                    LocalTranslationRequest(
+                        sourceText: editedSource,
+                        correctedSourceText: editedSource,
+                        sourceLanguage: review.sourceLanguage,
+                        targetLanguage: review.targetLanguage,
+                        context: ContextSnapshot(appBundle: "app.velora.review.retranslate", mode: .translate),
+                        glossary: [],
+                        deadlineMS: ComposeRequest.defaultTranslateDeadlineMS
+                    )
                 )
-            )
-        floatingPanel.hide(after: 1.0)
+                let target = output.targetText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard self?.pendingReview?.id == review.id else {
+                    return
+                }
+                if target.isEmpty {
+                    self?.reviewPanel.showRetranslateIssue("重译超时，保留原译文")
+                } else {
+                    self?.reviewPanel.updateTarget(target)
+                }
+            } catch {
+                guard self?.pendingReview?.id == review.id else {
+                    return
+                }
+                self?.reviewPanel.showRetranslateIssue(VeloraErrorPresenter.message(for: error))
+            }
+        }
+    }
+
+    /// Watches for ⌘Z in the target app shortly after an insertion — a strong
+    /// negative signal we can capture WITHOUT reading any app content (we only
+    /// observe the key chord, never text). Auto-expires with the window.
+    private func startUndoWatch() {
+        stopUndoWatch()
+        undoMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.modifierFlags.contains(.command),
+                  event.charactersIgnoringModifiers?.lowercased() == "z" else {
+                return
+            }
+            Task { @MainActor in
+                self?.handlePotentialUndo()
+            }
+        }
+        undoWatchExpiry = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            guard !Task.isCancelled else {
+                return
+            }
+            self?.stopUndoWatch()
+        }
+    }
+
+    private func stopUndoWatch() {
+        if let undoMonitor {
+            NSEvent.removeMonitor(undoMonitor)
+            self.undoMonitor = nil
+        }
+        undoWatchExpiry?.cancel()
+        undoWatchExpiry = nil
+    }
+
+    private func handlePotentialUndo() {
+        guard let record = lastInsertion,
+              Date().timeIntervalSince(record.at) <= 30,
+              let targetBundleID = record.targetBundleID,
+              NSWorkspace.shared.frontmostApplication?.bundleIdentifier == targetBundleID else {
+            return
+        }
+
+        MacCorrectionJournal.recordUndoAfterInsert(
+            record: record,
+            secondsAfterInsert: Date().timeIntervalSince(record.at)
+        )
+        stopUndoWatch()
+        lastInsertion = nil
     }
 
     private func modeTitle(for settings: VeloraRuntimeSettings) -> String {
         switch settings.mode {
-        case .dictate:
-            return "听写 \(settings.sourceLanguage) \(settings.asrModelMode.rawValue)"
-        case .polish:
-            return "润色 \(settings.sourceLanguage) \(settings.asrModelMode.rawValue)"
+        case .input:
+            return "输入 \(settings.sourceLanguage) \(settings.asrModelMode.rawValue)"
         case .translate:
             return "翻译 \(settings.sourceLanguage)->\(settings.targetLanguage) \(settings.asrModelMode.rawValue)"
         }
     }
 
-    private func makePipeline(for settings: VeloraRuntimeSettings) -> PipelineOrchestrator {
+    private func makePipeline(
+        for settings: VeloraRuntimeSettings,
+        prepared: MacPreparedPipelineContext? = nil
+    ) -> PipelineOrchestrator {
         PipelineOrchestrator(
-            asrEngine: WhisperCLIASREngine(configuration: .configuration(for: settings.asrModelMode)),
-            contextProvider: MacContextProvider(),
-            memoryStore: InMemoryHotwordStore(),
+            asrEngine: senseVoiceEngine
+                ?? WhisperCLIASREngine(configuration: .configuration(for: settings.asrModelMode)),
+            contextProvider: prepared.map { MacPreparedContextProvider(snapshot: $0.snapshot) }
+                ?? MacContextProvider() as any ContextProvider,
+            memoryStore: prepared.map { MacPreparedMemoryStore(hotwords: $0.hotwords) }
+                ?? activeMemoryStore,
             textEngine: OllamaTextIntelligenceEngine(),
             translationEngine: OllamaTranslationEngine(),
             insertionEngine: MacPasteboardInsertionEngine()
         )
+    }
+}
+
+/// Context + hotwords captured while the user was still speaking. Handing
+/// them to the pipeline as constant providers moves那两段工作 out of the
+/// after-release critical path (their trace stages then measure ~0ms).
+struct MacPreparedPipelineContext: Sendable {
+    var snapshot: ContextSnapshot
+    var hotwords: [HotwordCandidate]
+}
+
+struct MacPreparedContextProvider: ContextProvider {
+    var snapshot: ContextSnapshot
+
+    func currentSnapshot(for request: PipelineRunRequest) async -> ContextSnapshot {
+        var snapshot = snapshot
+        snapshot.mode = request.mode
+        snapshot.languagePair = request.targetLanguage.map { "\(request.sourceLanguage)-\($0)" }
+        return snapshot
+    }
+}
+
+struct MacPreparedMemoryStore: MemoryStore {
+    var hotwords: [HotwordCandidate]
+
+    func rankHotwords(for snapshot: ContextSnapshot, limit: Int) async throws -> [HotwordCandidate] {
+        Array(hotwords.prefix(limit))
     }
 }
 
@@ -842,6 +1315,9 @@ struct MacPasteboardInsertionEngine: InsertionEngine {
 enum MacPasteboardInsertOutcome {
     case inserted
     case copiedNeedsAccessibility
+    /// The release-time target app could not be brought back to front.
+    /// Text stays on the clipboard; we never paste into whatever is frontmost.
+    case targetUnavailable
     case failedToWrite
 }
 
@@ -924,8 +1400,17 @@ enum MacPasteboardInserter {
         }
 
         let writtenChangeCount = pasteboard.changeCount
-        if target?.activateBeforeInsertion() == true {
+        // Fail closed: with a known target, never paste into whatever app
+        // happens to be frontmost. Activation must succeed AND the frontmost
+        // app must actually be the target before Cmd+V is posted.
+        if let target {
+            guard target.activateBeforeInsertion() else {
+                return .targetUnavailable
+            }
             RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.08))
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier else {
+                return .targetUnavailable
+            }
         }
         postCommandV()
 
@@ -1000,17 +1485,34 @@ struct MacPasteboardSnapshot {
     }
 }
 
+/// What we remember about the most recent successful insertion, so a quick
+/// retry (re-dictating the same thing) or an undo in the target app can be
+/// journaled as negative feedback. Detection is deterministic on purpose:
+/// this signal demotes hotwords, and a false positive is worse than a miss.
+struct MacLastInsertionRecord {
+    var finalText: String
+    var asrText: String
+    var appliedEdits: [TextEdit]
+    var targetBundleID: String?
+    var mode: DictationMode
+    var at: Date
+}
+
 struct MacPendingTranslationReview: Identifiable {
     let id = UUID()
     var sourceText: String
     var targetText: String
     var sourceLanguage: String
     var targetLanguage: String
-    var preferredInsertLanguage: String
-    var defaultInsertText: String
     var modeSummary: String
     var latencyDetail: String
+    var warnings: [String]
+    var asrText: String
+    var appliedEdits: [TextEdit]
     var target: MacInsertionTarget?
+    /// The side the settings panel promises to insert on plain confirm
+    /// (hotkey / ⌘⏎ / menu). The overlay buttons can still pick either side.
+    var preferredSelection: MacTranslationReviewSelection = .target
 
     var sourceLanguageDisplayName: String {
         TranslationLanguageResolver.displayName(for: sourceLanguage)
@@ -1019,30 +1521,101 @@ struct MacPendingTranslationReview: Identifiable {
     var targetLanguageDisplayName: String {
         TranslationLanguageResolver.displayName(for: targetLanguage)
     }
+}
 
-    var preferredLanguageDisplayName: String {
-        TranslationLanguageResolver.displayName(for: preferredInsertLanguage)
+/// Which single-language text to insert. Insertion is never bilingual
+/// (product decision 2026-07-05); the bilingual view lives only in the overlay.
+enum MacTranslationReviewSelection {
+    case source
+    case target
+
+    var actionTitle: String {
+        self == .source ? "上屏原文" : "上屏译文"
     }
+}
 
-    func insertText(for selection: MacTranslationReviewSelection) -> String {
-        switch selection {
-        case .preferred:
-            return defaultInsertText
-        case .source:
-            return sourceText
-        case .target:
-            return targetText
+/// Locally journaled correction pairs — the raw feed for Phase 2 memory
+/// (hotword/glossary evolution). Result text stays on this machine, same
+/// privacy tier as History; nothing here is ever logged or sent anywhere.
+enum MacCorrectionJournal {
+    static func recordIfEdited(
+        review: MacPendingTranslationReview,
+        editedSource: String,
+        editedTarget: String,
+        insertedSelection: MacTranslationReviewSelection
+    ) {
+        let sourceEdited = editedSource != review.sourceText
+        let targetEdited = editedTarget != review.targetText
+        guard sourceEdited || targetEdited else {
+            return
         }
+
+        var entry: [String: Any] = [
+            "kind": "translate_review_edit",
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "language_pair": "\(review.sourceLanguage)-\(review.targetLanguage)",
+            "inserted": insertedSelection == .source ? "source" : "target",
+        ]
+        if sourceEdited {
+            entry["source_before"] = review.sourceText
+            entry["source_after"] = editedSource
+        }
+        if targetEdited {
+            entry["target_before"] = review.targetText
+            entry["target_after"] = editedTarget
+        }
+        append(entry)
     }
 
-    func displayName(for selection: MacTranslationReviewSelection) -> String {
-        switch selection {
-        case .preferred:
-            return preferredLanguageDisplayName
-        case .source:
-            return sourceLanguageDisplayName
-        case .target:
-            return targetLanguageDisplayName
+    static func recordRetryRedictation(
+        previous: MacLastInsertionRecord,
+        newASRText: String,
+        similarity: Double
+    ) {
+        append([
+            "kind": "retry_redictation",
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "mode": previous.mode.rawValue,
+            "similarity": (similarity * 100).rounded() / 100,
+            "previous_asr": previous.asrText,
+            "previous_final": previous.finalText,
+            "new_asr": newASRText,
+            "applied_edits": previous.appliedEdits.map { ["from": $0.from, "to": $0.to, "reason": $0.reason] },
+        ])
+    }
+
+    static func recordUndoAfterInsert(
+        record: MacLastInsertionRecord,
+        secondsAfterInsert: TimeInterval
+    ) {
+        append([
+            "kind": "undo_after_insert",
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "mode": record.mode.rawValue,
+            "seconds_after_insert": (secondsAfterInsert * 10).rounded() / 10,
+            "final_text": record.finalText,
+            "asr_text": record.asrText,
+            "applied_edits": record.appliedEdits.map { ["from": $0.from, "to": $0.to, "reason": $0.reason] },
+        ])
+    }
+
+    private static func append(_ entry: [String: Any]) {
+        guard let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return
+        }
+        let folder = directory.appendingPathComponent("Velora", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent("corrections.jsonl")
+        guard let data = try? JSONSerialization.data(withJSONObject: entry),
+              let line = String(data: data, encoding: .utf8) else {
+            return
+        }
+        if let handle = try? FileHandle(forWritingTo: file) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: Data((line + "\n").utf8))
+        } else {
+            try? Data((line + "\n").utf8).write(to: file)
         }
     }
 }
@@ -1050,14 +1623,29 @@ struct MacPendingTranslationReview: Identifiable {
 @MainActor
 final class MacTranslationReviewPanelModel: ObservableObject {
     @Published var review: MacPendingTranslationReview?
+    @Published var editedSource = ""
+    @Published var editedTarget = ""
+    @Published var isRetranslating = false
+    @Published var retranslateIssue = ""
     var onConfirm: ((MacTranslationReviewSelection) -> Void)?
     var onCancel: (() -> Void)?
+    var onRetranslate: (() -> Void)?
+
+    var sourceWasEdited: Bool {
+        guard let review else {
+            return false
+        }
+        return editedSource != review.sourceText
+    }
 }
 
-enum MacTranslationReviewSelection {
-    case preferred
-    case source
-    case target
+/// Borderless non-activating panels refuse key status by default; the overlay
+/// hosts editable text, so it must be able to take keyboard focus without
+/// activating the app (the target app keeps frontmost status for re-insertion).
+final class MacKeyableReviewPanel: NSPanel {
+    override var canBecomeKey: Bool {
+        true
+    }
 }
 
 @MainActor
@@ -1067,25 +1655,57 @@ final class MacTranslationReviewPanelController {
 
     init(
         onConfirm: @escaping (MacTranslationReviewSelection) -> Void,
-        onCancel: @escaping () -> Void
+        onCancel: @escaping () -> Void,
+        onRetranslate: @escaping () -> Void
     ) {
         model.onConfirm = onConfirm
         model.onCancel = onCancel
+        model.onRetranslate = onRetranslate
+    }
+
+    var editedSource: String {
+        model.editedSource
+    }
+
+    var editedTarget: String {
+        model.editedTarget
+    }
+
+    func editedText(for selection: MacTranslationReviewSelection) -> String {
+        selection == .source ? model.editedSource : model.editedTarget
     }
 
     func show(_ review: MacPendingTranslationReview) {
         model.review = review
+        model.editedSource = review.sourceText
+        model.editedTarget = review.targetText
+        model.isRetranslating = false
+        model.retranslateIssue = ""
         positionPanel()
         panel.orderFrontRegardless()
+        panel.makeKey()
     }
 
     func hide() {
         panel.orderOut(nil)
     }
 
+    func updateTarget(_ text: String) {
+        model.editedTarget = text
+        model.retranslateIssue = ""
+    }
+
+    func setRetranslating(_ retranslating: Bool) {
+        model.isRetranslating = retranslating
+    }
+
+    func showRetranslateIssue(_ message: String) {
+        model.retranslateIssue = message
+    }
+
     private func makePanel() -> NSPanel {
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 286),
+        let panel = MacKeyableReviewPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 360),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -1095,6 +1715,7 @@ final class MacTranslationReviewPanelController {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
+        panel.becomesKeyOnlyIfNeeded = false
         panel.contentView = NSHostingView(rootView: MacTranslationReviewPanelView(model: model))
         return panel
     }
@@ -1108,7 +1729,7 @@ final class MacTranslationReviewPanelController {
         let size = panel.frame.size
         let origin = NSPoint(
             x: frame.midX - size.width / 2,
-            y: frame.minY + 116
+            y: frame.minY + 96
         )
         panel.setFrameOrigin(origin)
     }
@@ -1116,126 +1737,163 @@ final class MacTranslationReviewPanelController {
 
 struct MacTranslationReviewPanelView: View {
     @ObservedObject var model: MacTranslationReviewPanelModel
+    @FocusState private var focusedField: Field?
+
+    enum Field {
+        case source
+        case target
+    }
 
     var body: some View {
         if let review = model.review {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
-                    Text("确认上屏")
-                        .font(.system(size: 13, weight: .semibold))
-                    Text("\(review.modeSummary) · 默认 \(review.preferredLanguageDisplayName) · Esc 取消")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Spacer()
-                    Button {
-                        model.onCancel?()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .frame(width: 22, height: 22)
-                    }
-                    .buttonStyle(.plain)
-                    .keyboardShortcut(.cancelAction)
-                    .accessibilityLabel("取消")
-                }
-
-                HStack(alignment: .top, spacing: 12) {
-                    MacTranslationReviewTextBlock(
-                        role: "原文",
-                        languageName: review.sourceLanguageDisplayName,
-                        text: review.sourceText,
-                        isDefault: TranslationLanguageResolver.normalizedLanguage(review.sourceLanguage)
-                            == TranslationLanguageResolver.normalizedLanguage(review.preferredInsertLanguage),
-                        onConfirm: { model.onConfirm?(.source) }
-                    )
-                    MacTranslationReviewTextBlock(
-                        role: "译文",
-                        languageName: review.targetLanguageDisplayName,
-                        text: review.targetText,
-                        isDefault: TranslationLanguageResolver.normalizedLanguage(review.targetLanguage)
-                            == TranslationLanguageResolver.normalizedLanguage(review.preferredInsertLanguage),
-                        onConfirm: { model.onConfirm?(.target) }
-                    )
-                }
-
-                Text("再次按 \(MacProductCopy.hotKey) 上屏 \(review.preferredLanguageDisplayName)：\(review.defaultInsertText.oneLinePreview(maxLength: 76))")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                header(review)
+                sourceSection(review)
+                targetSection(review)
+                footer
             }
-            .padding(14)
-            .frame(width: 640, height: 286)
+            .padding(16)
+            .frame(width: 560)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(.separator.opacity(0.75))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(.separator.opacity(0.7))
             )
+            .shadow(color: .black.opacity(0.2), radius: 22, y: 8)
+            .onAppear {
+                focusedField = .target
+            }
         }
     }
-}
 
-struct MacTranslationReviewTextBlock: View {
-    var role: String
-    var languageName: String
-    var text: String
-    var isDefault: Bool
-    var onConfirm: () -> Void
+    private func header(_ review: MacPendingTranslationReview) -> some View {
+        HStack(spacing: 8) {
+            Text("确认翻译")
+                .font(.system(size: 13, weight: .semibold))
+            Text(review.modeSummary)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+            if !review.warnings.isEmpty {
+                Text("⚠︎ \(review.warnings.joined(separator: " · "))")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.orange)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            Spacer()
+            Button {
+                model.onCancel?()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(.cancelAction)
+            .accessibilityLabel("取消")
+        }
+    }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Text(languageName)
-                    .font(.system(size: 12, weight: .semibold))
-                Text(role)
-                    .font(.system(size: 11))
+    private func sourceSection(_ review: MacPendingTranslationReview) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text("原文 · \(review.sourceLanguageDisplayName)")
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
-                if isDefault {
-                    Text("默认")
-                        .font(.system(size: 10, weight: .semibold))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                        .foregroundStyle(Color.accentColor)
+                if model.isRetranslating {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if model.sourceWasEdited {
+                    Button {
+                        model.onRetranslate?()
+                    } label: {
+                        Label("重新翻译", systemImage: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .buttonStyle(.borderless)
+                    .keyboardShortcut("r", modifiers: .command)
+                }
+                if !model.retranslateIssue.isEmpty {
+                    Text(model.retranslateIssue)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
+                        .lineLimit(1)
                 }
                 Spacer()
             }
-            ScrollView {
-                Text(text)
-                    .font(.system(size: 13))
-                    .lineSpacing(2)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.background.opacity(0.82))
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(.separator.opacity(0.65))
-            )
 
-            if isDefault {
-                confirmButton
-                    .buttonStyle(.borderedProminent)
-            } else {
-                confirmButton
-                    .buttonStyle(.bordered)
-            }
+            TextEditor(text: $model.editedSource)
+                .font(.system(size: 12.5))
+                .scrollContentBackground(.hidden)
+                .padding(7)
+                .frame(height: 76)
+                .background(.background.opacity(0.55))
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(focusedField == .source ? Color.accentColor.opacity(0.6) : Color(nsColor: .separatorColor).opacity(0.6))
+                )
+                .focused($focusedField, equals: .source)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var confirmButton: some View {
-        Button {
-            onConfirm()
-        } label: {
-            Label("上屏\(languageName)", systemImage: "keyboard")
-                .frame(maxWidth: .infinity)
+    private func targetSection(_ review: MacPendingTranslationReview) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("译文 · \(review.targetLanguageDisplayName)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text("将上屏 · 可直接修改")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                Spacer()
+            }
+
+            TextEditor(text: $model.editedTarget)
+                .font(.system(size: 14))
+                .lineSpacing(2)
+                .scrollContentBackground(.hidden)
+                .padding(8)
+                .frame(height: 112)
+                .background(.background.opacity(0.82))
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(
+                            focusedField == .target ? Color.accentColor.opacity(0.8) : Color(nsColor: .separatorColor).opacity(0.6),
+                            lineWidth: focusedField == .target ? 1.5 : 1
+                        )
+                )
+                .focused($focusedField, equals: .target)
         }
-        .controlSize(.small)
+    }
+
+    private var footer: some View {
+        // The prominent ⌘⏎ button always carries the settings-preferred side;
+        // the bordered button is the per-utterance override for the other side.
+        let preferred = model.review?.preferredSelection ?? .target
+        let other: MacTranslationReviewSelection = preferred == .source ? .target : .source
+        return HStack(spacing: 10) {
+            Text("Esc 取消 · \(MacProductCopy.hotKey) 或 ⌘⏎ \(preferred.actionTitle) · 修改将用于优化热词")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+            Spacer()
+            Button(other.actionTitle) {
+                model.onConfirm?(other)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            Button {
+                model.onConfirm?(preferred)
+            } label: {
+                Label(preferred.actionTitle, systemImage: "keyboard")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .keyboardShortcut(.return, modifiers: .command)
+        }
     }
 }
 
@@ -1450,6 +2108,81 @@ final class MacEscapeEventTap {
     }
 }
 
+/// Owns the physical Fn key at the session event-tap level so a bare Fn press
+/// can be swallowed before macOS's own "press 🌐 key to switch input source"
+/// handling ever sees it. `NSEvent` global/local monitors can only observe
+/// `flagsChanged`, never consume it, which is why the system action used to
+/// fire alongside (or instead of) Velora's own action.
+final class MacFunctionKeyEventTap {
+    private var eventTap: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
+    private let handler: (CGEvent) -> Bool
+
+    init(handler: @escaping (CGEvent) -> Bool) {
+        self.handler = handler
+        install()
+    }
+
+    func invalidate() {
+        if let eventTap {
+            CGEvent.tapEnable(tap: eventTap, enable: false)
+        }
+        if let runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        }
+        eventTap = nil
+        runLoopSource = nil
+    }
+
+    deinit {
+        invalidate()
+    }
+
+    private func install() {
+        let mask = CGEventMask(1) << CGEventType.flagsChanged.rawValue
+        let selfPointer = Unmanaged.passUnretained(self).toOpaque()
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: mask,
+            callback: { _, type, event, userData in
+                guard let userData else {
+                    return Unmanaged.passUnretained(event)
+                }
+
+                let bridge = Unmanaged<MacFunctionKeyEventTap>.fromOpaque(userData).takeUnretainedValue()
+                return bridge.handle(type: type, event: event)
+            },
+            userInfo: selfPointer
+        ) else {
+            return
+        }
+
+        eventTap = tap
+        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        if let runLoopSource {
+            CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        }
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let eventTap {
+                CGEvent.tapEnable(tap: eventTap, enable: true)
+            }
+            return Unmanaged.passUnretained(event)
+        }
+
+        guard type == .flagsChanged else {
+            return Unmanaged.passUnretained(event)
+        }
+
+        return handler(event) ? nil : Unmanaged.passUnretained(event)
+    }
+}
+
 final class MacGlobalHotKeyCenter {
     enum HotKeyError: Error {
         case registerFailed(OSStatus)
@@ -1458,13 +2191,17 @@ final class MacGlobalHotKeyCenter {
 
     private var hotKeyRefs: [EventHotKeyRef] = []
     private var eventHandlerRef: EventHandlerRef?
-    private var globalModifierMonitor: Any?
-    private var localModifierMonitor: Any?
+    private var functionKeyEventTap: MacFunctionKeyEventTap?
     private var pendingFunctionWorkItem: DispatchWorkItem?
-    private var lastModifierFlags: NSEvent.ModifierFlags = []
+    private var lastModifierFlags: CGEventFlags = []
     private var functionComboTriggered = false
     private var functionMappings: [MacHotKeyPreset: MacHotKeyInvocation] = [:]
     private var handler: ((MacHotKeyInvocation) -> Void)?
+
+    /// When true, a bare Fn press fires without the Fn⇧ disambiguation delay.
+    /// Set by the controller while a capture flow is active, so stopping a
+    /// recording never pays the 140ms wait.
+    var prefersImmediateBareFunction: (() -> Bool)?
 
     func register(
         preferences: MacHotKeyPreferences,
@@ -1495,7 +2232,7 @@ final class MacGlobalHotKeyCenter {
         }
 
         if !functionMappings.isEmpty {
-            installFunctionModifierMonitors()
+            installFunctionKeyEventTap()
         }
     }
 
@@ -1513,15 +2250,8 @@ final class MacGlobalHotKeyCenter {
             self.eventHandlerRef = nil
         }
 
-        if let globalModifierMonitor {
-            NSEvent.removeMonitor(globalModifierMonitor)
-            self.globalModifierMonitor = nil
-        }
-
-        if let localModifierMonitor {
-            NSEvent.removeMonitor(localModifierMonitor)
-            self.localModifierMonitor = nil
-        }
+        functionKeyEventTap?.invalidate()
+        functionKeyEventTap = nil
 
         handler = nil
         functionMappings.removeAll()
@@ -1611,23 +2341,28 @@ final class MacGlobalHotKeyCenter {
         hotKeyRefs.append(hotKeyRef)
     }
 
-    private func installFunctionModifierMonitors() {
-        let mask: NSEvent.EventTypeMask = [.flagsChanged]
-        globalModifierMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] event in
-            self?.handleModifierEvent(event)
-        }
-        localModifierMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
-            self?.handleModifierEvent(event)
-            return event
+    private func installFunctionKeyEventTap() {
+        functionKeyEventTap = MacFunctionKeyEventTap { [weak self] event in
+            self?.handleModifierEvent(event) ?? false
         }
     }
 
-    private func handleModifierEvent(_ event: NSEvent) {
-        let flags = event.modifierFlags.intersection([.function, .shift])
-        let functionWasDown = lastModifierFlags.contains(.function)
-        let functionIsDown = flags.contains(.function)
-        let shiftWasDown = lastModifierFlags.contains(.shift)
-        let shiftIsDown = flags.contains(.shift)
+    /// Whether Velora claims the physical Fn key end-to-end. Only true when a
+    /// bare Fn press is actually mapped to something — if the user only wired
+    /// up Fn⇧, a lone Fn tap is left untouched so macOS's own input-source
+    /// switch keeps working exactly as before.
+    private var ownsFunctionKey: Bool {
+        functionMappings[.function] != nil
+    }
+
+    /// - Returns: `true` if the tap should swallow this event (prevent it
+    ///   from reaching the focused app or the system's default Fn handling).
+    private func handleModifierEvent(_ event: CGEvent) -> Bool {
+        let flags = event.flags.intersection([.maskSecondaryFn, .maskShift])
+        let functionWasDown = lastModifierFlags.contains(.maskSecondaryFn)
+        let functionIsDown = flags.contains(.maskSecondaryFn)
+        let shiftWasDown = lastModifierFlags.contains(.maskShift)
+        let shiftIsDown = flags.contains(.maskShift)
 
         defer {
             lastModifierFlags = flags
@@ -1641,18 +2376,21 @@ final class MacGlobalHotKeyCenter {
             } else {
                 scheduleOrFireBareFunction()
             }
-            return
+            return ownsFunctionKey
         }
 
         if functionIsDown && shiftIsDown && !shiftWasDown {
             pendingFunctionWorkItem?.cancel()
             fireFunctionPreset(.functionShift)
-            return
+            return ownsFunctionKey
         }
 
         if !functionIsDown && functionWasDown {
             functionComboTriggered = false
+            return ownsFunctionKey
         }
+
+        return false
     }
 
     private func scheduleOrFireBareFunction() {
@@ -1660,7 +2398,7 @@ final class MacGlobalHotKeyCenter {
             return
         }
 
-        if functionMappings[.functionShift] == nil {
+        if functionMappings[.functionShift] == nil || prefersImmediateBareFunction?() == true {
             fireFunctionPreset(.function)
             return
         }
@@ -1754,9 +2492,28 @@ final class MacFloatingStatusModel: ObservableObject {
         detail: "ready",
         startedAt: nil
     )
-    @Published var audioLevel: Float = 0
+    @Published var isVisible = false
+    @Published var levelHistory: [Float] = MacFloatingStatusModel.quietLevels
+
+    static var quietLevels: [Float] {
+        Array(repeating: 0, count: MacVoiceWaveform.barCount)
+    }
+
+    func pushLevel(_ level: Float) {
+        var next = levelHistory
+        next.removeFirst()
+        next.append(min(max(level, 0), 1))
+        levelHistory = next
+    }
+
+    func resetLevels() {
+        levelHistory = Self.quietLevels
+    }
 }
 
+/// Quiet HUD in the spirit of Typeless: a small bottom-center capsule that
+/// appears only while Velora is doing something, never steals clicks, and
+/// animates in/out instead of popping.
 @MainActor
 final class MacFloatingStatusPanelController {
     private let model = MacFloatingStatusModel()
@@ -1767,31 +2524,49 @@ final class MacFloatingStatusPanelController {
         hideTask?.cancel()
         model.status = status
         if status.phase != .listening {
-            model.audioLevel = 0
+            model.resetLevels()
         }
         positionPanel()
         panel.orderFrontRegardless()
-    }
+        model.isVisible = true
 
-    func updateDetail(_ detail: String) {
-        model.status.detail = detail
+        // Nothing on this HUD is interactive, so terminal states must
+        // self-clear — a persistent toast would squat on the screen forever.
+        // Callers may still schedule a shorter hide after this returns.
+        switch status.phase {
+        case .error:
+            hide(after: 6.0)
+        case .review:
+            hide(after: 5.0)
+        case .idle, .requestingPermission, .listening, .transcribing, .inserted:
+            break
+        }
     }
 
     func updateAudioLevel(_ level: Float) {
-        model.audioLevel = min(max(level, 0), 1)
+        model.pushLevel(level)
     }
 
     func hide(after delay: TimeInterval) {
         hideTask?.cancel()
         hideTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled else {
+                return
+            }
+            model.isVisible = false
+            // Let the exit transition finish before the window disappears.
+            try? await Task.sleep(nanoseconds: 260_000_000)
+            guard !Task.isCancelled else {
+                return
+            }
             panel.orderOut(nil)
         }
     }
 
     private func makePanel() -> NSPanel {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 360, height: 52),
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 96),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -1800,7 +2575,11 @@ final class MacFloatingStatusPanelController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        // Shadow is drawn by the capsule itself; a window shadow would show
+        // the full transparent canvas rectangle.
+        panel.hasShadow = false
+        // Display-only HUD: it must never intercept clicks meant for the app under it.
+        panel.ignoresMouseEvents = true
         panel.contentView = NSHostingView(rootView: MacFloatingStatusView(model: model))
         return panel
     }
@@ -1814,7 +2593,7 @@ final class MacFloatingStatusPanelController {
         let size = panel.frame.size
         let origin = NSPoint(
             x: frame.midX - size.width / 2,
-            y: frame.minY + 72
+            y: frame.minY + 40
         )
         panel.setFrameOrigin(origin)
     }
@@ -1823,97 +2602,202 @@ final class MacFloatingStatusPanelController {
 struct MacFloatingStatusView: View {
     @ObservedObject var model: MacFloatingStatusModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        HStack(spacing: 10) {
-            if model.status.phase == .listening {
-                Circle()
-                    .fill(model.status.phase.color)
-                    .frame(width: 8, height: 8)
-                    .accessibilityHidden(true)
-                MacVoiceLevelStrip(
-                    phase: model.status.phase,
-                    level: model.audioLevel,
-                    reduceMotion: reduceMotion
-                )
-                if let startedAt = model.status.startedAt {
-                    MacElapsedTimeText(startedAt: startedAt)
-                }
-            } else {
-                Image(systemName: model.status.phase.symbolName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(model.status.phase.color)
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-                Text(model.status.title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            if model.isVisible {
+                pill
+                    .transition(pillTransition)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, 12)
+        .animation(
+            reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.34, dampingFraction: 0.8),
+            value: model.isVisible
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.86), value: model.status.phase)
+        .allowsHitTesting(false)
+    }
+
+    private var pillTransition: AnyTransition {
+        if reduceMotion {
+            return .opacity
+        }
+        return .scale(scale: 0.9, anchor: .bottom)
+            .combined(with: .opacity)
+            .combined(with: .offset(y: 10))
+    }
+
+    private var pill: some View {
+        content
+            .padding(.horizontal, 16)
+            .frame(height: 38)
+            .frame(minWidth: 128)
+            .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+            .overlay(
+                Capsule(style: .continuous)
+                    .strokeBorder(
+                        .white.opacity(colorScheme == .dark ? 0.14 : 0.5),
+                        lineWidth: 0.5
+                    )
+            )
+            .shadow(color: .black.opacity(0.16), radius: 16, y: 6)
+            .fixedSize()
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch model.status.phase {
+        case .listening:
+            listening
+        case .requestingPermission, .transcribing:
+            processing
+        case .inserted:
+            inserted
+        case .review, .error, .idle:
+            message
+        }
+    }
+
+    private var listening: some View {
+        HStack(spacing: 11) {
+            MacPulsingDot(reduceMotion: reduceMotion)
+            MacVoiceWaveform(
+                levels: model.levelHistory,
+                tint: .primary,
+                reduceMotion: reduceMotion
+            )
+            if let startedAt = model.status.startedAt {
+                MacElapsedTimeText(startedAt: startedAt)
+            }
+        }
+        .accessibilityLabel("正在录音")
+    }
+
+    private var processing: some View {
+        HStack(spacing: 9) {
+            MacThinkingDots()
+            Text(model.status.title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .accessibilityLabel("正在处理")
+    }
+
+    private var inserted: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.green)
+                .accessibilityHidden(true)
+            Text("已上屏")
+                .font(.system(size: 12, weight: .semibold))
+            if !model.status.detail.isEmpty {
                 Text(model.status.detail)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 260)
+            }
+        }
+    }
+
+    private var message: some View {
+        HStack(spacing: 8) {
+            Image(systemName: model.status.phase.symbolName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(model.status.phase.color)
+                .accessibilityHidden(true)
+            Text(model.status.title)
+                .font(.system(size: 12, weight: .semibold))
+                .lineLimit(1)
+            if !model.status.detail.isEmpty {
+                Text(model.status.detail)
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
-            }
-
-            Spacer(minLength: 4)
-
-            if model.status.phase == .listening {
-                MacFloatingKeycap(text: MacProductCopy.hotKey)
-                MacFloatingKeycap(text: "Esc")
+                    .frame(maxWidth: 300)
             }
         }
-        .padding(.horizontal, 12)
-        .frame(width: 360, height: 52)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(.separator.opacity(0.7))
-        )
     }
 }
 
-struct MacVoiceLevelStrip: View {
-    var phase: MacFloatingPhase
-    var level: Float
+/// Scrolling live waveform: each incoming level pushes the bars one slot to
+/// the left, voice-memo style, instead of a synthetic sine wobble.
+struct MacVoiceWaveform: View {
+    static let barCount = 26
+
+    var levels: [Float]
+    var tint: Color
     var reduceMotion: Bool
 
-    private let barCount = 14
-
     var body: some View {
-        HStack(alignment: .center, spacing: 3) {
-            ForEach(0..<barCount, id: \.self) { index in
+        HStack(alignment: .center, spacing: 2.5) {
+            ForEach(levels.indices, id: \.self) { index in
                 Capsule(style: .continuous)
-                    .fill(phase.color.opacity(phase == .listening ? 0.82 : 0.45))
-                    .frame(width: 3, height: barHeight(at: index))
-                    .animation(reduceMotion ? nil : .spring(response: 0.16, dampingFraction: 0.82), value: level)
+                    .fill(tint.opacity(0.35 + Double(levels[index]) * 0.6))
+                    .frame(width: 2.5, height: barHeight(levels[index]))
             }
         }
-        .frame(width: 84, height: 18)
-        .accessibilityLabel(accessibilityLabel)
+        .frame(height: 22)
+        .animation(reduceMotion ? nil : .linear(duration: 0.06), value: levels)
+        .accessibilityLabel("录音音量")
     }
 
-    private func barHeight(at index: Int) -> CGFloat {
-        switch phase {
-        case .listening:
-            let wave = Float((sin(Double(index) * 0.9) + 1) / 2)
-            let weighted = max(0.08, min(1, level * (0.55 + wave * 0.7)))
-            return CGFloat(3 + weighted * 15)
-        case .transcribing:
-            return CGFloat(7 + (index % 4) * 3)
-        default:
-            return CGFloat(6 + (index % 3) * 2)
+    private func barHeight(_ level: Float) -> CGFloat {
+        2.5 + CGFloat(pow(Double(level), 0.8)) * 17.5
+    }
+}
+
+struct MacPulsingDot: View {
+    var reduceMotion: Bool
+    @State private var dimmed = false
+
+    var body: some View {
+        Circle()
+            .fill(.red)
+            .frame(width: 7, height: 7)
+            .opacity(dimmed ? 0.45 : 1)
+            .accessibilityHidden(true)
+            .onAppear {
+                guard !reduceMotion else {
+                    return
+                }
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                    dimmed = true
+                }
+            }
+    }
+}
+
+struct MacThinkingDots: View {
+    @State private var animating = false
+
+    var body: some View {
+        HStack(spacing: 3.5) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(.secondary)
+                    .frame(width: 4.5, height: 4.5)
+                    .scaleEffect(animating ? 1 : 0.55)
+                    .opacity(animating ? 1 : 0.4)
+                    .animation(
+                        .easeInOut(duration: 0.55)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.16),
+                        value: animating
+                    )
+            }
         }
-    }
-
-    private var accessibilityLabel: String {
-        switch phase {
-        case .listening:
-            return "录音音量"
-        case .transcribing:
-            return "正在处理"
-        default:
-            return "状态指示"
+        .accessibilityHidden(true)
+        .onAppear {
+            animating = true
         }
     }
 }
@@ -1924,7 +2808,7 @@ struct MacElapsedTimeText: View {
     var body: some View {
         TimelineView(.periodic(from: startedAt, by: 1)) { context in
             Text(Self.formattedElapsed(from: startedAt, to: context.date))
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
@@ -1934,25 +2818,5 @@ struct MacElapsedTimeText: View {
     private static func formattedElapsed(from start: Date, to end: Date) -> String {
         let elapsed = max(0, Int(end.timeIntervalSince(start)))
         return String(format: "%02d:%02d", elapsed / 60, elapsed % 60)
-    }
-}
-
-struct MacFloatingKeycap: View {
-    var text: String
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 12, weight: .semibold, design: .rounded))
-            .lineLimit(1)
-            .minimumScaleFactor(0.78)
-            .padding(.horizontal, 8)
-            .frame(minWidth: text.count <= 3 ? 38 : 50, minHeight: 26)
-            .background(.background.opacity(0.72))
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(.separator.opacity(0.7))
-            )
-            .accessibilityLabel("停止快捷键 \(text)")
     }
 }

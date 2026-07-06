@@ -214,7 +214,7 @@ func environmentReport() -> DiagnosticReport {
 
 func textReport(options: DiagnosticOptions) async throws -> DiagnosticReport {
     let modeValue = options.value("--mode", default: "translate")
-    guard let mode = DictationMode(rawValue: modeValue) else {
+    guard let mode = DictationMode.normalize(modeValue) else {
         throw PipelineError.unsupportedMode("mode:\(modeValue)")
     }
 
@@ -257,7 +257,7 @@ func textReport(options: DiagnosticOptions) async throws -> DiagnosticReport {
             sourceLanguage: source,
             targetLanguage: mode == .translate ? target : nil,
             insertPolicy: insertPolicy,
-            polishStyle: options.value("--style", default: "clean"),
+            composeStyle: options.value("--style", default: "clean"),
             insertionStrategy: .none
         )
     )
@@ -346,23 +346,32 @@ func ollamaReport(options: DiagnosticOptions) async throws -> DiagnosticReport {
             metrics: ["wall_ms": elapsedMS(since: start)]
         )
 
-    case "polish":
+    case "polish", "compose":
         let engine = OllamaTextIntelligenceEngine()
         let input = options.value("--text", default: "明天上午十点我和 Alex 开会 帮我确认一下 agenda")
-        let result = try await engine.polish(
-            PolishRequest(
+        let target = options.optionalValue("--target")
+        let result = try await engine.compose(
+            ComposeRequest(
                 text: input,
+                mode: target == nil ? .input : .translate,
                 style: options.value("--style", default: "clean"),
-                context: ContextSnapshot(appBundle: "diagnostics", nearbyText: "agenda", mode: .polish)
+                sourceLanguage: options.value("--source", default: "zh"),
+                targetLanguage: target,
+                context: ContextSnapshot(appBundle: "diagnostics", nearbyText: "agenda", mode: target == nil ? .input : .translate)
             )
         )
         return DiagnosticReport(
             module: "ollama",
-            ok: !result.finalText.isEmpty,
-            summary: "ollama_polish_ok",
-            details: ["input_preview": input.oneLinePreview(maxLength: 160)],
+            ok: !result.polishedText.isEmpty,
+            summary: "ollama_compose_ok",
+            details: [
+                "input_preview": input.oneLinePreview(maxLength: 160),
+                "engine": result.engine,
+                "warnings": result.warnings.joined(separator: ","),
+                "target_preview": (result.targetText ?? "").oneLinePreview(maxLength: 160),
+            ],
             metrics: ["wall_ms": elapsedMS(since: start)],
-            output: result.finalText
+            output: result.polishedText
         )
 
     case "translate":

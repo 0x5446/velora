@@ -1,0 +1,82 @@
+[
+ {
+  "cand": "repair_v3",
+  "case": "ordinal_3",
+  "expect": "list",
+  "ok": true,
+  "ms": 1402,
+  "polished": "这次改动主要有三块：\n1. 把 ASR 换成了 SenseVoice；\n2. 加了记忆层；\n3. 录音期并行化。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "shopping",
+  "expect": "list",
+  "ok": true,
+  "ms": 1021,
+  "polished": "帮我记一下要买：\n- 牛奶\n- 鸡蛋\n- 面包\n- 酸奶"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "yishi_ershi",
+  "expect": "list",
+  "ok": true,
+  "ms": 892,
+  "polished": "问题有两个：\n1. 延迟太高；\n2. 偶尔会崩溃。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "todo",
+  "expect": "list",
+  "ok": false,
+  "ms": 699,
+  "polished": "今天的任务是修复登录 bug，然后写周报，最后回复邮件。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "steps",
+  "expect": "list",
+  "ok": true,
+  "ms": 1349,
+  "polished": "部署流程：\n1. 首先拉最新代码；\n2. 然后跑测试；\n3. 接着打包；\n4. 最后上线。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "flat_reply",
+  "expect": "flat",
+  "ok": true,
+  "ms": 704,
+  "polished": "帮我回复他，说好的没问题，我明天上午把文档发过去。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "flat_one",
+  "expect": "flat",
+  "ok": true,
+  "ms": 603,
+  "polished": "明天上午十点开会，帮我确认一下议程。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "flat_greeting",
+  "expect": "flat",
+  "ok": true,
+  "ms": 513,
+  "polished": "好的，收到，我马上处理。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "flat_sentence",
+  "expect": "flat",
+  "ok": true,
+  "ms": 625,
+  "polished": "这个接口超时了，你看下是不是后端的问题。"
+ },
+ {
+  "cand": "repair_v3",
+  "case": "multi_topic",
+  "expect": "any",
+  "ok": true,
+  "ms": 1117,
+  "polished": "今天先把测试跑完，然后明天上午过一遍发布说明。下午三点和产品对一次。有问题的话，周四再留一天缓冲。"
+ }
+]

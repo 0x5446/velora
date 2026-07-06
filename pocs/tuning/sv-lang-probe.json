@@ -1,0 +1,218 @@
+[
+ {
+  "id": "ascend_00308",
+  "corpus": "ascend",
+  "expected": "那  dialogue system就像是说哎它其实要帮我们",
+  "cer_auto": 0.407,
+  "txt_auto": "那taxde system就像是说唉，他提早帮我们。",
+  "cer_en": 0.407,
+  "txt_en": "那 taxaxde system就像是说A他加帮我们。"
+ },
+ {
+  "id": "ascend_00939",
+  "corpus": "ascend",
+  "expected": "但是你们不觉得平时也有很多due要赶吗",
+  "cer_auto": 0.316,
+  "txt_auto": "但是你们你不觉得平时也有很多定腰感吗？",
+  "cer_en": 0.579,
+  "txt_en": "但你你不觉得平很 your."
+ },
+ {
+  "id": "ascend_01014",
+  "corpus": "ascend",
+  "expected": "另一个呢就是responsibility的问题",
+  "cer_auto": 0.0,
+  "txt_auto": "另一个呢就是responsibility的问题。",
+  "cer_en": 0.0,
+  "txt_en": "另一个呢就是 responsibility的问题。"
+ },
+ {
+  "id": "ascend_01076",
+  "corpus": "ascend",
+  "expected": "close  嗯很多my friends in my generation",
+  "cer_auto": 0.258,
+  "txt_auto": "Thoseose kid很多 my friends in my generation。",
+  "cer_en": 0.161,
+  "txt_en": "Those kid很多 my friends in my generation."
+ },
+ {
+  "id": "ascend_00712",
+  "corpus": "ascend",
+  "expected": "但我觉得three pointer是一个非常efficient的一个方式去得分",
+  "cer_auto": 0.053,
+  "txt_auto": "但我觉得three point是一个非常efficient的一个方式去得分。",
+  "cer_en": 0.132,
+  "txt_en": "但我觉得 three pointers is一个非常 efficient的一方式去得."
+ },
+ {
+  "id": "ascend_00631",
+  "corpus": "ascend",
+  "expected": "make friends啊就",
+  "cer_auto": 0.154,
+  "txt_auto": "make friends to.",
+  "cer_en": 0.231,
+  "txt_en": "Make friends too."
+ },
+ {
+  "id": "ascend_00233",
+  "corpus": "ascend",
+  "expected": "对台湾的台湾大学National Taiwan University念",
+  "cer_auto": 0.364,
+  "txt_auto": "对，台湾的台湾大学national台湾unity面。",
+  "cer_en": 0.03,
+  "txt_en": "对台湾的台湾大学 National Taiwan University面."
+ },
+ {
+  "id": "ascend_01035",
+  "corpus": "ascend",
+  "expected": "但是如果你就是单纯的sell这个technology就是说告诉他就是我的我self driving这",
+  "cer_auto": 0.183,
+  "txt_auto": "但是如果你就是单纯的sell这个tenology，就是说告诉他就是我的我的self driving这个 function",
+  "cer_en": 0.2,
+  "txt_en": "但是如果你就是单纯的sell这个 technology，就是说告诉他就是我的我的 selflf driving这个 fu"
+ },
+ {
+  "id": "ascend_01048",
+  "corpus": "ascend",
+  "expected": "你不能去把它放在真的环境下去测试它因为这个万一那个accident happen怎么办",
+  "cer_auto": 0.143,
+  "txt_auto": "你不能去把它放在真的环境下去测试它。因为这个万一那个sit happen怎么办？",
+  "cer_en": 0.119,
+  "txt_en": "你不能去把它放在真的环境下去测试它。因为这个万一那个sitent happens怎么办？"
+ },
+ {
+  "id": "ascend_01068",
+  "corpus": "ascend",
+  "expected": "当然我小时候我也没有smartphone但是呢我是小时候比较早接触过那个电脑",
+  "cer_auto": 0.026,
+  "txt_auto": "当然我小时候我也没有smart phone，但是呢我是小时候比较早接触的那个电脑。",
+  "cer_en": 0.053,
+  "txt_en": "呃然我小时候我也没有smart phone，但是呢我是小时候比较早接触的那个电脑。"
+ },
+ {
+  "id": "ascend_00947",
+  "corpus": "ascend",
+  "expected": "就是会有很多呃比如说跟alumnus聚会啊一起吃饭然后用就是",
+  "cer_auto": 0.367,
+  "txt_auto": "就是会有很多呃，比如说跟卢明来聚会，一起吃饭，然后要么就。",
+  "cer_en": 1.0,
+  "txt_en": "."
+ },
+ {
+  "id": "ascend_00138",
+  "corpus": "ascend",
+  "expected": "嗯所以你现在还是比较focus在找工作这件事上",
+  "cer_auto": 0.043,
+  "txt_auto": "嗯，所以你现在还是比较focus在找工作这件事。",
+  "cer_en": 0.217,
+  "txt_en": "所以你现在还是比较 focus在找工作."
+ },
+ {
+  "id": "ascend_01131",
+  "corpus": "ascend",
+  "expected": "然后再建一个model去optimization这样",
+  "cer_auto": 0.577,
+  "txt_auto": "然后再建一个 뭐都我去 opt这.",
+  "cer_en": 0.808,
+  "txt_en": "And that一 model to."
+ },
+ {
+  "id": "ascend_00337",
+  "corpus": "ascend",
+  "expected": "就是user去回去respond一些就是interesting的",
+  "cer_auto": 0.062,
+  "txt_auto": "就是user去会去respon一些就是interesting的。",
+  "cer_en": 0.156,
+  "txt_en": "就是 user去去res一些就是 interesting的。"
+ },
+ {
+  "id": "ascend_00698",
+  "corpus": "ascend",
+  "expected": "um那个第一是Michael Jordan",
+  "cer_auto": 0.1,
+  "txt_auto": "那个第一是michael jordan。",
+  "cer_en": 0.35,
+  "txt_en": "N D Michael Jordan."
+ },
+ {
+  "id": "ascend_00193",
+  "corpus": "ascend",
+  "expected": "嗯I like hot pot",
+  "cer_auto": 0.167,
+  "txt_auto": "系 like hot pot.",
+  "cer_en": 0.083,
+  "txt_en": "I like hot pot."
+ },
+ {
+  "id": "ascend_01213",
+  "corpus": "ascend",
+  "expected": "然后它可能会record your personal life",
+  "cer_auto": 0.321,
+  "txt_auto": "然后他可能会re your personal。",
+  "cer_en": 0.286,
+  "txt_en": "然后 can record your personal."
+ },
+ {
+  "id": "ascend_00606",
+  "corpus": "ascend",
+  "expected": "然后  高高三是我最胖的时候because I呃do not go out i just呃stay",
+  "cer_auto": 0.415,
+  "txt_auto": "然后不告告诉你是我最胖的时候 because I do not work around and just stay.",
+  "cer_en": 0.61,
+  "txt_en": " because I do not walk around and just stay."
+ },
+ {
+  "id": "ascend_00706",
+  "corpus": "ascend",
+  "expected": "因为他的得分方式非常efficient",
+  "cer_auto": 0.105,
+  "txt_auto": "因为他的得分方式非常eicient。",
+  "cer_en": 0.0,
+  "txt_en": "因为他的得分方式非常 efficient。"
+ },
+ {
+  "id": "ascend_00404",
+  "corpus": "ascend",
+  "expected": "对那我当初其实是我本科是e background",
+  "cer_auto": 0.087,
+  "txt_auto": "那我当初其实是我本科是一background。",
+  "cer_en": 0.043,
+  "txt_en": "对那我当初其实是我本科是一 background。"
+ },
+ {
+  "id": "ascend_00489",
+  "corpus": "ascend",
+  "expected": "我记得学校那个gym那边",
+  "cer_auto": 0.25,
+  "txt_auto": "我记得学校那个去那边。",
+  "cer_en": 1.0,
+  "txt_en": "What the."
+ },
+ {
+  "id": "ascend_00425",
+  "corpus": "ascend",
+  "expected": "然后在打算申请graduate school的时候我考虑过挺多major的",
+  "cer_auto": 0.083,
+  "txt_auto": "然后在打算申请graduate school的时候，我考虑过挺多 majorjor的。",
+  "cer_en": 0.0,
+  "txt_en": "然后在打算申请 graduate school的时候，我考虑过挺多 major的。"
+ },
+ {
+  "id": "ascend_00259",
+  "corpus": "ascend",
+  "expected": "那你现在住在Hong Kong大概住了多久",
+  "cer_auto": 0.2,
+  "txt_auto": "那你现在住在 Hong框大概住了多久？",
+  "cer_en": 0.4,
+  "txt_en": "那你现住 Hong Kong."
+ },
+ {
+  "id": "ascend_00269",
+  "corpus": "ascend",
+  "expected": "就是像那些就是没有deadline的时候也不会那么stress",
+  "cer_auto": 0.129,
+  "txt_auto": "就是像那些就是没有登line的时候，也不会那么stress。",
+  "cer_en": 0.194,
+  "txt_en": "就是像那些就是没有 deadline light的时候也不会那么stres。"
+ }
+]
