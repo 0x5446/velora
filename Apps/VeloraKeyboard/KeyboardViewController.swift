@@ -21,22 +21,25 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func configureView() {
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .veloraBackground
 
         statusLabel.font = .preferredFont(forTextStyle: .callout)
         statusLabel.numberOfLines = 2
-        statusLabel.textColor = .secondaryLabel
+        statusLabel.textColor = .veloraInkSecondary
 
         insertButton.setTitle("插入最近结果", for: .normal)
         insertButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
+        insertButton.tintColor = .veloraAccent
         insertButton.addTarget(self, action: #selector(insertCandidate), for: .touchUpInside)
 
         refreshButton.setImage(UIImage(systemName: "arrow.clockwise"), for: .normal)
         refreshButton.accessibilityLabel = "刷新候选"
+        refreshButton.tintColor = .veloraAccent
         refreshButton.addTarget(self, action: #selector(refreshCandidate), for: .touchUpInside)
 
         openAppButton.setImage(UIImage(systemName: "waveform"), for: .normal)
         openAppButton.accessibilityLabel = "打开 Velora"
+        openAppButton.tintColor = .veloraAccent
         openAppButton.addTarget(self, action: #selector(openContainingApp), for: .touchUpInside)
 
         let buttonRow = UIStackView(arrangedSubviews: [insertButton, refreshButton, openAppButton])

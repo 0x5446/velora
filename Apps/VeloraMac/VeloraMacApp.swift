@@ -102,14 +102,15 @@ struct MacSettingsView: View {
             if let conflict = MacHotKeyConflictDetector.functionKeyConflict(for: hotKeys.preferences) {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.veloraAccent)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(conflict.title)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(VeloraFont.body(12, weight: .semibold))
+                            .foregroundStyle(Color.veloraInkPrimary)
                         Text(conflict.detail)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                            .font(VeloraFont.caption(11))
+                            .foregroundStyle(Color.veloraInkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 8)
@@ -177,7 +178,7 @@ struct MacSettingsView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("识别、润色与翻译全部在本机完成，音频与文本不会离开这台 Mac。")
                 Text("\(MacProductCopy.name) \(appVersion)")
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Color.veloraInkSecondary.opacity(0.7))
             }
         }
     }
@@ -202,7 +203,7 @@ struct MacSettingsView: View {
             .pickerStyle(.segmented)
             LabeledContent("运行时") {
                 Text(viewModel.runtimeSettingsSummary)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(VeloraFont.mono(11))
                     .textSelection(.enabled)
             }
         }
@@ -224,8 +225,8 @@ struct MacSettingsView: View {
                 }
             }
             Text([audioRecorder.status, systemProbeStatus].filter { !$0.isEmpty }.joined(separator: " · "))
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .font(VeloraFont.mono(11))
+                .foregroundStyle(Color.veloraInkSecondary)
                 .textSelection(.enabled)
         }
     }
@@ -250,7 +251,7 @@ struct MacSettingsView: View {
     private var diagnosticsSection: some View {
         Section("诊断") {
             Text(viewModel.diagnostics.isEmpty ? "ready" : viewModel.diagnostics)
-                .font(.system(size: 11, design: .monospaced))
+                .font(VeloraFont.mono(11))
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -345,23 +346,20 @@ struct MacTextEditorPanel: View {
     var title: String
     @Binding var text: String
     var minHeight: CGFloat
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .font(VeloraFont.body(12, weight: .semibold))
+                .foregroundStyle(Color.veloraInkSecondary)
             TextEditor(text: $text)
-                .font(.system(size: 13))
+                .font(VeloraFont.body(13))
                 .frame(minHeight: minHeight)
                 .scrollContentBackground(.hidden)
                 .padding(8)
-                .background(Color(nsColor: .textBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(Color(nsColor: .separatorColor))
-                )
+                .veloraTextEditorStyle(isFocused: isFocused)
+                .focused($isFocused)
         }
         .frame(maxWidth: .infinity)
     }

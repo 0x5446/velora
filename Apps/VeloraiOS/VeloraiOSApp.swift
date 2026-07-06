@@ -1,6 +1,7 @@
 import AVFoundation
 import SwiftUI
 import UIKit
+import Velora
 
 @main
 struct VeloraiOSApp: App {
@@ -100,7 +101,7 @@ struct iOSPrototypeView: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .tint(audioRecorder.isRecording ? .red : .accentColor)
+            .tint(audioRecorder.isRecording ? Color.veloraDanger : Color.veloraAccent)
 
             Text(audioRecorder.status)
                 .font(.caption.monospaced())
@@ -114,7 +115,7 @@ struct iOSPrototypeView: View {
         VStack(alignment: .leading, spacing: 18) {
             Image(systemName: "mic.fill")
                 .font(.system(size: 36, weight: .semibold))
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.veloraDanger)
 
             Text("麦克风权限")
                 .font(.title2.weight(.semibold))
