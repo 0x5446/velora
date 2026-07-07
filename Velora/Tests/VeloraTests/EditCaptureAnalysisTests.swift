@@ -306,3 +306,79 @@ private func temporaryPromotionStore() throws -> SQLiteMemoryStore {
     store.removeTerm(term: "文当", replacement: "文档")
     #expect(store.listTerms().count == 1)
 }
+
+// MARK: - Terminal grid hard-wrap handling
+
+/// Re-wraps text into fixed-width rows the way a terminal grid renders it —
+/// hard \n injected mid-span, breakpoints shifting as content changes.
+private func gridWrapped(_ text: String, width: Int) -> String {
+    var rows: [String] = []
+    var current = ""
+    for ch in text {
+        current.append(ch)
+        if current.count == width {
+            rows.append(current)
+            current = ""
+        }
+    }
+    if !current.isEmpty {
+        rows.append(current)
+    }
+    return rows.joined(separator: "\n")
+}
+
+@Test func hardWrapStripRemovesNewlinesAndCarriageReturns() {
+    #expect(VeloraSpanAnchor.strippingHardWraps("ab\ncd\r\nef") == "abcdef")
+    #expect(VeloraSpanAnchor.strippingHardWraps("无换行") == "无换行")
+}
+
+@Test func wrappedTerminalSpanLocatesAndDiffsAfterRewrap() {
+    // The exact scenario that failed live in iTerm2 (2026-07-07): a dictated
+    // sentence longer than one terminal row. The grid injects \n inside the
+    // span, so an exact match on the raw value can never hit — capture must
+    // fall back to wrap-stripped space, and the whole observation (baseline,
+    // updated reads, diff) then runs there.
+    let inserted = "所以现在终端这边也可以去记录这个商品文字的修改了呗。"
+    let baselineGrid = "prompt> " + gridWrapped(inserted, width: 10)
+
+    // Raw grid: exact match fails (this is what broke the live capture).
+    #expect(baselineGrid.range(of: inserted) == nil)
+
+    // Wrap-stripped: match succeeds — mirrors tryCapture's fallback.
+    let baseline = VeloraSpanAnchor.strippingHardWraps(baselineGrid)
+    let range = baseline.range(of: inserted, options: [.backwards])
+    #expect(range != nil)
+    guard let range else { return }
+    let spanStart = baseline.distance(from: baseline.startIndex, to: range.lowerBound)
+
+    // The user fixes the ASR near-homophone (商品 → 上屏); the grid re-wraps
+    // at a different width, moving every break point.
+    let edited = inserted.replacingOccurrences(of: "商品", with: "上屏")
+    let updatedGrid = "prompt> " + gridWrapped(edited, width: 13)
+    let updated = VeloraSpanAnchor.strippingHardWraps(updatedGrid)
+
+    let extraction = VeloraSpanAnchor.extractSpan(
+        baseline: baseline,
+        spanStart: spanStart,
+        spanLength: inserted.count,
+        updated: updated
+    )
+    #expect(extraction?.span == edited)
+
+    // And the diff classifies it as the hotword candidate it is.
+    let analysis = VeloraEditAnalyzer.analyze(inserted: inserted, userFinal: edited, appliedEdits: [])
+    let fix = analysis.blocks.first { $0.kind == .asrFix }
+    #expect(fix?.before == "商品")
+    #expect(fix?.after == "上屏")
+}
+
+@Test func wrappedSpanSurvivesPhantomNewlineFreeDiff() {
+    // Even when nothing was edited, comparing stripped baseline against a
+    // re-wrapped-then-stripped read must be a clean no-op — phantom newlines
+    // must never surface as content edits.
+    let inserted = "测试一段会被终端折行的比较长的中文句子内容。"
+    let a = VeloraSpanAnchor.strippingHardWraps(gridWrapped(inserted, width: 7))
+    let b = VeloraSpanAnchor.strippingHardWraps(gridWrapped(inserted, width: 11))
+    #expect(a == b)
+    #expect(a == inserted)
+}

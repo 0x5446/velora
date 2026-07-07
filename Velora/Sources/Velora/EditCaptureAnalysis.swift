@@ -350,6 +350,22 @@ public enum VeloraSpanAnchor {
     public struct Extraction: Sendable, Equatable {
         public var span: String
         public var method: String
+
+        public init(span: String, method: String) {
+            self.span = span
+            self.method = method
+        }
+    }
+
+    /// Terminal-grid hosts (iTerm2, Terminal.app) expose the screen as wrapped
+    /// rows: hard \n (and \r) land INSIDE any span longer than one row, which
+    /// breaks exact span matches and poisons diffs with phantom newlines.
+    /// Observations on such hosts run entirely in wrap-stripped space — the
+    /// observer strips every value it reads with this before matching/diffing.
+    public static func strippingHardWraps(_ text: String) -> String {
+        // Character.isNewline also matches the CRLF grapheme cluster, which
+        // a plain == "\n" / == "\r" comparison would miss entirely.
+        text.filter { !$0.isNewline }
     }
 
     /// - Parameters:
