@@ -42,6 +42,10 @@ final class MacPostInsertObserver {
         /// Terminal-grid host: hard wraps are stripped from every value read
         /// (baselineValue/spanStart already live in stripped space).
         var stripsHardWraps: Bool
+        /// Character length of the located span in `baselineValue`. Equals
+        /// the inserted text's length for exact matches, but can differ when
+        /// capture had to fuzzy-arm over an already-edited field.
+        var spanLength: Int
         /// Last poll sample where the span could still be located. Grid hosts
         /// clear the input line on send (Enter) and re-render the text with
         /// different wrapping, so the settle-time read often cannot anchor
@@ -59,6 +63,7 @@ final class MacPostInsertObserver {
         var lastReportedSpan: String
         var expiresAt: Date
         var stripsHardWraps: Bool
+        var spanLength: Int
     }
 
     static let observationWindowSeconds: TimeInterval = 60
@@ -81,10 +86,13 @@ final class MacPostInsertObserver {
         guard MacLearningSettings.learningEnabled else {
             return
         }
+        MacLearningDebugLog.log("begin session=\(pending.sessionID.prefix(8)) pid=\(pending.targetPID)")
         stopObservation(reason: "superseded")
         captureTask?.cancel()
         captureTask = Task { @MainActor [weak self] in
-            for delayMS in [350, 600, 1_200] {
+            // Denser early retries: capture must win the race against the
+            // user's first correction, which can land within 2 seconds.
+            for delayMS in [250, 450, 800, 1_400] {
                 try? await Task.sleep(nanoseconds: UInt64(delayMS) * 1_000_000)
                 guard let self, !Task.isCancelled else {
                     return
@@ -130,6 +138,7 @@ final class MacPostInsertObserver {
         // app must never stall Velora's main thread even on this initial fetch.
         AXUIElementSetMessagingTimeout(appElement, 0.3)
         guard let element = copyElement(appElement, kAXFocusedUIElementAttribute) else {
+            MacLearningDebugLog.log("capture retry: no focused element")
             return false
         }
         AXUIElementSetMessagingTimeout(element, 0.3)
@@ -138,33 +147,55 @@ final class MacPostInsertObserver {
             bundleID: pending.targetBundleID,
             elementSubrole: MacLearningPrivacy.subrole(of: element)
         ) != nil {
+            MacLearningDebugLog.log("capture veto: privacy block")
             return true
         }
 
         guard let rawValue = stringValue(of: element), rawValue.count <= 100_000 else {
+            MacLearningDebugLog.log("capture retry: value unreadable or > 100k")
             return false
         }
         // Anchor on the LAST occurrence — the freshly pasted text sits at the
         // cursor, and earlier duplicates would mis-anchor the span.
         var value = rawValue
         var stripsHardWraps = false
-        var range = value.range(of: pending.insertedText, options: [.backwards])
-        if range == nil {
+        var spanStart: Int
+        var spanLength = pending.insertedText.count
+        if let range = rawValue.range(of: pending.insertedText, options: [.backwards]) {
+            spanStart = rawValue.distance(from: rawValue.startIndex, to: range.lowerBound)
+        } else if case let stripped = VeloraSpanAnchor.strippingHardWraps(rawValue),
+                  let range = stripped.range(of: pending.insertedText, options: [.backwards]) {
             // Terminal-grid hosts (iTerm2 & co.) expose the screen as wrapped
             // rows: any span longer than one row has hard \n injected inside
-            // it, so the exact match above cannot hit. Retry in wrap-stripped
-            // space and, when that lands, keep the whole observation there.
-            let stripped = VeloraSpanAnchor.strippingHardWraps(rawValue)
-            if let strippedRange = stripped.range(of: pending.insertedText, options: [.backwards]) {
-                value = stripped
-                stripsHardWraps = true
-                range = strippedRange
-            }
-        }
-        guard let range else {
+            // it, so the exact match above cannot hit. Match in wrap-stripped
+            // space and keep the whole observation there.
+            value = stripped
+            stripsHardWraps = true
+            spanStart = stripped.distance(from: stripped.startIndex, to: range.lowerBound)
+        } else if rawValue.count <= 4_000,
+                  let range = VeloraSpanAnchor.fuzzyLocate(
+                      Array(pending.insertedText), in: Array(rawValue)
+                  ) {
+            // The user may already be editing the span (fast fixes land
+            // within the capture retries): fuzzy-arm so the observation
+            // still starts. The baseline span is the CURRENT, possibly
+            // part-edited text — the settle diff still compares the
+            // original inserted text against the user's final span.
+            spanStart = range.lowerBound
+            spanLength = range.upperBound - range.lowerBound
+        } else if case let stripped = VeloraSpanAnchor.strippingHardWraps(rawValue),
+                  stripped.count <= 4_000, stripped.count != rawValue.count,
+                  let range = VeloraSpanAnchor.fuzzyLocate(
+                      Array(pending.insertedText), in: Array(stripped)
+                  ) {
+            value = stripped
+            stripsHardWraps = true
+            spanStart = range.lowerBound
+            spanLength = range.upperBound - range.lowerBound
+        } else {
+            MacLearningDebugLog.log("capture retry: span not located (value=\(rawValue.count) chars)")
             return false
         }
-        let spanStart = value.distance(from: value.startIndex, to: range.lowerBound)
 
         var axObserverRef: AXObserver?
         guard AXObserverCreate(pending.targetPID, Self.axCallback, &axObserverRef) == .success,
@@ -188,11 +219,13 @@ final class MacPostInsertObserver {
             lastSampledValue: value,
             lastChangeAt: nil,
             stripsHardWraps: stripsHardWraps,
+            spanLength: spanLength,
             lastGoodExtraction: nil
         )
         dirty = false
         startAuxiliaryMonitors(targetPID: pending.targetPID)
         startPolling()
+        MacLearningDebugLog.log("armed session=\(pending.sessionID.prefix(8)) stripsWraps=\(stripsHardWraps) spanStart=\(spanStart) spanLen=\(spanLength)")
         return true
     }
 
@@ -216,7 +249,7 @@ final class MacPostInsertObserver {
         case kAXUIElementDestroyedNotification as String:
             settle(reason: "element_destroyed")
         case kAXFocusedUIElementChangedNotification as String:
-            settle(reason: "focus_change")
+            settleIfChanged(reason: "focus_change")
         default:
             break
         }
@@ -240,7 +273,7 @@ final class MacPostInsertObserver {
                     return
                 }
                 if activated.processIdentifier != targetPID {
-                    self.settle(reason: "app_switch")
+                    self.settleIfChanged(reason: "app_switch")
                 }
             }
         }
@@ -289,7 +322,7 @@ final class MacPostInsertObserver {
                let extraction = VeloraSpanAnchor.extractSpan(
                    baseline: observation.baselineValue,
                    spanStart: observation.spanStart,
-                   spanLength: observation.pending.insertedText.count,
+                   spanLength: observation.spanLength,
                    updated: value
                ) {
                 observation.lastGoodExtraction = extraction
@@ -309,10 +342,30 @@ final class MacPostInsertObserver {
 
     // MARK: - Settle & journal
 
+    /// Focus/app switches are NOT terminal while the span is still untouched:
+    /// the user often glances at another window right after inserting and
+    /// only then comes back to fix the text — and app-activation churn right
+    /// after the paste itself would otherwise kill the observation within a
+    /// second. Settle on a switch only once the field actually changed; the
+    /// 60s window cap still bounds the untouched case.
+    private func settleIfChanged(reason: String) {
+        guard let observation = active else {
+            return
+        }
+        let current = sampleValue(of: observation.element, stripped: observation.stripsHardWraps)
+            ?? observation.lastSampledValue
+        if current != observation.baselineValue {
+            settle(reason: reason)
+        } else {
+            MacLearningDebugLog.log("switch ignored (span untouched) reason=\(reason)")
+        }
+    }
+
     private func settle(reason: String) {
         guard let observation = active else {
             return
         }
+        MacLearningDebugLog.log("settle reason=\(reason) session=\(observation.pending.sessionID.prefix(8))")
         // One last read so edits between polls are not lost; fall back to the
         // last sample when the element is already gone.
         let finalValue = sampleValue(of: observation.element, stripped: observation.stripsHardWraps)
@@ -328,11 +381,12 @@ final class MacPostInsertObserver {
             let extraction = VeloraSpanAnchor.extractSpan(
                 baseline: observation.baselineValue,
                 spanStart: observation.spanStart,
-                spanLength: observation.pending.insertedText.count,
+                spanLength: observation.spanLength,
                 updated: finalValue
             ) ?? observation.lastGoodExtraction.map {
                 VeloraSpanAnchor.Extraction(span: $0.span, method: $0.method + "+last_sample")
             }
+            MacLearningDebugLog.log("settle extraction=\(extraction?.method ?? "nil") changed=\(finalValue != observation.baselineValue)")
             if let extraction {
                 reportedSpan = extraction.span
                 journalIfMeaningful(
@@ -352,7 +406,8 @@ final class MacPostInsertObserver {
             spanStart: observation.spanStart,
             lastReportedSpan: reportedSpan,
             expiresAt: Date().addingTimeInterval(Self.residueLifetimeSeconds),
-            stripsHardWraps: observation.stripsHardWraps
+            stripsHardWraps: observation.stripsHardWraps,
+            spanLength: observation.spanLength
         )
     }
 
@@ -364,6 +419,7 @@ final class MacPostInsertObserver {
         anchorMethod: String
     ) {
         guard finalSpan != pending.insertedText else {
+            MacLearningDebugLog.log("journal skip: span unchanged")
             return
         }
         let analysis = VeloraEditAnalyzer.analyze(
@@ -372,8 +428,10 @@ final class MacPostInsertObserver {
             appliedEdits: pending.appliedEdits
         )
         guard !analysis.blocks.isEmpty else {
+            MacLearningDebugLog.log("journal skip: no meaningful blocks")
             return
         }
+        MacLearningDebugLog.log("journal post_insert_edit session=\(pending.sessionID.prefix(8)) blocks=\(analysis.blocks.count) via=\(anchorMethod)")
         MacCorrectionJournal.recordPostInsertEdit(
             sessionID: pending.sessionID,
             mode: pending.mode,
@@ -417,7 +475,7 @@ final class MacPostInsertObserver {
         guard let extraction = VeloraSpanAnchor.extractSpan(
             baseline: residue.baselineValue,
             spanStart: residue.spanStart,
-            spanLength: residue.pending.insertedText.count,
+            spanLength: residue.spanLength,
             updated: value
         ) else {
             self.residue = nil

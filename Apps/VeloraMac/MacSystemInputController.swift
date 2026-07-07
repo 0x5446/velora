@@ -23,6 +23,7 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var observers: [NSObjectProtocol] = []
+    private var debugBridge: MacDebugBridge?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Menu-bar utility: no Dock icon, no main menu. The status item plus
@@ -33,6 +34,9 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Prewarm at launch so the resident SenseVoice model and Ollama are
         // warm before the first Fn press — the whole point of the sidecar.
         dictationController.prewarmModelMode()
+        // Always installed, but every event re-checks developer mode — the
+        // bridge is inert for regular users.
+        debugBridge = MacDebugBridge(controller: dictationController)
 
         let center = NotificationCenter.default
         observers.append(center.addObserver(
@@ -867,9 +871,60 @@ final class MacDictationController {
             )
             return
         }
+        runPipeline(with: clip)
+    }
 
+    /// Developer-mode automation entry: run a prepared wav through the EXACT
+    /// production path — including the pre-roll that fn-press would do
+    /// (settle previous observation, ingest the journal) — so an automated
+    /// harness can verify the whole learning loop without a microphone.
+    ///
+    /// `targetPID` pins the insertion target explicitly: a harness window
+    /// launched from a background shell may be DENIED self-activation by
+    /// macOS, so "whatever is frontmost" would paste into the user's app.
+    /// The production activate-verify-paste protection still applies.
+    func debugInjectClip(at url: URL, targetPID: pid_t?) {
+        guard MacDeveloperModeStore.shared.isEnabled else {
+            return
+        }
+        var targetOverride: MacInsertionTarget?
+        if let targetPID {
+            guard let app = NSRunningApplication(processIdentifier: targetPID), !app.isTerminated else {
+                return
+            }
+            targetOverride = MacInsertionTarget(
+                processIdentifier: targetPID,
+                bundleIdentifier: app.bundleIdentifier ?? "",
+                localizedName: app.localizedName ?? ""
+            )
+        }
+        postInsertObserver.harvestBeforeNextDictation()
+        ingestJournalIncrementally()
+        let duration: TimeInterval
+        if let file = try? AVAudioFile(forReading: url), file.fileFormat.sampleRate > 0 {
+            duration = Double(file.length) / file.fileFormat.sampleRate
+        } else {
+            duration = 0
+        }
+        let now = Date()
+        runPipeline(
+            with: MacRecordedAudioClip(
+                url: url,
+                startedAt: now.addingTimeInterval(-duration),
+                endedAt: now
+            ),
+            targetOverride: targetOverride
+        )
+    }
+
+    /// Everything downstream of "we have a finished recording". Split from
+    /// stopAndRunPipeline so the debug bridge can inject a prepared clip.
+    private func runPipeline(
+        with clip: MacRecordedAudioClip,
+        targetOverride: MacInsertionTarget? = nil
+    ) {
         let settings = activeSettings ?? settingsStore.load()
-        let insertionTarget = MacInsertionTarget.captureFrontmost()
+        let insertionTarget = targetOverride ?? MacInsertionTarget.captureFrontmost()
         // Single privacy verdict for the whole learning loop, taken NOW while
         // the user's target field is still focused (before the paste moves
         // focus). Reused by audio retention, journal writes and the observer so

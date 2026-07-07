@@ -332,6 +332,16 @@ private func gridWrapped(_ text: String, width: Int) -> String {
     #expect(VeloraSpanAnchor.strippingHardWraps("无换行") == "无换行")
 }
 
+@Test func hardWrapStripDropsRowTailPaddingButKeepsContentSpaces() {
+    // iTerm2 (probed 2026-07-07): CJK double-width chars leave a one-column
+    // gap at the row end, rendered as trailing space(s) before the newline.
+    #expect(VeloraSpanAnchor.strippingHardWraps("中文行尾 \n继续") == "中文行尾继续")
+    #expect(VeloraSpanAnchor.strippingHardWraps("双空格  \n继续") == "双空格继续")
+    // Interior spaces are content and must survive.
+    #expect(VeloraSpanAnchor.strippingHardWraps("How old\nare you") == "How oldare you")
+    #expect(VeloraSpanAnchor.strippingHardWraps("a b c") == "a b c")
+}
+
 @Test func wrappedTerminalSpanLocatesAndDiffsAfterRewrap() {
     // The exact scenario that failed live in iTerm2 (2026-07-07): a dictated
     // sentence longer than one terminal row. The grid injects \n inside the

@@ -3,6 +3,38 @@ import ApplicationServices
 import Carbon
 import Foundation
 
+/// Developer-mode-only breadcrumbs for the learning loop (the observer's
+/// state machine is otherwise invisible — settles, veto reasons and journal
+/// skips leave no trace). Inert unless developer mode is on. Content is
+/// limited to state-machine facts: reasons, counts, session ids — never the
+/// observed text itself.
+@MainActor
+enum MacLearningDebugLog {
+    private static let url = FileManager.default
+        .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("Velora/debug-observer.log")
+    private static let maxBytes = 512 * 1_024
+
+    static func log(_ message: @autoclosure () -> String) {
+        guard MacDeveloperModeStore.shared.isEnabled else {
+            return
+        }
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        let line = "\(stamp) \(message())\n"
+        if let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size]) as? Int,
+           size > maxBytes {
+            try? FileManager.default.removeItem(at: url)
+        }
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(Data(line.utf8))
+            try? handle.close()
+        } else {
+            try? Data(line.utf8).write(to: url)
+        }
+    }
+}
+
 /// Learning-loop preferences. Learning is on by default — the entire loop is
 /// local and inspectable — but must die instantly when switched off, so every
 /// journal write and observer start re-reads these flags.
