@@ -45,8 +45,9 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
  "similarity":0.93,"is_rewrite":false,
  "edit_blocks":[{"type":"asr_fix|style|content|reverted_hotword",
                  "before":"超市","after":"超时","pinyin_distance":0}],
- "window_ms":38000,"terminated_by":"quiet|focus_change|app_switch|timeout|next_session",
- "anchor_method":"anchors|prefix_anchor_fuzzy|…"}
+ "window_ms":38000,
+ "terminated_by":"quiet|focus_change|app_switch|timeout|next_session|element_destroyed|element_unreadable",
+ "anchor_method":"anchors|prefix_anchor_fuzzy|suffix_anchor_fuzzy|prefix_anchor_to_end|start_to_suffix_anchor|whole_field|fuzzy"}
 ```
 
 `session_id` 关联两类事件凑齐 (asr, polished, user_final) 三元组。懒 diff 可能对同一 session 产生第二条 post_insert_edit（以后到的为准）。
@@ -66,7 +67,9 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 
 1. **HomophoneReplacer（ASR 内解码后替换，首选）**：sherpa-onnx 官方对 SenseVoice 的热词答案（transducer 专属的 hotwords 不适用于 CTC）。`scripts/build_hotword_fst.py` 把生效词表编译成 `replace.fst`（pypinyin TONE3 + pynini），资产放 `Application Support/Velora/hr/{dict,lexicon.txt,replace.fst}`，sidecar 启动时自动加载（缺失/旧版 sherpa 自动降级）。注意 HR 同音必换、仅中文——所以只喂"生效"词，候选池绝不进入。
 2. **HotwordCorrector**（ASR 后字面替换，既有）：与 HR 互补，覆盖拉丁词与字面命中。
-3. **LLM glossary**：原仅翻译模式，现扩展到输入模式（`inputSystem` 规则 9），并加拼音域预筛——只注入本句发音里真实出现的词对，防大词表误纠。**提示词已变更：合并前需重跑 `pocs/tuning/` 三套 eval 门禁。**
+3. **LLM glossary**：原仅翻译模式，现扩展到输入模式（`inputSystem` 规则 9），并加拼音域预筛——只注入本句发音里真实出现的词对，防大词表误纠。**提示词已变更：合并前需重跑三套 eval 门禁 `pocs/tuning/repair_eval.py`、`pocs/tuning/format_eval.py`、`pocs/tuning/homophone_eval.py`。**
+
+> 注意作用域：只有源语言的 `asr_fix`（同音验证过的听写纠错）进入 `terms` 热词表，参与 HotwordCorrector 与 HR。翻译确认卡片的**译文侧编辑不进热词表**（只留在 journal 供微调），避免另一种语言的术语偏好污染 ASR 后的字面替换。
 
 ## 微调数据与本地 QLoRA
 

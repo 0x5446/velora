@@ -16,8 +16,11 @@ enum MacLearningSettings {
             : UserDefaults.standard.bool(forKey: learningEnabledKey)
     }
 
+    /// Audio retention is gated by the master learning switch too: turning
+    /// learning off must stop new clips even if the retention flag was left on
+    /// (the settings UI only hides that toggle, it doesn't clear it).
     static var audioRetentionEnabled: Bool {
-        UserDefaults.standard.bool(forKey: audioRetentionKey)
+        learningEnabled && UserDefaults.standard.bool(forKey: audioRetentionKey)
     }
 }
 
@@ -72,6 +75,26 @@ enum MacLearningPrivacy {
             return nil
         }
         return value as? String
+    }
+
+    /// Privacy verdict for the CURRENTLY focused element, computed on the main
+    /// thread right after a paste. Journal writes and audio retention use this
+    /// so a web/custom password field (identifiable only by its AX subrole, not
+    /// the global secure-input flag) is refused BEFORE anything hits disk —
+    /// closing the window where recordInsertion previously ran with subrole=nil.
+    @MainActor
+    static func focusedBlockReason(bundleID: String?) -> String? {
+        var subrole: String?
+        if AXIsProcessTrusted() {
+            let systemWide = AXUIElementCreateSystemWide()
+            var focused: CFTypeRef?
+            if AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+               let focused,
+               CFGetTypeID(focused) == AXUIElementGetTypeID() {
+                subrole = self.subrole(of: focused as! AXUIElement)
+            }
+        }
+        return blockReason(bundleID: bundleID, elementSubrole: subrole)
     }
 }
 

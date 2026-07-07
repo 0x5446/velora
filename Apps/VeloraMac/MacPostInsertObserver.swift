@@ -90,6 +90,11 @@ final class MacPostInsertObserver {
     /// Called when the user starts the next dictation: settle any live
     /// observation immediately and lazy-diff the previous span one last time.
     func harvestBeforeNextDictation() {
+        // Cancel a still-pending capture (paste landed <350ms before the next
+        // dictation): otherwise its delayed retry could arm an observation for
+        // the previous utterance mid-way through the new recording.
+        captureTask?.cancel()
+        captureTask = nil
         if active != nil {
             settle(reason: "next_session")
         }
@@ -112,12 +117,13 @@ final class MacPostInsertObserver {
             return true
         }
         let appElement = AXUIElementCreateApplication(pending.targetPID)
+        // Cap the timeout BEFORE the first cross-process read: a hung target
+        // app must never stall Velora's main thread even on this initial fetch.
+        AXUIElementSetMessagingTimeout(appElement, 0.3)
         guard let element = copyElement(appElement, kAXFocusedUIElementAttribute) else {
             return false
         }
-        // A hung target app must never stall Velora's main thread.
         AXUIElementSetMessagingTimeout(element, 0.3)
-        AXUIElementSetMessagingTimeout(appElement, 0.3)
 
         if MacLearningPrivacy.blockReason(
             bundleID: pending.targetBundleID,
@@ -343,6 +349,16 @@ final class MacPostInsertObserver {
         }
         guard Date() < residue.expiresAt,
               NSRunningApplication(processIdentifier: residue.pending.targetPID)?.isTerminated == false else {
+            self.residue = nil
+            return
+        }
+        // Re-check privacy: over the 30-min residue window the element could
+        // have become a secure field, or secure-input could now be on. Never
+        // read a blocked surface even for the free lazy diff.
+        if MacLearningPrivacy.blockReason(
+            bundleID: residue.pending.targetBundleID,
+            elementSubrole: MacLearningPrivacy.subrole(of: residue.element)
+        ) != nil {
             self.residue = nil
             return
         }

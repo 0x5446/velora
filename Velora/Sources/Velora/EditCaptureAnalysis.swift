@@ -372,9 +372,17 @@ public enum VeloraSpanAnchor {
         let prefixAnchor = anchor(from: baseChars, end: spanStart, length: 16)
         let suffixAnchor = anchor(from: baseChars, start: spanStart + spanLength, length: 16)
 
-        let lowerBound = locateAnchorEnd(prefixAnchor, in: updatedChars)
-        let upperBound = locateAnchorStart(suffixAnchor, in: updatedChars, notBefore: lowerBound ?? 0)
         let originalSpan = Array(baseChars[spanStart..<(spanStart + spanLength)])
+        // Solve the two anchors as a PAIR: pick the (prefix-end, suffix-start)
+        // combination whose gap is closest to the original span length. Solving
+        // them independently (last prefix, then first suffix after it) mis-locates
+        // when the prefix context repeats AFTER the span.
+        let (lowerBound, upperBound) = locateAnchorPair(
+            prefix: prefixAnchor,
+            suffix: suffixAnchor,
+            in: updatedChars,
+            expectedGap: spanLength
+        )
 
         switch (lowerBound, upperBound) {
         case let (.some(low), .some(high)) where high >= low:
@@ -454,6 +462,79 @@ public enum VeloraSpanAnchor {
         return best?.range
     }
 
+    /// All indices just past each occurrence of `anchor` in `text`.
+    private static func anchorEnds(_ anchor: [Character], in text: [Character]) -> [Int] {
+        guard !anchor.isEmpty, text.count >= anchor.count else {
+            return []
+        }
+        var ends: [Int] = []
+        for start in 0...(text.count - anchor.count)
+        where Array(text[start..<(start + anchor.count)]) == anchor {
+            ends.append(start + anchor.count)
+        }
+        return ends
+    }
+
+    /// All start indices of each occurrence of `anchor` in `text`.
+    private static func anchorStarts(_ anchor: [Character], in text: [Character]) -> [Int] {
+        guard !anchor.isEmpty, text.count >= anchor.count else {
+            return []
+        }
+        var starts: [Int] = []
+        for start in 0...(text.count - anchor.count)
+        where Array(text[start..<(start + anchor.count)]) == anchor {
+            starts.append(start)
+        }
+        return starts
+    }
+
+    /// Chooses the prefix-end / suffix-start pair whose gap is closest to the
+    /// expected span length, degrading each anchor to its inner 6 chars if the
+    /// full context was grazed by an edit. Empty anchors mean the span sat at a
+    /// document edge and are returned as nil so the caller's edge cases handle them.
+    private static func locateAnchorPair(
+        prefix: [Character],
+        suffix: [Character],
+        in text: [Character],
+        expectedGap: Int
+    ) -> (Int?, Int?) {
+        var ends = anchorEnds(prefix, in: text)
+        if ends.isEmpty, prefix.count > 6 {
+            ends = anchorEnds(Array(prefix.suffix(6)), in: text)
+        }
+        var starts = anchorStarts(suffix, in: text)
+        if starts.isEmpty, suffix.count > 6 {
+            starts = anchorStarts(Array(suffix.prefix(6)), in: text)
+        }
+
+        let low: Int? = prefix.isEmpty ? nil : ends.min(by: { abs($0 - 0) < abs($1 - 0) })
+        // For empty prefix, edge case returns nil low; keep suffix best guess.
+        if prefix.isEmpty {
+            return (nil, suffix.isEmpty ? nil : starts.first)
+        }
+        if suffix.isEmpty {
+            return (low, nil)
+        }
+        guard !ends.isEmpty, !starts.isEmpty else {
+            return (ends.isEmpty ? nil : low, nil)
+        }
+
+        var best: (low: Int, high: Int, cost: Int)?
+        for end in ends {
+            for start in starts where start >= end {
+                let cost = abs((start - end) - expectedGap)
+                if cost < (best?.cost ?? Int.max) {
+                    best = (end, start, cost)
+                }
+            }
+        }
+        if let best {
+            return (best.low, best.high)
+        }
+        // No suffix occurs after any prefix end: fall back to nearest prefix end.
+        return (low, nil)
+    }
+
     private static func anchor(from characters: [Character], end: Int, length: Int) -> [Character] {
         let start = max(0, end - length)
         guard start < end else {
@@ -468,39 +549,5 @@ public enum VeloraSpanAnchor {
             return []
         }
         return Array(characters[start..<end])
-    }
-
-    /// Index just past the LAST occurrence of the anchor (prefix context sits
-    /// immediately before the span; later duplicates are closer to the span).
-    private static func locateAnchorEnd(_ anchor: [Character], in text: [Character]) -> Int? {
-        guard !anchor.isEmpty else {
-            return text.isEmpty ? nil : 0
-        }
-        for start in stride(from: text.count - anchor.count, through: 0, by: -1)
-        where Array(text[start..<(start + anchor.count)]) == anchor {
-            return start + anchor.count
-        }
-        // Degrade to a shorter anchor before giving up (edits may have grazed it).
-        if anchor.count > 6 {
-            return locateAnchorEnd(Array(anchor.suffix(6)), in: text)
-        }
-        return nil
-    }
-
-    private static func locateAnchorStart(_ anchor: [Character], in text: [Character], notBefore: Int) -> Int? {
-        guard !anchor.isEmpty else {
-            return nil
-        }
-        guard text.count >= anchor.count else {
-            return nil
-        }
-        for start in max(0, notBefore)...(text.count - anchor.count)
-        where Array(text[start..<(start + anchor.count)]) == anchor {
-            return start
-        }
-        if anchor.count > 6 {
-            return locateAnchorStart(Array(anchor.prefix(6)), in: text, notBefore: notBefore)
-        }
-        return nil
     }
 }

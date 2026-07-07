@@ -122,14 +122,21 @@ def main() -> int:
     dataset = pairs + identity_pool[:keep_identity]
     rng.shuffle(dataset)
 
-    if not dataset:
-        print("no usable pairs yet — keep dictating, the journal grows on its own")
+    # Require at least one genuinely corrected pair — an all-identity or
+    # single-row set would write an empty train.jsonl that run_qlora.sh then
+    # feeds to mlx_lm.lora, "succeeding" with nothing to learn.
+    if not pairs or len(dataset) < 2:
+        print(f"not enough usable pairs yet (corrected={len(pairs)}, total={len(dataset)}) — keep dictating")
         return 0
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    split = max(1, int(len(dataset) * args.valid_ratio))
+    # Never let the validation split swallow every training row.
+    split = min(len(dataset) - 1, max(1, int(len(dataset) * args.valid_ratio)))
     valid, train = dataset[:split], dataset[split:]
+    if not train:
+        print("not enough usable pairs after split — keep dictating")
+        return 0
     for name, rows in (("train", train), ("valid", valid)):
         with (out_dir / f"{name}.jsonl").open("w", encoding="utf-8") as fh:
             for row in rows:

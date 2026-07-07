@@ -23,7 +23,9 @@ OUT_DIR="${2:-build/finetune}"
 LLAMA_CPP="${LLAMA_CPP:-$HOME/workspace/llama.cpp}"
 ITERS="${VELORA_FT_ITERS:-600}"
 
-[ -f "$DATA_DIR/train.jsonl" ] || { echo "missing $DATA_DIR/train.jsonl — run prepare_polish_dataset.py first"; exit 1; }
+# -s: file must be non-empty. prepare_polish_dataset.py refuses to write an
+# empty train set, but guard here too so a stale/zero file never trains on nothing.
+[ -s "$DATA_DIR/train.jsonl" ] || { echo "missing or empty $DATA_DIR/train.jsonl — run prepare_polish_dataset.py first (needs enough corrected pairs)"; exit 1; }
 command -v mlx_lm.lora >/dev/null || { echo "pip install mlx-lm"; exit 1; }
 
 mkdir -p "$OUT_DIR"
@@ -62,7 +64,10 @@ EOF
 ollama create velora-polish -f "$OUT_DIR/Modelfile"
 
 echo
-echo "done. A/B it against the stock model with the existing eval gates:"
+echo "done. A/B it against the stock model with ALL THREE eval gates (same set"
+echo "the prompt-engineering work is gated on — skipping homophone_eval hides"
+echo "same-sound correction regressions):"
 echo "  VELORA_OLLAMA_MODEL=velora-polish python3 pocs/tuning/repair_eval.py"
 echo "  VELORA_OLLAMA_MODEL=velora-polish python3 pocs/tuning/format_eval.py"
+echo "  VELORA_OLLAMA_MODEL=velora-polish python3 pocs/tuning/homophone_eval.py"
 echo "then set VELORA_OLLAMA_MODEL=velora-polish for the app if it wins."

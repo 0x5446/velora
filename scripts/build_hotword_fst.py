@@ -59,6 +59,31 @@ def main() -> int:
     if not memory_path.exists():
         print(f"memory store not found: {memory_path}", file=sys.stderr)
         return 1
+
+    # Cleanup path runs FIRST and needs only the memory store: if there are no
+    # active terms left (user disabled/deleted them all), remove any stale
+    # assets so the sidecar stops applying old replacements — even when the
+    # hr-files download is no longer around. resolvedHRDirectory() then returns
+    # nil and HR is skipped on restart.
+    pairs = load_pairs(memory_path)
+    if not pairs:
+        removed = False
+        for name in ("replace.fst", "lexicon.txt"):
+            target = out_dir / name
+            if target.exists():
+                target.unlink()
+                removed = True
+        if (out_dir / "dict").exists():
+            shutil.rmtree(out_dir / "dict")
+            removed = True
+        if removed:
+            print(f"no active learned zh pairs; cleared stale HR assets in {out_dir}")
+            print("restart Velora so the ASR sidecar drops the old dictionary")
+        else:
+            print("no active learned zh pairs to compile; nothing to do")
+        return 0
+
+    # Build path needs the universal hr-files assets and the compilers.
     if not (hr_files / "dict").is_dir() or not (hr_files / "lexicon.txt").exists():
         print(
             "hr-files assets missing. Download `dict/` and `lexicon.txt` from\n"
@@ -80,11 +105,6 @@ def main() -> int:
     except ImportError:
         print("pip install pynini  (or: conda install -c conda-forge pynini)", file=sys.stderr)
         return 1
-
-    pairs = load_pairs(memory_path)
-    if not pairs:
-        print("no active learned zh pairs to compile; nothing to do")
-        return 0
 
     def toned(text: str) -> str:
         # HR rules match tone-numbered pinyin without separators: 超时 → chao1shi2

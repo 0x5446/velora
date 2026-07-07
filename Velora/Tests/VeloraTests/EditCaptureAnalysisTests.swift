@@ -147,6 +147,26 @@ import Testing
     #expect(extraction?.span == "整段就是插入內容")
 }
 
+@Test func spanAnchorPicksCorrectSpanWhenPrefixRepeatsAfterSpan() {
+    // The 16-char prefix context before the span also appears AFTER it. Naive
+    // last-occurrence anchoring would pick the trailing copy and miss the span;
+    // pair-solving by gap length must select the real one.
+    let baseline = "请参考下面的说明开始操作插入的正文内容请参考下面的说明结束"
+    let inserted = "插入的正文内容"
+    let spanStart = baseline.distance(
+        from: baseline.startIndex,
+        to: baseline.range(of: inserted)!.lowerBound
+    )
+    let updated = "请参考下面的说明开始操作插入的正文內容请参考下面的说明结束"
+    let extraction = VeloraSpanAnchor.extractSpan(
+        baseline: baseline,
+        spanStart: spanStart,
+        spanLength: inserted.count,
+        updated: updated
+    )
+    #expect(extraction?.span == "插入的正文內容")
+}
+
 @Test func spanAnchorSurvivesEditsBeforeTheSpan() {
     // Offsets drift when the user edits text ABOVE the span; anchors survive.
     let baseline = "第一段落写了一些别的东西。插入的内容在这里。结尾。"
@@ -218,6 +238,56 @@ private func temporaryPromotionStore() throws -> SQLiteMemoryStore {
         limit: 5
     )
     #expect(ranked.contains { $0.term == "超市" && $0.replacement == "超时" })
+}
+
+@Test func laterPostInsertEditForSameSessionWins() async throws {
+    // Session s1: first the user makes an asr_fix, then (lazy re-diff, same
+    // session, later in the file) reverts it. Only the LAST event should apply,
+    // so no 超市→超时 pair should be learned.
+    let store = try temporaryPromotionStore()
+    let journal = URL(fileURLWithPath: NSTemporaryDirectory() + "velora-journal-latest-\(UUID().uuidString).jsonl")
+    defer { try? FileManager.default.removeItem(at: journal) }
+    let entries = [
+        #"{"kind":"post_insert_edit","session_id":"s1","lang":"zh","edit_blocks":[{"type":"asr_fix","before":"超市","after":"超时"}]}"#,
+        #"{"kind":"post_insert_edit","session_id":"s1","lang":"zh","edit_blocks":[]}"#,
+        // A different session confirms the pair once — not enough on its own.
+        #"{"kind":"post_insert_edit","session_id":"s2","lang":"zh","edit_blocks":[{"type":"asr_fix","before":"超市","after":"超时"}]}"#,
+    ]
+    try (entries.joined(separator: "\n") + "\n").write(to: journal, atomically: true, encoding: .utf8)
+
+    store.ingestCorrectionJournal(at: journal)
+    // s1's asr_fix was superseded by its empty re-diff, so only s2 contributed:
+    // one session, below the 2-session gate → not promoted → not ranked.
+    let ranked = try await store.rankHotwords(for: ContextSnapshot(appBundle: "t", mode: .input), limit: 5)
+    #expect(!ranked.contains { $0.term == "超市" })
+}
+
+@Test func translateTargetEditsDoNotEnterHotwordTable() throws {
+    // Target-side (translated) edits must NOT be mined into `terms` — only the
+    // source-language edit is a hotword candidate.
+    let store = try temporaryPromotionStore()
+    let journal = URL(fileURLWithPath: NSTemporaryDirectory() + "velora-journal-tgt-\(UUID().uuidString).jsonl")
+    defer { try? FileManager.default.removeItem(at: journal) }
+    let entry = #"{"kind":"translate_review_edit","language_pair":"zh-en","source_before":"过一遍疑程","source_after":"过一遍议程","target_before":"reviewthe aganda","target_after":"review the agenda"}"#
+    try (entry + "\n").write(to: journal, atomically: true, encoding: .utf8)
+
+    let summary = store.ingestCorrectionJournal(at: journal)
+    // Only the source edit counts (singleSpanDiff trims the shared 程 → 疑→议);
+    // the target edit is ignored entirely.
+    #expect(summary.acceptedPairs == 1)
+    let terms = store.listTerms()
+    #expect(terms.contains { $0.term == "疑" && $0.replacement == "议" })
+    #expect(!terms.contains { $0.replacement.contains("agenda") })
+}
+
+@Test func migrationPreservesExistingLearnedTermsAsPromoted() throws {
+    // A store created fresh has the new columns; reopening the same file must
+    // not fail and must keep terms rankable.
+    let path = NSTemporaryDirectory() + "velora-memory-migrate-\(UUID().uuidString).sqlite"
+    let first = try SQLiteMemoryStore(path: path)
+    first.recordAcceptedCorrection(term: "文当", replacement: "文档")
+    let reopened = try SQLiteMemoryStore(path: path)
+    #expect(reopened.termCount() == 1)
 }
 
 @Test func dictionaryManagementAPIs() throws {

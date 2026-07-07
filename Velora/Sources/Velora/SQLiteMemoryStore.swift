@@ -26,6 +26,9 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
             throw PipelineError.localModelUnavailable("memory_store_open_failed:\(message)")
         }
         db = handle
+        // Contend gracefully with the settings-panel connection on the same
+        // file instead of failing writes with SQLITE_BUSY.
+        sqlite3_busy_timeout(handle, 2_000)
         try execute("""
         CREATE TABLE IF NOT EXISTS terms (
             term TEXT NOT NULL,
@@ -48,12 +51,36 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
         );
         """)
         // Additive migrations for stores created before the candidate-pool
-        // columns existed; a failure just means the column is already there.
-        // Pre-existing learned terms default to promoted so an upgrade never
-        // silently turns off hotwords the user has been relying on.
-        try? execute("ALTER TABLE terms ADD COLUMN promoted INTEGER NOT NULL DEFAULT 1")
-        try? execute("ALTER TABLE terms ADD COLUMN session_count INTEGER NOT NULL DEFAULT 0")
-        try? execute("ALTER TABLE terms ADD COLUMN last_session_id TEXT NOT NULL DEFAULT ''")
+        // columns existed. Check the actual schema first so a real failure
+        // (disk/lock/corruption) surfaces instead of being swallowed as an
+        // "already exists" no-op — otherwise later promoted/session_count
+        // reads would silently return wrong data. Pre-existing learned terms
+        // default to promoted so an upgrade never turns off hotwords in use.
+        let existing = try columnNames(of: "terms")
+        let additions: [(name: String, ddl: String)] = [
+            ("promoted", "ALTER TABLE terms ADD COLUMN promoted INTEGER NOT NULL DEFAULT 1"),
+            ("session_count", "ALTER TABLE terms ADD COLUMN session_count INTEGER NOT NULL DEFAULT 0"),
+            ("last_session_id", "ALTER TABLE terms ADD COLUMN last_session_id TEXT NOT NULL DEFAULT ''"),
+        ]
+        for addition in additions where !existing.contains(addition.name) {
+            try execute(addition.ddl)
+        }
+    }
+
+    private func columnNames(of table: String) throws -> Set<String> {
+        var names: Set<String> = []
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "PRAGMA table_info(\(table))", -1, &statement, nil) == SQLITE_OK else {
+            throw PipelineError.localModelUnavailable("memory_store_pragma_failed")
+        }
+        defer { sqlite3_finalize(statement) }
+        while sqlite3_step(statement) == SQLITE_ROW {
+            // table_info columns: cid(0) name(1) type(2) ...
+            if let name = sqlite3_column_text(statement, 1) {
+                names.insert(String(cString: name))
+            }
+        }
+        return names
     }
 
     deinit {
@@ -343,6 +370,15 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
     @discardableResult
     public func ingestCorrectionJournal(at url: URL) -> IngestSummary {
         var summary = IngestSummary()
+        // Serialize the whole read-offset → process → write-offset cycle. The
+        // caller fires this from an untracked Task.detached on every recording
+        // start, so two overlapping runs could otherwise read the same offset
+        // and double-count the same lines. First writer wins; the loser bails.
+        guard beginIngestGuard() else {
+            return summary
+        }
+        defer { endIngestGuard() }
+
         guard let data = try? Data(contentsOf: url) else {
             return summary
         }
@@ -355,77 +391,49 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
             return summary
         }
 
+        // post_insert_edit for one session can appear twice (live settle, then
+        // the next-dictation lazy re-diff). Keep only the LAST one per session
+        // so a temporary edit the user reverted doesn't leave a stale asr_fix
+        // (docs/LEARNING_PIPELINE.md: "以后到的为准"). Preserve arrival order.
+        var latestPostInsert: [String: [String: Any]] = [:]
+        var postInsertOrder: [String] = []
+        var immediate: [(kind: String, object: [String: Any], sessionKey: String)] = []
+
         for line in text.split(separator: "\n") {
             guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
                   let kind = object["kind"] as? String else {
                 summary.skippedEntries += 1
                 continue
             }
-            // Session key for the promotion gate: explicit session_id when the
-            // event carries one, else the timestamp (distinct utterances get
-            // distinct keys, replays of the same event stay idempotent-ish).
             let sessionKey = (object["session_id"] as? String) ?? (object["at"] as? String) ?? "unknown"
+            if kind == "post_insert_edit" {
+                if latestPostInsert[sessionKey] == nil {
+                    postInsertOrder.append(sessionKey)
+                }
+                latestPostInsert[sessionKey] = object
+            } else {
+                immediate.append((kind, object, sessionKey))
+            }
+        }
 
-            switch kind {
+        for entry in immediate {
+            switch entry.kind {
             case "translate_review_edit":
-                var mined = false
-                if let before = object["source_before"] as? String,
-                   let after = object["source_after"] as? String,
+                // Only the SOURCE-language edit is a hotword candidate. Target
+                // (translated) edits are terminology preferences in another
+                // language; mining them into the shared term pool lets the
+                // ASR-side HotwordCorrector rewrite unrelated text. They stay
+                // in the journal for fine-tuning, just not in `terms`.
+                if let before = entry.object["source_before"] as? String,
+                   let after = entry.object["source_after"] as? String,
                    let pair = Self.singleSpanDiff(before: before, after: after) {
-                    recordAcceptedCorrection(term: pair.before, replacement: pair.after, sessionKey: sessionKey)
+                    recordAcceptedCorrection(term: pair.before, replacement: pair.after, sessionKey: entry.sessionKey)
                     summary.acceptedPairs += 1
-                    mined = true
-                }
-                // Target-side edits are terminology preferences in the TARGET
-                // language — mine them too (they feed the glossary shown to
-                // the compose/translate prompt).
-                if let before = object["target_before"] as? String,
-                   let after = object["target_after"] as? String,
-                   let pair = Self.singleSpanDiff(before: before, after: after) {
-                    let language = (object["language_pair"] as? String)?
-                        .split(separator: "-").last.map(String.init) ?? "en"
-                    recordAcceptedCorrection(
-                        term: pair.before,
-                        replacement: pair.after,
-                        language: language,
-                        sessionKey: sessionKey
-                    )
-                    summary.acceptedPairs += 1
-                    mined = true
-                }
-                if !mined {
+                } else {
                     summary.skippedEntries += 1
                 }
-            case "post_insert_edit":
-                let blocks = object["edit_blocks"] as? [[String: Any]] ?? []
-                let language = object["lang"] as? String ?? "zh"
-                for block in blocks {
-                    guard let type = block["type"] as? String,
-                          let before = block["before"] as? String,
-                          let after = block["after"] as? String else {
-                        continue
-                    }
-                    switch type {
-                    case "asr_fix":
-                        recordAcceptedCorrection(
-                            term: before,
-                            replacement: after,
-                            language: language,
-                            sessionKey: sessionKey
-                        )
-                        summary.acceptedPairs += 1
-                    case "reverted_hotword":
-                        // The user undid OUR replacement: reject the pair as
-                        // it exists in the table (term = original, replacement
-                        // = what we wrongly put on screen).
-                        recordRejection(term: after, replacement: before)
-                        summary.negativeSignals += 1
-                    default:
-                        break
-                    }
-                }
             case "retry_redictation", "undo_after_insert":
-                let edits = object["applied_edits"] as? [[String: Any]] ?? []
+                let edits = entry.object["applied_edits"] as? [[String: Any]] ?? []
                 for edit in edits {
                     if let from = edit["from"] as? String, let to = edit["to"] as? String {
                         recordRejection(term: from, replacement: to)
@@ -441,6 +449,39 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
             }
         }
 
+        for sessionKey in postInsertOrder {
+            guard let object = latestPostInsert[sessionKey] else {
+                continue
+            }
+            let blocks = object["edit_blocks"] as? [[String: Any]] ?? []
+            let language = object["lang"] as? String ?? "zh"
+            for block in blocks {
+                guard let type = block["type"] as? String,
+                      let before = block["before"] as? String,
+                      let after = block["after"] as? String else {
+                    continue
+                }
+                switch type {
+                case "asr_fix":
+                    recordAcceptedCorrection(
+                        term: before,
+                        replacement: after,
+                        language: language,
+                        sessionKey: sessionKey
+                    )
+                    summary.acceptedPairs += 1
+                case "reverted_hotword":
+                    // The user undid OUR replacement: reject the pair as it
+                    // exists in the table (term = original, replacement = what
+                    // we wrongly put on screen).
+                    recordRejection(term: after, replacement: before)
+                    summary.negativeSignals += 1
+                default:
+                    break
+                }
+            }
+        }
+
         queue.sync {
             run(
                 "INSERT INTO meta (key, value) VALUES ('journal_offset', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -449,6 +490,20 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
         }
         performMaintenance()
         return summary
+    }
+
+    private var ingesting = false
+    private func beginIngestGuard() -> Bool {
+        queue.sync {
+            guard !ingesting else {
+                return false
+            }
+            ingesting = true
+            return true
+        }
+    }
+    private func endIngestGuard() {
+        queue.sync { ingesting = false }
     }
 
     /// Mines a term pair only from a SHORT contiguous change (both sides
