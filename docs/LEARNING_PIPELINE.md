@@ -12,7 +12,9 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
         ├─ AXObserver kAXValueChanged / 焦点变化 / 元素销毁
         ├─ 键盘全局监听 → 只置脏标记，绝不读键值
         └─ 1s 轮询兜底（只在脏时读值）
-     结算（静默5s / 焦点切换 / 超时 / 下次听写）
+     结算（静默5s / 焦点切换* / 超时 / 下次听写）
+        *焦点/应用切换只在插入段已被改动时才结算——上屏后紧跟的激活抖动
+         或"切走看一眼再回来改"都不该终结观察（60s 上限仍兜底）
         ├─ 锚点定位插入段（VeloraSpanAnchor：前后文锚 + 模糊兜底）
         ├─ 字符级 diff + 三分类（VeloraEditAnalyzer）
         └─ post_insert_edit 事件落盘
@@ -32,7 +34,13 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 
 已知盲区（接受）：CSS 遮罩的伪密码框不带安全角色，无法识别（第 3 层部分兜底）；Google Docs 等 canvas 编辑器不覆盖；Electron 首版未做 `AXManualAccessibility` 懒激活（观察拿不到值时静默放弃）。
 
-终端网格宿主（iTerm2 / Terminal 等）的特殊处理：终端把屏幕暴露为**逐行折行的字符网格**，跨行的插入段中间被塞进硬 `\n`，精确匹配必然失败。捕获时精确匹配落空会在**去硬换行空间**重试，命中则整个观察（基线、采样、diff）都在该空间运行；另外终端回车发送后输入行被清空、文本换位重排，结算时锚不到就回退到**最后一次能定位到 span 的轮询样本**（`anchor_method` 带 `+last_sample` 后缀）。
+终端网格宿主（iTerm2 / Terminal 等）的特殊处理：终端把屏幕暴露为**逐行折行的字符网格**，跨行的插入段中间被塞进硬 `\n`，CJK 双宽字符行尾放不下时还会留**填充空格**（iTerm2 实测 200 列网格、174/975 行带行尾空格）。捕获时精确匹配落空会在**去硬换行空间**（剥掉换行及其前面的行尾填充）重试，命中则整个观察（基线、采样、diff）都在该空间运行；还不中就用 fuzzyLocate 模糊武装（用户可能在捕获重试窗内已开始编辑）。终端回车发送后输入行被清空、文本换位重排，结算时锚不到就回退到**最后一次能定位到 span 的轮询样本**（`anchor_method` 带 `+last_sample` 后缀）。
+
+## 自动化 E2E 与 debug 桥（developer mode）
+
+开发者模式下 Velora 监听两个分布式通知（`MacDebugBridge`，普通用户下完全惰性）：`app.velora.debug.dictate`（object 为 `wav路径` 或 `wav路径|目标pid`，把音频当作刚松开 fn 注入完整生产管线，含 harvest/ingest 前置）与 `app.velora.debug.probeFocused`（object 为 bundle id，用 Velora 自己的 AX 权限输出目标 app 聚焦元素的**结构统计**到 `debug-probe.json`，永不落盘屏幕内容）。观察器状态机的面包屑写在 `debug-observer.log`（只记原因/计数/session，不记文本）。
+
+`scripts/e2e/run_edit_capture_e2e.sh`：Cartesia TTS → 注入 → 靶标窗口（`EditCaptureTarget.swift`，接收粘贴后程序化改自己的文本，模拟人工修正，无需任何 TCC 权限）→ 断言 journal 配对事件与 memory.sqlite 候选/晋升，三轮跑完自动清理合成词条。需要 `CARTESIA_API_KEY`，且启动 Velora 前 `defaults write app.velora.mac velora.developer_mode -bool true`。
 
 ## 数据 schema（corrections.jsonl 新增两种事件）
 

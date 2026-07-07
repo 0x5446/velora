@@ -363,9 +363,32 @@ public enum VeloraSpanAnchor {
     /// Observations on such hosts run entirely in wrap-stripped space — the
     /// observer strips every value it reads with this before matching/diffing.
     public static func strippingHardWraps(_ text: String) -> String {
+        // Drop newlines AND the padding spaces just before them: a CJK
+        // double-width char that does not fit the last column leaves a
+        // one-column gap, which the grid renders as trailing space(s).
+        // Interior spaces are real content and are preserved.
         // Character.isNewline also matches the CRLF grapheme cluster, which
         // a plain == "\n" / == "\r" comparison would miss entirely.
-        text.filter { !$0.isNewline }
+        var result = ""
+        result.reserveCapacity(text.count)
+        var pendingSpaces = 0
+        for ch in text {
+            if ch.isNewline {
+                pendingSpaces = 0
+            } else if ch == " " {
+                pendingSpaces += 1
+            } else {
+                if pendingSpaces > 0 {
+                    result += String(repeating: " ", count: pendingSpaces)
+                    pendingSpaces = 0
+                }
+                result.append(ch)
+            }
+        }
+        if pendingSpaces > 0 {
+            result += String(repeating: " ", count: pendingSpaces)
+        }
+        return result
     }
 
     /// - Parameters:
@@ -450,8 +473,10 @@ public enum VeloraSpanAnchor {
 
     /// Best sliding-window match of `span` inside `text` by normalized
     /// similarity. Three window sizes cover shrink/grow edits; the region is
-    /// expected to be pre-bounded by the caller.
-    static func fuzzyLocate(
+    /// expected to be pre-bounded by the caller. Public because the capture
+    /// path also uses it to arm an observation when the user already started
+    /// editing before capture landed.
+    public static func fuzzyLocate(
         _ span: [Character],
         in text: [Character],
         minSimilarity: Double = 0.6
