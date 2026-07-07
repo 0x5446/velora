@@ -43,6 +43,8 @@ struct MacSettingsView: View {
     @AppStorage(MacLearningSettings.learningEnabledKey) private var learningEnabled = true
     @AppStorage(MacLearningSettings.audioRetentionKey) private var retainAudioClips = false
     @StateObject private var dictionary = MacDictionaryModel()
+    @State private var newDictionaryTerm = ""
+    @State private var newDictionaryReplacement = ""
 
     var body: some View {
         Form {
@@ -178,56 +180,50 @@ struct MacSettingsView: View {
             if learningEnabled {
                 Toggle("保留录音用于将来改进模型", isOn: $retainAudioClips)
             }
-            if !dictionary.terms.isEmpty {
-                DisclosureGroup("词典 · \(dictionary.terms.count) 条") {
-                    ForEach(dictionary.terms.prefix(100)) { record in
-                        dictionaryRow(record)
-                    }
-                    if dictionary.terms.count > 100 {
-                        Text("仅显示前 100 条")
-                            .font(VeloraFont.caption(10))
-                            .foregroundStyle(Color.veloraInkSecondary)
-                    }
+            DisclosureGroup("词典 · \(dictionary.terms.count) 条") {
+                ForEach(dictionary.terms.prefix(100)) { record in
+                    MacDictionaryRowView(record: record, model: dictionary)
                 }
+                if dictionary.terms.count > 100 {
+                    Text("仅显示前 100 条")
+                        .font(VeloraFont.caption(10))
+                        .foregroundStyle(Color.veloraInkSecondary)
+                }
+                dictionaryAddRow
             }
         } header: {
             Text("学习")
         } footer: {
-            Text("上屏后你手动修正的词会在本机积累为热词，同一修正在两次不同听写中出现才会生效。密码框、密码管理器和终端永不学习；所有数据只存在这台 Mac 上，随时可禁用或删除。录音保留是可选项（默认关闭，上限 2GB，最旧的自动清理）。")
+            Text("上屏后你手动修正的词会在本机积累为热词，同一修正在两次不同听写中出现才会生效；手动添加或编辑的词条立即生效。密码框和密码管理器永不学习；所有数据只存在这台 Mac 上，随时可禁用或删除。录音保留是可选项（默认关闭，上限 2GB，最旧的自动清理）。")
         }
     }
 
-    private func dictionaryRow(_ record: SQLiteMemoryStore.TermRecord) -> some View {
-        HStack(spacing: 8) {
-            Text("\(record.term) → \(record.replacement)")
+    private var dictionaryAddRow: some View {
+        HStack(spacing: 6) {
+            TextField("误识别词", text: $newDictionaryTerm)
+                .textFieldStyle(.roundedBorder)
                 .font(VeloraFont.body(12))
-                .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
-                .strikethrough(record.disabled)
-                .lineLimit(1)
-            if record.isAutoLearned {
-                Text("✨")
-                    .font(.system(size: 10))
-                    .help("从你的修改中自动学到")
+                .frame(width: 140)
+            Text("→")
+                .foregroundStyle(Color.veloraInkSecondary)
+            TextField("替换为", text: $newDictionaryReplacement)
+                .textFieldStyle(.roundedBorder)
+                .font(VeloraFont.body(12))
+                .frame(width: 140)
+            Button("添加") {
+                dictionary.add(term: newDictionaryTerm, replacement: newDictionaryReplacement)
+                newDictionaryTerm = ""
+                newDictionaryReplacement = ""
             }
-            if !record.promoted && !record.disabled {
-                Text("候选")
-                    .font(VeloraFont.caption(9, weight: .medium))
-                    .foregroundStyle(Color.veloraInkSecondary)
-            }
-            Spacer()
-            Button(record.disabled ? "启用" : "停用") {
-                dictionary.setDisabled(record, disabled: !record.disabled)
-            }
-            .buttonStyle(.borderless)
+            .disabled(
+                newDictionaryTerm.trimmingCharacters(in: .whitespaces).isEmpty
+                    || newDictionaryReplacement.trimmingCharacters(in: .whitespaces).isEmpty
+                    || newDictionaryTerm == newDictionaryReplacement
+            )
             .font(VeloraFont.caption(11))
-            Button(role: .destructive) {
-                dictionary.remove(record)
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 10))
-            }
-            .buttonStyle(.borderless)
+            Spacer()
         }
+        .padding(.top, 2)
     }
 
     private var attentionSection: some View {
@@ -469,6 +465,88 @@ enum MacClipboard {
 
 /// Backs the settings-panel dictionary list. Opens its own store connection;
 /// SQLite serializes access with the controller's connection on the same file.
+/// One dictionary row, editable in place. The pair is the record's identity,
+/// so a committed edit rebuilds the row (ForEach id changes) with fresh
+/// drafts; uncommitted drafts show a 保存 affordance and also commit on ⏎.
+private struct MacDictionaryRowView: View {
+    let record: SQLiteMemoryStore.TermRecord
+    @ObservedObject var model: MacDictionaryModel
+    @State private var term: String
+    @State private var replacement: String
+
+    init(record: SQLiteMemoryStore.TermRecord, model: MacDictionaryModel) {
+        self.record = record
+        self.model = model
+        _term = State(initialValue: record.term)
+        _replacement = State(initialValue: record.replacement)
+    }
+
+    private var edited: Bool {
+        term != record.term || replacement != record.replacement
+    }
+
+    private var commitDisabled: Bool {
+        term.trimmingCharacters(in: .whitespaces).isEmpty
+            || replacement.trimmingCharacters(in: .whitespaces).isEmpty
+            || term == replacement
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            TextField("误识别词", text: $term)
+                .textFieldStyle(.plain)
+                .font(VeloraFont.body(12))
+                .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
+                .strikethrough(record.disabled && !edited)
+                .frame(width: 140)
+            Text("→")
+                .foregroundStyle(Color.veloraInkSecondary)
+            TextField("替换为", text: $replacement)
+                .textFieldStyle(.plain)
+                .font(VeloraFont.body(12))
+                .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
+                .strikethrough(record.disabled && !edited)
+                .frame(width: 140)
+            if record.isAutoLearned {
+                Text("✨")
+                    .font(.system(size: 10))
+                    .help("从你的修改中自动学到")
+            }
+            if !record.promoted && !record.disabled {
+                Text("候选")
+                    .font(VeloraFont.caption(9, weight: .medium))
+                    .foregroundStyle(Color.veloraInkSecondary)
+            }
+            Spacer()
+            if edited {
+                Button("保存") {
+                    model.update(record, newTerm: term, newReplacement: replacement)
+                }
+                .buttonStyle(.borderless)
+                .font(VeloraFont.caption(11))
+                .disabled(commitDisabled)
+            }
+            Button(record.disabled ? "启用" : "停用") {
+                model.setDisabled(record, disabled: !record.disabled)
+            }
+            .buttonStyle(.borderless)
+            .font(VeloraFont.caption(11))
+            Button(role: .destructive) {
+                model.remove(record)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 10))
+            }
+            .buttonStyle(.borderless)
+        }
+        .onSubmit {
+            if edited && !commitDisabled {
+                model.update(record, newTerm: term, newReplacement: replacement)
+            }
+        }
+    }
+}
+
 @MainActor
 final class MacDictionaryModel: ObservableObject {
     @Published var terms: [SQLiteMemoryStore.TermRecord] = []
@@ -485,6 +563,21 @@ final class MacDictionaryModel: ObservableObject {
 
     func remove(_ record: SQLiteMemoryStore.TermRecord) {
         store?.removeTerm(term: record.term, replacement: record.replacement)
+        refresh()
+    }
+
+    func add(term: String, replacement: String) {
+        store?.addManualTerm(term: term, replacement: replacement)
+        refresh()
+    }
+
+    func update(_ record: SQLiteMemoryStore.TermRecord, newTerm: String, newReplacement: String) {
+        store?.updateTerm(
+            term: record.term,
+            replacement: record.replacement,
+            newTerm: newTerm,
+            newReplacement: newReplacement
+        )
         refresh()
     }
 }

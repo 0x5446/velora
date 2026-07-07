@@ -310,6 +310,60 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
         }
     }
 
+    /// User-typed dictionary entry: active immediately (promoted, no
+    /// candidate gate — the pool exists to filter NOISY automatic signals,
+    /// not deliberate input). Upserting an existing pair re-enables it.
+    public func addManualTerm(term: String, replacement: String, language: String = "zh") {
+        let term = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        let replacement = replacement.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !term.isEmpty, !replacement.isEmpty, term != replacement else {
+            return
+        }
+        queue.sync {
+            run(
+                """
+                INSERT INTO terms (term, replacement, language, source, promoted, disabled, last_seen_at)
+                VALUES (?, ?, ?, 'manual', 1, 0, ?)
+                ON CONFLICT(term, replacement) DO UPDATE SET disabled = 0, promoted = 1
+                """,
+                binds: [.text(term), .text(replacement), .text(language), .double(Date().timeIntervalSince1970)]
+            )
+        }
+    }
+
+    /// In-place edit of a pair. The pair IS the primary key, so this is a
+    /// keyed move that carries the row's stats along; landing on an existing
+    /// pair merges into it (old row removed, target re-enabled). Editing is
+    /// deliberate input, so the result is promoted like a manual entry.
+    public func updateTerm(
+        term: String,
+        replacement: String,
+        newTerm: String,
+        newReplacement: String
+    ) {
+        let newTerm = newTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newReplacement = newReplacement.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !newTerm.isEmpty, !newReplacement.isEmpty, newTerm != newReplacement,
+              newTerm != term || newReplacement != replacement else {
+            return
+        }
+        queue.sync {
+            // OR IGNORE: when the target pair already exists the move is
+            // skipped; the follow-up DELETE then drops the old row and the
+            // UPDATE re-enables the merge target. Without a collision the
+            // row moves in place and the follow-ups are no-ops.
+            run(
+                "UPDATE OR IGNORE terms SET term = ?, replacement = ?, promoted = 1, disabled = 0 WHERE term = ? AND replacement = ?",
+                binds: [.text(newTerm), .text(newReplacement), .text(term), .text(replacement)]
+            )
+            run("DELETE FROM terms WHERE term = ? AND replacement = ?", binds: [.text(term), .text(replacement)])
+            run(
+                "UPDATE terms SET disabled = 0, promoted = 1 WHERE term = ? AND replacement = ?",
+                binds: [.text(newTerm), .text(newReplacement)]
+            )
+        }
+    }
+
     /// Periodic hygiene, run after each journal ingest:
     /// - learned terms unseen for 90 days drop back to the candidate pool;
     /// - the active learned set is capped so ranking stays sharp and a future

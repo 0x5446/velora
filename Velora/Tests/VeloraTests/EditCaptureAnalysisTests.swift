@@ -446,3 +446,42 @@ private func iTermGrid(_ text: String, width: Int) -> String {
     #expect(fix?.before == "画")
     #expect(fix?.after == "话")
 }
+
+// MARK: - Manual dictionary editing
+
+@Test func manualTermIsActiveImmediatelyAndUpserts() async throws {
+    let store = try temporaryPromotionStore()
+    store.addManualTerm(term: "薇拉", replacement: "Velora")
+    let ranked = try await store.rankHotwords(for: ContextSnapshot(appBundle: "t", mode: .input), limit: 5)
+    #expect(ranked.contains { $0.term == "薇拉" })
+
+    // Re-adding a disabled pair re-enables it instead of duplicating.
+    store.setTermDisabled(term: "薇拉", replacement: "Velora", disabled: true)
+    store.addManualTerm(term: "薇拉", replacement: "Velora")
+    let terms = store.listTerms()
+    #expect(terms.filter { $0.term == "薇拉" }.count == 1)
+    #expect(terms.first { $0.term == "薇拉" }?.disabled == false)
+    // Rejected inputs: empty side, identity pair.
+    store.addManualTerm(term: " ", replacement: "x")
+    store.addManualTerm(term: "same", replacement: "same")
+    #expect(store.listTerms().count == 1)
+}
+
+@Test func updateTermMovesPairAndMergesOnCollision() throws {
+    let store = try temporaryPromotionStore()
+    store.recordAcceptedCorrection(term: "会画", replacement: "对话")
+    store.updateTerm(term: "会画", replacement: "对话", newTerm: "会画", newReplacement: "会话")
+
+    var terms = store.listTerms()
+    #expect(terms.count == 1)
+    #expect(terms.first?.replacement == "会话")
+    // Editing is deliberate: the pair is active even if it was a candidate.
+    #expect(terms.first?.promoted == true)
+
+    // Collision merges: editing another pair onto 会画→会话 keeps one row.
+    store.addManualTerm(term: "绘画", replacement: "绘图")
+    store.updateTerm(term: "绘画", replacement: "绘图", newTerm: "会画", newReplacement: "会话")
+    terms = store.listTerms()
+    #expect(terms.count == 1)
+    #expect(terms.first?.term == "会画")
+}
