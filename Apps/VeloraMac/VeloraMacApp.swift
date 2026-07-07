@@ -40,12 +40,16 @@ struct MacSettingsView: View {
     @State private var microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
     @State private var systemProbeStatus = ""
     @AppStorage(OllamaLocalClient.residentKeepAliveDefaultsKey) private var keepModelResident = false
+    @AppStorage(MacLearningSettings.learningEnabledKey) private var learningEnabled = true
+    @AppStorage(MacLearningSettings.audioRetentionKey) private var retainAudioClips = false
+    @StateObject private var dictionary = MacDictionaryModel()
 
     var body: some View {
         Form {
             hotkeySection
             translationSection
             performanceSection
+            learningSection
             if needsAttention {
                 attentionSection
             }
@@ -59,9 +63,10 @@ struct MacSettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460)
-        .frame(height: developerMode.isEnabled ? 860 : 560)
+        .frame(height: developerMode.isEnabled ? 920 : 640)
         .onAppear {
             refreshPermissions()
+            dictionary.refresh()
         }
         // Event-driven permission refresh: the window regains key exactly when
         // the user returns from System Settings after granting access.
@@ -164,6 +169,64 @@ struct MacSettingsView: View {
             Text("性能")
         } footer: {
             Text("开启后模型常驻内存（约 6GB），闲置多久后的第一次上屏都无需等待模型加载。关闭时，Velora 会在你开始说话的同时预热模型来掩盖加载耗时。")
+        }
+    }
+
+    private var learningSection: some View {
+        Section {
+            Toggle("从我的修改中学习", isOn: $learningEnabled)
+            if learningEnabled {
+                Toggle("保留录音用于将来改进模型", isOn: $retainAudioClips)
+            }
+            if !dictionary.terms.isEmpty {
+                DisclosureGroup("词典 · \(dictionary.terms.count) 条") {
+                    ForEach(dictionary.terms.prefix(100)) { record in
+                        dictionaryRow(record)
+                    }
+                    if dictionary.terms.count > 100 {
+                        Text("仅显示前 100 条")
+                            .font(VeloraFont.caption(10))
+                            .foregroundStyle(Color.veloraInkSecondary)
+                    }
+                }
+            }
+        } header: {
+            Text("学习")
+        } footer: {
+            Text("上屏后你手动修正的词会在本机积累为热词，同一修正在两次不同听写中出现才会生效。密码框、密码管理器和终端永不学习；所有数据只存在这台 Mac 上，随时可禁用或删除。录音保留是可选项（默认关闭，上限 2GB，最旧的自动清理）。")
+        }
+    }
+
+    private func dictionaryRow(_ record: SQLiteMemoryStore.TermRecord) -> some View {
+        HStack(spacing: 8) {
+            Text("\(record.term) → \(record.replacement)")
+                .font(VeloraFont.body(12))
+                .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
+                .strikethrough(record.disabled)
+                .lineLimit(1)
+            if record.isAutoLearned {
+                Text("✨")
+                    .font(.system(size: 10))
+                    .help("从你的修改中自动学到")
+            }
+            if !record.promoted && !record.disabled {
+                Text("候选")
+                    .font(VeloraFont.caption(9, weight: .medium))
+                    .foregroundStyle(Color.veloraInkSecondary)
+            }
+            Spacer()
+            Button(record.disabled ? "启用" : "停用") {
+                dictionary.setDisabled(record, disabled: !record.disabled)
+            }
+            .buttonStyle(.borderless)
+            .font(VeloraFont.caption(11))
+            Button(role: .destructive) {
+                dictionary.remove(record)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 10))
+            }
+            .buttonStyle(.borderless)
         }
     }
 
@@ -401,6 +464,28 @@ enum MacClipboard {
     static func write(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+/// Backs the settings-panel dictionary list. Opens its own store connection;
+/// SQLite serializes access with the controller's connection on the same file.
+@MainActor
+final class MacDictionaryModel: ObservableObject {
+    @Published var terms: [SQLiteMemoryStore.TermRecord] = []
+    private let store = SQLiteMemoryStore.defaultStore()
+
+    func refresh() {
+        terms = store?.listTerms(limit: 500) ?? []
+    }
+
+    func setDisabled(_ record: SQLiteMemoryStore.TermRecord, disabled: Bool) {
+        store?.setTermDisabled(term: record.term, replacement: record.replacement, disabled: disabled)
+        refresh()
+    }
+
+    func remove(_ record: SQLiteMemoryStore.TermRecord) {
+        store?.removeTerm(term: record.term, replacement: record.replacement)
+        refresh()
     }
 }
 
