@@ -311,6 +311,7 @@ final class MacPostInsertObserver {
             settle(reason: "element_unreadable")
             return
         }
+        MacLearningDebugLog.log("poll sample \(value.count)ch changed=\(value != observation.lastSampledValue)")
         if value != observation.lastSampledValue {
             observation.lastSampledValue = value
             observation.lastChangeAt = now
@@ -352,12 +353,12 @@ final class MacPostInsertObserver {
         guard let observation = active else {
             return
         }
-        let current = sampleValue(of: observation.element, stripped: observation.stripsHardWraps)
-            ?? observation.lastSampledValue
+        let read = sampleValue(of: observation.element, stripped: observation.stripsHardWraps)
+        let current = read ?? observation.lastSampledValue
         if current != observation.baselineValue {
             settle(reason: reason)
         } else {
-            MacLearningDebugLog.log("switch ignored (span untouched) reason=\(reason)")
+            MacLearningDebugLog.log("switch ignored (span untouched) reason=\(reason) read=\(read.map { "\($0.count)ch" } ?? "nil")")
         }
     }
 
@@ -368,8 +369,9 @@ final class MacPostInsertObserver {
         MacLearningDebugLog.log("settle reason=\(reason) session=\(observation.pending.sessionID.prefix(8))")
         // One last read so edits between polls are not lost; fall back to the
         // last sample when the element is already gone.
-        let finalValue = sampleValue(of: observation.element, stripped: observation.stripsHardWraps)
-            ?? observation.lastSampledValue
+        let finalRead = sampleValue(of: observation.element, stripped: observation.stripsHardWraps)
+        MacLearningDebugLog.log("settle finalRead=\(finalRead.map { "\($0.count)ch" } ?? "nil") baseline=\(observation.baselineValue.count)ch changed=\(finalRead.map { $0 != observation.baselineValue } ?? false)")
+        let finalValue = finalRead ?? observation.lastSampledValue
         let windowMS = Int(Date().timeIntervalSince(observation.startedAt) * 1_000)
         stopObservation(reason: reason)
 
