@@ -92,7 +92,9 @@ final class MacPostInsertObserver {
         captureTask = Task { @MainActor [weak self] in
             // Denser early retries: capture must win the race against the
             // user's first correction, which can land within 2 seconds.
-            for delayMS in [250, 450, 800, 1_400] {
+            // The trailing retry gives Electron hosts time to build their
+            // AX tree after the AXManualAccessibility nudge.
+            for delayMS in [250, 450, 800, 1_400, 2_000] {
                 try? await Task.sleep(nanoseconds: UInt64(delayMS) * 1_000_000)
                 guard let self, !Task.isCancelled else {
                     return
@@ -138,7 +140,17 @@ final class MacPostInsertObserver {
         // app must never stall Velora's main thread even on this initial fetch.
         AXUIElementSetMessagingTimeout(appElement, 0.3)
         guard let element = copyElement(appElement, kAXFocusedUIElementAttribute) else {
-            MacLearningDebugLog.log("capture retry: no focused element")
+            // Electron hosts (Lark, Slack, VS Code …) keep their AX tree
+            // unbuilt until AXManualAccessibility is flipped on — five live
+            // Lark dictations all failed right here. Nudge it and let the
+            // remaining retries read the freshly built tree; a harmless
+            // unsupported-attribute error on non-Electron apps.
+            AXUIElementSetAttributeValue(
+                appElement,
+                "AXManualAccessibility" as CFString,
+                kCFBooleanTrue
+            )
+            MacLearningDebugLog.log("capture retry: no focused element (AXManualAccessibility nudged)")
             return false
         }
         AXUIElementSetMessagingTimeout(element, 0.3)
