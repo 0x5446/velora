@@ -392,3 +392,57 @@ private func gridWrapped(_ text: String, width: Int) -> String {
     #expect(a == b)
     #expect(a == inserted)
 }
+
+/// Renders text the way iTerm2's accessibility buffer does (probed live
+/// 2026-07-07): every double-width CJK char is followed by a U+0000 filler
+/// for its second cell, rows are hard-wrapped and may carry tail padding.
+private func iTermGrid(_ text: String, width: Int) -> String {
+    var cells = ""
+    for ch in text {
+        cells.append(ch)
+        if ch.unicodeScalars.first.map({ $0.value > 0x2E7F }) == true {
+            cells.append("\0")
+        }
+    }
+    return gridWrapped(cells, width: width)
+}
+
+@Test func hardWrapStripRemovesITermDoubleWidthNULFillers() {
+    let inserted = "正常听写不用特意配合"
+    let grid = iTermGrid("提示> " + inserted, width: 9)
+    // Raw and even whitespace-free matching fail on the NUL-riddled grid —
+    // this is exactly why iTerm2 Chinese captures never armed.
+    #expect(!grid.contains(inserted))
+    // Wrap-strip now drops the fillers too, so the span matches again.
+    let stripped = VeloraSpanAnchor.strippingHardWraps(grid)
+    #expect(stripped.contains(inserted))
+}
+
+@Test func iTermNULGridSpanExtractsAndClassifiesAfterEdit() {
+    // The live 2026-07-07 iTerm2 failure: a CJK sentence pasted into the
+    // Claude Code input box, hand-fixed (near-homophone), then re-rendered
+    // by the grid. 会画→会话 share pinyin (huìhuà) — a true asr_fix.
+    let inserted = "新开的会画，看看这个问题还存不存在。"
+    let baselineGrid = iTermGrid("> " + inserted, width: 11)
+    let baseline = VeloraSpanAnchor.strippingHardWraps(baselineGrid)
+    guard let range = baseline.range(of: inserted, options: [.backwards]) else {
+        Issue.record("span must locate in stripped space")
+        return
+    }
+    let spanStart = baseline.distance(from: baseline.startIndex, to: range.lowerBound)
+
+    let edited = inserted.replacingOccurrences(of: "会画", with: "会话")
+    let updated = VeloraSpanAnchor.strippingHardWraps(iTermGrid("> " + edited, width: 13))
+    let extraction = VeloraSpanAnchor.extractSpan(
+        baseline: baseline,
+        spanStart: spanStart,
+        spanLength: inserted.count,
+        updated: updated
+    )
+    #expect(extraction?.span == edited)
+    let analysis = VeloraEditAnalyzer.analyze(inserted: inserted, userFinal: edited, appliedEdits: [])
+    // singleSpanDiff trims the shared 会 — the learned pair is 画→话.
+    let fix = analysis.blocks.first { $0.kind == .asrFix }
+    #expect(fix?.before == "画")
+    #expect(fix?.after == "话")
+}

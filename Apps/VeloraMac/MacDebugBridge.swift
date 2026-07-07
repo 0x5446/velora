@@ -84,10 +84,16 @@ final class MacDebugBridge {
     }
 
     /// Structural diagnosis only — the element's text NEVER leaves the stats.
-    private func handleProbe(bundleID: String?) {
-        guard MacDeveloperModeStore.shared.isEnabled, let bundleID else {
+    /// Object may be "bundleID" or "bundleID|customNeedle" — the needle is
+    /// text the CALLER already knows; results are match booleans and gap
+    /// counts, never element content.
+    private func handleProbe(bundleID rawObject: String?) {
+        guard MacDeveloperModeStore.shared.isEnabled, let rawObject else {
             return
         }
+        let parts = rawObject.split(separator: "|", maxSplits: 1)
+        let bundleID = String(parts[0])
+        let customNeedle = parts.count > 1 ? String(parts[1]) : nil
         var report: [String: Any] = [
             "bundle_id": bundleID,
             "at": ISO8601DateFormatter().string(from: Date()),
@@ -133,7 +139,7 @@ final class MacDebugBridge {
         report["max_row_chars"] = rows.map(\.count).max() ?? 0
 
         // Would the LAST insertion into this app anchor today? Counts only.
-        if let inserted = lastInsertedText(appBundle: bundleID) {
+        if let inserted = customNeedle ?? lastInsertedText(appBundle: bundleID) {
             let stripped = VeloraSpanAnchor.strippingHardWraps(value)
             report["needle_chars"] = inserted.count
             report["needle_matches_raw"] = value.contains(inserted)
@@ -142,7 +148,68 @@ final class MacDebugBridge {
             let denseNeedle = inserted.filter { !$0.isWhitespace }
             report["needle_matches_whitespace_free"] =
                 !denseNeedle.isEmpty && denseValue.contains(denseNeedle)
+            // What exactly sits BETWEEN the needle's characters in the raw
+            // buffer? Two-pointer scan allowing small gaps; reports gap
+            // character classes only (this is how a grid host's padding /
+            // wrap artifacts are identified without dumping screen content).
+            report["gap_match"] = gapMatchStats(needle: inserted, in: value)
         }
+    }
+
+    /// Finds `needle`'s characters in order inside `hay`, tolerating up to
+    /// `maxGap` filler chars between consecutive needle chars. Returns match
+    /// success plus a histogram of the filler classes encountered.
+    private func gapMatchStats(needle: String, in hay: String, maxGap: Int = 8) -> [String: Any] {
+        let needleChars = Array(needle)
+        let hayChars = Array(hay)
+        guard let first = needleChars.first else {
+            return ["matched": false]
+        }
+        var bestStats: [String: Any] = ["matched": false]
+        for start in hayChars.indices where hayChars[start] == first {
+            var gaps: [String: Int] = [:]
+            var gapCodepoints = Set<UInt32>()
+            var maxRun = 0
+            var hayIndex = start + 1
+            var needleIndex = 1
+            var run = 0
+            var failed = false
+            while needleIndex < needleChars.count {
+                guard hayIndex < hayChars.count, run <= maxGap else {
+                    failed = true
+                    break
+                }
+                let ch = hayChars[hayIndex]
+                if ch == needleChars[needleIndex] {
+                    needleIndex += 1
+                    maxRun = max(maxRun, run)
+                    run = 0
+                } else {
+                    let cls: String
+                    if ch.isNewline {
+                        cls = "newline"
+                    } else if ch == " " {
+                        cls = "space"
+                    } else if ch.isWhitespace {
+                        cls = "other_ws"
+                    } else {
+                        cls = "other"
+                    }
+                    gaps[cls, default: 0] += 1
+                    if let scalar = ch.unicodeScalars.first {
+                        gapCodepoints.insert(scalar.value)
+                    }
+                    run += 1
+                }
+                hayIndex += 1
+            }
+            if !failed {
+                return ["matched": true, "gap_histogram": gaps, "max_gap_run": maxRun,
+                        "gap_codepoints": Array(gapCodepoints).sorted().prefix(5).map { String(format: "U+%04X", $0) }]
+            }
+            bestStats = ["matched": false]
+        }
+        return bestStats
     }
 
     private func lastInsertedText(appBundle: String) -> String? {

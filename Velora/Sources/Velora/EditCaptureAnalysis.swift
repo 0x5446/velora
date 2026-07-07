@@ -369,11 +369,18 @@ public enum VeloraSpanAnchor {
         // Interior spaces are real content and are preserved.
         // Character.isNewline also matches the CRLF grapheme cluster, which
         // a plain == "\n" / == "\r" comparison would miss entirely.
+        //
+        // NUL: iTerm2 represents the SECOND cell of every double-width char
+        // as U+0000 in its accessibility string (probed live 2026-07-07:
+        // 18-char CJK needle, 16 gaps, all U+0000) — so Chinese spans can
+        // never match without dropping them.
         var result = ""
         result.reserveCapacity(text.count)
         var pendingSpaces = 0
         for ch in text {
-            if ch.isNewline {
+            if ch == "\0" {
+                continue
+            } else if ch.isNewline {
                 pendingSpaces = 0
             } else if ch == " " {
                 pendingSpaces += 1
