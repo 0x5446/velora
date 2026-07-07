@@ -26,7 +26,7 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 1. 观察只针对 **Velora 刚插入文本的那一个元素**，窗口 ≤60 秒；
 2. 键盘监听**只产生布尔脏标记**，永不读取按键内容（同 undo watch 的既有纪律）；
 3. 只 diff 并持久化**插入段本身**，插入段之外的任何文本永不提取；
-4. 三层护栏一票否决（`MacLearningPrivacy`）：`IsSecureEventInputEnabled()` 全局暂停 → `AXSecureTextField` subrole 排除（覆盖原生+网页密码框）→ bundle id 黑名单（密码管理器/终端/系统设置）；
+4. 三层护栏一票否决（`MacLearningPrivacy`）：`IsSecureEventInputEnabled()` 全局暂停 → `AXSecureTextField` subrole 排除（覆盖原生+网页密码框）→ bundle id 黑名单（密码管理器/系统凭据面）。终端**刻意不拉黑**：它是对 CLI agent 听写的主场景，diff 只碰 Velora 自己插入的那段，sudo/ssh 的密码提示会开启 secure input，第 1 层已兜住；
 5. 全部数据只写 `~/Library/Application Support/Velora/`（journal、memory.sqlite、clips/），与 History 同隐私层级；
 6. 设置里"从我的修改中学习"总开关即时生效；词典逐条可停用/删除。
 

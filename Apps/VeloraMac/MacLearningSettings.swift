@@ -29,8 +29,13 @@ enum MacLearningSettings {
 /// This is also the anti-keylogger contract: observation is only ever armed
 /// for the element we just inserted into, and these gates can veto even that.
 enum MacLearningPrivacy {
-    /// Never learn from password managers, terminals (commands/keys), or
-    /// system credential surfaces. Prefix match on bundle id.
+    /// Never learn from password managers or system credential surfaces.
+    /// Prefix match on bundle id.
+    ///
+    /// Terminals are deliberately NOT blocked: they are a primary dictation
+    /// surface (talking to CLI agents), the diff only ever touches the span
+    /// Velora itself inserted, and terminal password prompts (sudo, ssh)
+    /// enable secure event input, which layer 1 already vetoes.
     static let blockedBundlePrefixes: [String] = [
         "com.1password.",
         "com.agilebits.",
@@ -40,12 +45,6 @@ enum MacLearningPrivacy {
         "com.apple.keychainaccess",
         "com.apple.Passwords",
         "com.apple.systempreferences",
-        "com.apple.Terminal",
-        "com.googlecode.iterm2",
-        "dev.warp.Warp",
-        "com.github.wez.wezterm",
-        "net.kovidgoyal.kitty",
-        "co.zeit.hyper",
     ]
 
     /// nil = allowed; otherwise a journal-safe reason string.
