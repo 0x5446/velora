@@ -39,6 +39,14 @@ final class MacPostInsertObserver {
         var startedAt: Date
         var lastSampledValue: String
         var lastChangeAt: Date?
+        /// Terminal-grid host: hard wraps are stripped from every value read
+        /// (baselineValue/spanStart already live in stripped space).
+        var stripsHardWraps: Bool
+        /// Last poll sample where the span could still be located. Grid hosts
+        /// clear the input line on send (Enter) and re-render the text with
+        /// different wrapping, so the settle-time read often cannot anchor
+        /// anymore — this preserves the edit state from just before the send.
+        var lastGoodExtraction: VeloraSpanAnchor.Extraction?
     }
 
     /// What survives after an observation ends, so the NEXT dictation can do
@@ -50,6 +58,7 @@ final class MacPostInsertObserver {
         var spanStart: Int
         var lastReportedSpan: String
         var expiresAt: Date
+        var stripsHardWraps: Bool
     }
 
     static let observationWindowSeconds: TimeInterval = 60
@@ -132,12 +141,27 @@ final class MacPostInsertObserver {
             return true
         }
 
-        guard let value = stringValue(of: element), value.count <= 100_000 else {
+        guard let rawValue = stringValue(of: element), rawValue.count <= 100_000 else {
             return false
         }
         // Anchor on the LAST occurrence — the freshly pasted text sits at the
         // cursor, and earlier duplicates would mis-anchor the span.
-        guard let range = value.range(of: pending.insertedText, options: [.backwards]) else {
+        var value = rawValue
+        var stripsHardWraps = false
+        var range = value.range(of: pending.insertedText, options: [.backwards])
+        if range == nil {
+            // Terminal-grid hosts (iTerm2 & co.) expose the screen as wrapped
+            // rows: any span longer than one row has hard \n injected inside
+            // it, so the exact match above cannot hit. Retry in wrap-stripped
+            // space and, when that lands, keep the whole observation there.
+            let stripped = VeloraSpanAnchor.strippingHardWraps(rawValue)
+            if let strippedRange = stripped.range(of: pending.insertedText, options: [.backwards]) {
+                value = stripped
+                stripsHardWraps = true
+                range = strippedRange
+            }
+        }
+        guard let range else {
             return false
         }
         let spanStart = value.distance(from: value.startIndex, to: range.lowerBound)
@@ -162,7 +186,9 @@ final class MacPostInsertObserver {
             spanStart: spanStart,
             startedAt: Date(),
             lastSampledValue: value,
-            lastChangeAt: nil
+            lastChangeAt: nil,
+            stripsHardWraps: stripsHardWraps,
+            lastGoodExtraction: nil
         )
         dirty = false
         startAuxiliaryMonitors(targetPID: pending.targetPID)
@@ -248,13 +274,26 @@ final class MacPostInsertObserver {
             return
         }
         dirty = false
-        guard let value = stringValue(of: observation.element) else {
+        guard let value = sampleValue(of: observation.element, stripped: observation.stripsHardWraps) else {
             settle(reason: "element_unreadable")
             return
         }
         if value != observation.lastSampledValue {
             observation.lastSampledValue = value
             observation.lastChangeAt = now
+            // Try to locate the span in this sample while it still exists:
+            // on grid hosts the send (Enter) clears the input line, so the
+            // settle-time extraction can come up empty — this sample is then
+            // the best record of what the user's edit actually looked like.
+            if value != observation.baselineValue,
+               let extraction = VeloraSpanAnchor.extractSpan(
+                   baseline: observation.baselineValue,
+                   spanStart: observation.spanStart,
+                   spanLength: observation.pending.insertedText.count,
+                   updated: value
+               ) {
+                observation.lastGoodExtraction = extraction
+            }
             active = observation
         }
         checkQuietSettle(observation, now: now)
@@ -276,26 +315,34 @@ final class MacPostInsertObserver {
         }
         // One last read so edits between polls are not lost; fall back to the
         // last sample when the element is already gone.
-        let finalValue = stringValue(of: observation.element) ?? observation.lastSampledValue
+        let finalValue = sampleValue(of: observation.element, stripped: observation.stripsHardWraps)
+            ?? observation.lastSampledValue
         let windowMS = Int(Date().timeIntervalSince(observation.startedAt) * 1_000)
         stopObservation(reason: reason)
 
         var reportedSpan = observation.pending.insertedText
-        if finalValue != observation.baselineValue,
-           let extraction = VeloraSpanAnchor.extractSpan(
-               baseline: observation.baselineValue,
-               spanStart: observation.spanStart,
-               spanLength: observation.pending.insertedText.count,
-               updated: finalValue
-           ) {
-            reportedSpan = extraction.span
-            journalIfMeaningful(
-                pending: observation.pending,
-                finalSpan: extraction.span,
-                windowMS: windowMS,
-                terminatedBy: reason,
-                anchorMethod: extraction.method
-            )
+        if finalValue != observation.baselineValue {
+            // When the final read cannot anchor anymore (grid hosts re-render
+            // the text after a send), fall back to the last poll sample that
+            // could — tagged so journal stats can tell the two apart.
+            let extraction = VeloraSpanAnchor.extractSpan(
+                baseline: observation.baselineValue,
+                spanStart: observation.spanStart,
+                spanLength: observation.pending.insertedText.count,
+                updated: finalValue
+            ) ?? observation.lastGoodExtraction.map {
+                VeloraSpanAnchor.Extraction(span: $0.span, method: $0.method + "+last_sample")
+            }
+            if let extraction {
+                reportedSpan = extraction.span
+                journalIfMeaningful(
+                    pending: observation.pending,
+                    finalSpan: extraction.span,
+                    windowMS: windowMS,
+                    terminatedBy: reason,
+                    anchorMethod: extraction.method
+                )
+            }
         }
 
         residue = Residue(
@@ -304,7 +351,8 @@ final class MacPostInsertObserver {
             baselineValue: observation.baselineValue,
             spanStart: observation.spanStart,
             lastReportedSpan: reportedSpan,
-            expiresAt: Date().addingTimeInterval(Self.residueLifetimeSeconds)
+            expiresAt: Date().addingTimeInterval(Self.residueLifetimeSeconds),
+            stripsHardWraps: observation.stripsHardWraps
         )
     }
 
@@ -362,7 +410,7 @@ final class MacPostInsertObserver {
             self.residue = nil
             return
         }
-        guard let value = stringValue(of: residue.element) else {
+        guard let value = sampleValue(of: residue.element, stripped: residue.stripsHardWraps) else {
             self.residue = nil
             return
         }
@@ -430,5 +478,14 @@ final class MacPostInsertObserver {
             return nil
         }
         return value as? String
+    }
+
+    /// Every read after capture goes through this so a wrap-stripped
+    /// observation never compares raw grid text against its stripped baseline.
+    private func sampleValue(of element: AXUIElement, stripped: Bool) -> String? {
+        guard let value = stringValue(of: element) else {
+            return nil
+        }
+        return stripped ? VeloraSpanAnchor.strippingHardWraps(value) : value
     }
 }

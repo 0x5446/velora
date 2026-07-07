@@ -30,7 +30,9 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 5. 全部数据只写 `~/Library/Application Support/Velora/`（journal、memory.sqlite、clips/），与 History 同隐私层级；
 6. 设置里"从我的修改中学习"总开关即时生效；词典逐条可停用/删除。
 
-已知盲区（接受）：CSS 遮罩的伪密码框不带安全角色，无法识别（第 3 层部分兜底）；Google Docs 等 canvas 编辑器与终端不覆盖；Electron 首版未做 `AXManualAccessibility` 懒激活（观察拿不到值时静默放弃）。
+已知盲区（接受）：CSS 遮罩的伪密码框不带安全角色，无法识别（第 3 层部分兜底）；Google Docs 等 canvas 编辑器不覆盖；Electron 首版未做 `AXManualAccessibility` 懒激活（观察拿不到值时静默放弃）。
+
+终端网格宿主（iTerm2 / Terminal 等）的特殊处理：终端把屏幕暴露为**逐行折行的字符网格**，跨行的插入段中间被塞进硬 `\n`，精确匹配必然失败。捕获时精确匹配落空会在**去硬换行空间**重试，命中则整个观察（基线、采样、diff）都在该空间运行；另外终端回车发送后输入行被清空、文本换位重排，结算时锚不到就回退到**最后一次能定位到 span 的轮询样本**（`anchor_method` 带 `+last_sample` 后缀）。
 
 ## 数据 schema（corrections.jsonl 新增两种事件）
 
@@ -48,6 +50,7 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
  "window_ms":38000,
  "terminated_by":"quiet|focus_change|app_switch|timeout|next_session|element_destroyed|element_unreadable",
  "anchor_method":"anchors|prefix_anchor_fuzzy|suffix_anchor_fuzzy|prefix_anchor_to_end|start_to_suffix_anchor|whole_field|fuzzy"}
+ // 网格宿主结算时锚定失败、改用最后可定位样本时，anchor_method 带 "+last_sample" 后缀
 ```
 
 `session_id` 关联两类事件凑齐 (asr, polished, user_final) 三元组。懒 diff 可能对同一 session 产生第二条 post_insert_edit（以后到的为准）。
