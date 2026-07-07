@@ -172,26 +172,21 @@ final class MacPostInsertObserver {
             value = stripped
             stripsHardWraps = true
             spanStart = stripped.distance(from: stripped.startIndex, to: range.lowerBound)
-        } else if rawValue.count <= 4_000,
-                  let range = VeloraSpanAnchor.fuzzyLocate(
-                      Array(pending.insertedText), in: Array(rawValue)
-                  ) {
+        } else if let located = Self.fuzzyLocateNearEnd(pending.insertedText, in: rawValue) {
             // The user may already be editing the span (fast fixes land
             // within the capture retries): fuzzy-arm so the observation
             // still starts. The baseline span is the CURRENT, possibly
             // part-edited text — the settle diff still compares the
             // original inserted text against the user's final span.
-            spanStart = range.lowerBound
-            spanLength = range.upperBound - range.lowerBound
+            spanStart = located.start
+            spanLength = located.length
         } else if case let stripped = VeloraSpanAnchor.strippingHardWraps(rawValue),
-                  stripped.count <= 4_000, stripped.count != rawValue.count,
-                  let range = VeloraSpanAnchor.fuzzyLocate(
-                      Array(pending.insertedText), in: Array(stripped)
-                  ) {
+                  stripped.count != rawValue.count,
+                  let located = Self.fuzzyLocateNearEnd(pending.insertedText, in: stripped) {
             value = stripped
             stripsHardWraps = true
-            spanStart = range.lowerBound
-            spanLength = range.upperBound - range.lowerBound
+            spanStart = located.start
+            spanLength = located.length
         } else {
             MacLearningDebugLog.log("capture retry: span not located (value=\(rawValue.count) chars)")
             return false
@@ -227,6 +222,20 @@ final class MacPostInsertObserver {
         startPolling()
         MacLearningDebugLog.log("armed session=\(pending.sessionID.prefix(8)) stripsWraps=\(stripsHardWraps) spanStart=\(spanStart) spanLen=\(spanLength)")
         return true
+    }
+
+    /// Fuzzy span location bounded to the TAIL of the field: fuzzyLocate is
+    /// quadratic so it caps its haystack at 4k chars, which used to disable
+    /// it entirely on terminal buffers (>10k). The paste always lands at the
+    /// cursor — near the end of a growing grid — so searching the last 4k
+    /// keeps the rescue path alive at any buffer size.
+    private static func fuzzyLocateNearEnd(_ needle: String, in hay: String) -> (start: Int, length: Int)? {
+        let hayChars = Array(hay)
+        let offset = max(0, hayChars.count - 4_000)
+        guard let range = VeloraSpanAnchor.fuzzyLocate(Array(needle), in: Array(hayChars[offset...])) else {
+            return nil
+        }
+        return (offset + range.lowerBound, range.upperBound - range.lowerBound)
     }
 
     private static let axCallback: AXObserverCallback = { _, _, notification, refcon in
