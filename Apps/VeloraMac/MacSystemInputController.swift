@@ -1895,12 +1895,51 @@ final class MacTranslationReviewPanelModel: ObservableObject {
     var onConfirm: ((MacTranslationReviewSelection) -> Void)?
     var onCancel: (() -> Void)?
     var onRetranslate: (() -> Void)?
+    private var autoRetranslateTask: Task<Void, Never>?
+    /// Last source text an AUTO retranslate fired for: stops the debounce
+    /// from re-firing on the same text (including after a failed attempt —
+    /// the user has to touch the source again to retry automatically).
+    private var lastAutoRetranslatedSource: String?
 
     var sourceWasEdited: Bool {
         guard let review else {
             return false
         }
         return editedSource != review.sourceText
+    }
+
+    func resetTransients() {
+        autoRetranslateTask?.cancel()
+        autoRetranslateTask = nil
+        lastAutoRetranslatedSource = nil
+    }
+
+    /// Editing the source is a request for a fresh translation — don't make
+    /// the user hunt for the button. Debounced so it fires once, after
+    /// typing pauses, never mid-edit and never while a retranslate runs.
+    func sourceEditDidChange() {
+        autoRetranslateTask?.cancel()
+        guard sourceWasEdited, !isRetranslating else {
+            return
+        }
+        let snapshot = editedSource
+        guard snapshot != lastAutoRetranslatedSource,
+              !snapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+        autoRetranslateTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard let self, !Task.isCancelled else {
+                return
+            }
+            guard self.sourceWasEdited, !self.isRetranslating,
+                  self.editedSource == snapshot,
+                  snapshot != self.lastAutoRetranslatedSource else {
+                return
+            }
+            self.lastAutoRetranslatedSource = snapshot
+            self.onRetranslate?()
+        }
     }
 }
 
@@ -1942,6 +1981,7 @@ final class MacTranslationReviewPanelController {
 
     func show(_ review: MacPendingTranslationReview) {
         model.review = review
+        model.resetTransients()
         model.editedSource = review.sourceText
         model.editedTarget = review.targetText
         model.isRetranslating = false
@@ -2099,6 +2139,9 @@ struct MacTranslationReviewPanelView: View {
                 .frame(height: 76)
                 .veloraTextEditorStyle(isFocused: focusedField == .source)
                 .focused($focusedField, equals: .source)
+                .onChange(of: model.editedSource) { _, _ in
+                    model.sourceEditDidChange()
+                }
         }
     }
 
