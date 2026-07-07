@@ -32,7 +32,7 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 5. 全部数据只写 `~/Library/Application Support/Velora/`（journal、memory.sqlite、clips/），与 History 同隐私层级；
 6. 设置里"从我的修改中学习"总开关即时生效；词典逐条可停用/删除。
 
-已知盲区（接受）：CSS 遮罩的伪密码框不带安全角色，无法识别（第 3 层部分兜底）；Google Docs 等 canvas 编辑器不覆盖；Electron 首版未做 `AXManualAccessibility` 懒激活（观察拿不到值时静默放弃）。
+已知盲区（接受）：CSS 遮罩的伪密码框不带安全角色，无法识别（第 3 层部分兜底）；Google Docs 等 canvas 编辑器不覆盖。Electron 宿主（Lark/Slack/VS Code 等）默认不构建 AX 树：捕获读不到聚焦元素时会写入 `AXManualAccessibility` 懒激活并在后续重试中读取新树（对非 Electron 应用是无害的 unsupported-attribute 错误）。
 
 终端网格宿主（iTerm2 / Terminal 等）的特殊处理：终端把屏幕暴露为**逐行折行的字符网格**，跨行的插入段中间被塞进硬 `\n`，CJK 双宽字符行尾放不下时还会留**填充空格**（iTerm2 实测 200 列网格、174/975 行带行尾空格）。捕获时精确匹配落空会在**去硬换行空间**（剥掉换行及其前面的行尾填充）重试，命中则整个观察（基线、采样、diff）都在该空间运行；还不中就用 fuzzyLocate 模糊武装（用户可能在捕获重试窗内已开始编辑）。终端回车发送后输入行被清空、文本换位重排，结算时锚不到就回退到**最后一次能定位到 span 的轮询样本**（`anchor_method` 带 `+last_sample` 后缀）。
 

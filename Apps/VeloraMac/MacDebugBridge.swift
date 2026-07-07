@@ -109,9 +109,18 @@ final class MacDebugBridge {
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         AXUIElementSetMessagingTimeout(appElement, 0.5)
         var focusedRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(
+        if AXUIElementCopyAttributeValue(
             appElement, kAXFocusedUIElementAttribute as CFString, &focusedRef
-        ) == .success, let focusedRef, CFGetTypeID(focusedRef) == AXUIElementGetTypeID() else {
+        ) != .success {
+            // Electron hosts need the manual-accessibility nudge (same as
+            // the observer's capture path) before their tree exists.
+            AXUIElementSetAttributeValue(appElement, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+            usleep(500_000)
+            _ = AXUIElementCopyAttributeValue(
+                appElement, kAXFocusedUIElementAttribute as CFString, &focusedRef
+            )
+        }
+        guard let focusedRef, CFGetTypeID(focusedRef) == AXUIElementGetTypeID() else {
             report["error"] = "no_focused_element"
             return
         }
