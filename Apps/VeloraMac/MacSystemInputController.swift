@@ -309,6 +309,7 @@ final class MacDictationController {
     private var pipelineGeneration = 0
     private var recordingGeneration = 0
     private var lastInsertion: MacLastInsertionRecord?
+    private let postInsertObserver = MacPostInsertObserver()
     private var undoMonitor: Any?
     private var undoWatchExpiry: Task<Void, Never>?
     private var contextPrepTask: Task<MacPreparedPipelineContext?, Never>?
@@ -367,6 +368,7 @@ final class MacDictationController {
         pipelineTask?.cancel()
         contextPrepTask?.cancel()
         stopUndoWatch()
+        postInsertObserver.invalidate()
     }
 
     var isCaptureBusy: Bool {
@@ -581,13 +583,16 @@ final class MacDictationController {
 
         // User edits in the overlay are the highest-quality learning signal:
         // capture the diff locally so the memory layer (Phase 2) can grow
-        // hotwords and glossary pairs from real corrections.
-        MacCorrectionJournal.recordIfEdited(
-            review: review,
-            editedSource: reviewPanel.editedSource,
-            editedTarget: reviewPanel.editedTarget,
-            insertedSelection: selection
-        )
+        // hotwords and glossary pairs from real corrections — unless this
+        // utterance came from a privacy-blocked target.
+        if !review.learnBlocked {
+            MacCorrectionJournal.recordIfEdited(
+                review: review,
+                editedSource: reviewPanel.editedSource,
+                editedTarget: reviewPanel.editedTarget,
+                insertedSelection: selection
+            )
+        }
 
         pendingReview = nil
         reviewPanel.hide()
@@ -604,6 +609,35 @@ final class MacDictationController {
                 at: Date()
             )
             startUndoWatch()
+            if !review.learnBlocked {
+                let insertedLanguage = selection == .source ? review.sourceLanguage : review.targetLanguage
+                MacCorrectionJournal.recordInsertion(
+                    sessionID: review.sessionID,
+                    mode: .translate,
+                    asrText: review.asrText,
+                    polishedText: review.polishedText,
+                    finalText: insertText,
+                    appliedEdits: review.appliedEdits,
+                    targetBundleID: review.target?.bundleIdentifier,
+                    language: insertedLanguage,
+                    audioRef: review.audioRef
+                )
+                if let target = review.target {
+                    postInsertObserver.begin(
+                        MacPostInsertObserver.PendingObservation(
+                            sessionID: review.sessionID,
+                            mode: .translate,
+                            insertedText: insertText,
+                            asrText: review.asrText,
+                            polishedText: review.polishedText,
+                            appliedEdits: review.appliedEdits,
+                            targetPID: target.processIdentifier,
+                            targetBundleID: target.bundleIdentifier,
+                            language: insertedLanguage
+                        )
+                    )
+                }
+            }
             floatingPanel.show(
                 MacFloatingStatus(
                     phase: .inserted,
@@ -644,11 +678,15 @@ final class MacDictationController {
     }
 
     func cancelPendingReview() {
-        guard pendingReview != nil else {
+        guard let review = pendingReview else {
             updateStatus("no_pending_review")
             return
         }
 
+        // A cancelled utterance leaves no trace: the vaulted clip goes too.
+        if let audioRef = review.audioRef {
+            MacAudioClipVault.remove(reference: audioRef)
+        }
         pendingReview = nil
         reviewPanel.hide()
         refreshEscapeCancellationState()
@@ -736,6 +774,11 @@ final class MacDictationController {
         Task {
             try? await OllamaLocalClient().prewarm()
         }
+
+        // Settle any live post-insert observation and lazy-diff the previous
+        // span BEFORE ingesting, so this dictation ranks hotwords against the
+        // freshest corrections. Bounded main-thread work (AX timeout 0.3s).
+        postInsertObserver.harvestBeforeNextDictation()
 
         // Latency-budget contract: context capture and hotword ranking run
         // DURING recording (the user is still speaking — this time is free),
@@ -827,6 +870,13 @@ final class MacDictationController {
 
         let settings = activeSettings ?? settingsStore.load()
         let insertionTarget = MacInsertionTarget.captureFrontmost()
+        // Single privacy verdict for the whole learning loop, taken NOW while
+        // the user's target field is still focused (before the paste moves
+        // focus). Reused by audio retention, journal writes and the observer so
+        // a password field is refused everywhere, not just in the observer.
+        let learnBlocked = MacLearningPrivacy.focusedBlockReason(
+            bundleID: insertionTarget?.bundleIdentifier
+        ) != nil
         activeSettings = nil
         isRecording = false
         audioService.setLevelHandler(nil)
@@ -921,11 +971,20 @@ final class MacDictationController {
                 // not model confidence. Input mode stays direct-insert.
                 if settings.mode == .translate {
                     let elapsedMS = releaseTime.duration(to: ContinuousClock.now).milliseconds
+                    // Vault the clip before the deferred cleanup deletes it;
+                    // a cancelled review removes it again. Skipped entirely for
+                    // privacy-blocked targets.
+                    let audioRef = learnBlocked ? nil : MacAudioClipVault.store(
+                        clipAt: clip.url,
+                        sessionID: result.session.id.uuidString
+                    )
                     presentTranslationReview(
                         result: result,
                         elapsedMS: elapsedMS,
                         preferredInsertLanguage: settings.preferredInsertLanguage,
-                        target: insertionTarget
+                        target: insertionTarget,
+                        audioRef: audioRef,
+                        learnBlocked: learnBlocked
                     )
                     return
                 }
@@ -947,6 +1006,40 @@ final class MacDictationController {
                         at: Date()
                     )
                     startUndoWatch()
+                    // Learning loop (only when the target isn't a privacy-
+                    // blocked surface): journal the (asr → polished → final)
+                    // triple and arm the post-insert edit observer. The vault
+                    // move happens before the deferred clip cleanup runs.
+                    if !learnBlocked {
+                        let sessionID = result.session.id.uuidString
+                        let audioRef = MacAudioClipVault.store(clipAt: clip.url, sessionID: sessionID)
+                        MacCorrectionJournal.recordInsertion(
+                            sessionID: sessionID,
+                            mode: settings.mode,
+                            asrText: result.asr.text,
+                            polishedText: result.compose.polishedText,
+                            finalText: result.finalText,
+                            appliedEdits: result.correction.edits + result.compose.edits,
+                            targetBundleID: insertionTarget?.bundleIdentifier,
+                            language: result.asr.language,
+                            audioRef: audioRef
+                        )
+                        if let insertionTarget {
+                            postInsertObserver.begin(
+                                MacPostInsertObserver.PendingObservation(
+                                    sessionID: sessionID,
+                                    mode: settings.mode,
+                                    insertedText: result.finalText,
+                                    asrText: result.asr.text,
+                                    polishedText: result.compose.polishedText,
+                                    appliedEdits: result.correction.edits + result.compose.edits,
+                                    targetPID: insertionTarget.processIdentifier,
+                                    targetBundleID: insertionTarget.bundleIdentifier,
+                                    language: result.asr.language
+                                )
+                            )
+                        }
+                    }
                     let warningsSuffix = result.compose.warnings.isEmpty
                         ? ""
                         : " ⚠︎\(result.compose.warnings.joined(separator: ","))"
@@ -1018,7 +1111,9 @@ final class MacDictationController {
         result: PipelineRunResult,
         elapsedMS: Int,
         preferredInsertLanguage: String,
-        target: MacInsertionTarget?
+        target: MacInsertionTarget?,
+        audioRef: String? = nil,
+        learnBlocked: Bool = false
     ) {
         guard let translation = result.translation else {
             floatingPanel.show(
@@ -1046,6 +1141,10 @@ final class MacDictationController {
             latencyDetail: "wall_ms=\(elapsedMS)",
             warnings: translation.warnings,
             asrText: result.asr.text,
+            polishedText: result.compose.polishedText,
+            sessionID: result.session.id.uuidString,
+            audioRef: audioRef,
+            learnBlocked: learnBlocked,
             appliedEdits: result.correction.edits + result.compose.edits,
             target: target,
             preferredSelection: preferredSelection
@@ -1256,6 +1355,7 @@ struct MacContextProvider: ContextProvider {
     private static func focusedSelectedText() -> String {
         guard AXIsProcessTrusted(),
               let element = focusedElement(),
+              !isSensitiveContext(element),
               let selectedText = copyAXAttribute(element, kAXSelectedTextAttribute) as? String else {
             return ""
         }
@@ -1265,10 +1365,25 @@ struct MacContextProvider: ContextProvider {
     private static func focusedValuePreview() -> String {
         guard AXIsProcessTrusted(),
               let element = focusedElement(),
+              !isSensitiveContext(element),
               let value = copyAXAttribute(element, kAXValueAttribute) as? String else {
             return ""
         }
         return value.oneLinePreview(maxLength: 400)
+    }
+
+    /// Design §10.3: never read from password fields — neither for context
+    /// prompting nor for learning. Secure input flag + secure-field subrole
+    /// cover native AND web password inputs.
+    private static func isSensitiveContext(_ element: AXUIElement) -> Bool {
+        if IsSecureEventInputEnabled() {
+            return true
+        }
+        if let subrole = copyAXAttribute(element, kAXSubroleAttribute) as? String,
+           subrole == (kAXSecureTextFieldSubrole as String) {
+            return true
+        }
+        return false
     }
 
     private static func focusedElement() -> AXUIElement? {
@@ -1406,6 +1521,9 @@ enum MacPasteboardInserter {
             snapshot.restoreIfUnchanged(to: pasteboard)
             return .failedToWrite
         }
+        // De-facto standard marker (org.nspasteboard.ConcealedType): clipboard
+        // managers skip this transient dictation text instead of archiving it.
+        pasteboard.setString(text, forType: NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType"))
 
         let writtenChangeCount = pasteboard.changeCount
         // Fail closed: with a known target, never paste into whatever app
@@ -1516,6 +1634,13 @@ struct MacPendingTranslationReview: Identifiable {
     var latencyDetail: String
     var warnings: [String]
     var asrText: String
+    var polishedText: String
+    var sessionID: String
+    var audioRef: String?
+    /// Privacy verdict captured at release time (target field still focused).
+    /// True → this utterance came from a password/blocked surface; the learning
+    /// loop stays off through confirm even though the review panel is showing.
+    var learnBlocked: Bool
     var appliedEdits: [TextEdit]
     var target: MacInsertionTarget?
     /// The side the settings panel promises to insert on plain confirm
@@ -1607,7 +1732,84 @@ enum MacCorrectionJournal {
         ])
     }
 
+    /// Every successful insertion becomes one corpus row carrying the full
+    /// (asr → polished → final) triple. Observer-produced `post_insert_edit`
+    /// rows join on `session_id` to complete the user-final leg — together
+    /// they are the fine-tune dataset (docs/LEARNING_PIPELINE.md).
+    static func recordInsertion(
+        sessionID: String,
+        mode: DictationMode,
+        asrText: String,
+        polishedText: String,
+        finalText: String,
+        appliedEdits: [TextEdit],
+        targetBundleID: String?,
+        language: String,
+        audioRef: String?
+    ) {
+        // Privacy is enforced by the caller's unified gate (focusedBlockReason
+        // at release time); the learning master switch is enforced in append.
+        append([
+            "kind": "insertion",
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "session_id": sessionID,
+            "mode": mode.rawValue,
+            "lang": language,
+            "app_bundle": targetBundleID ?? "",
+            "asr_text": asrText,
+            "polished_text": polishedText,
+            "final_text": finalText,
+            "llm_edits": appliedEdits.map { ["from": $0.from, "to": $0.to, "reason": $0.reason] },
+            "audio_ref": audioRef ?? NSNull(),
+        ])
+    }
+
+    static func recordPostInsertEdit(
+        sessionID: String,
+        mode: DictationMode,
+        language: String,
+        appBundle: String,
+        insertedText: String,
+        finalSpan: String,
+        analysis: VeloraEditAnalysis,
+        windowMS: Int,
+        terminatedBy: String,
+        anchorMethod: String
+    ) {
+        // Master switch enforced in append.
+        append([
+            "kind": "post_insert_edit",
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "session_id": sessionID,
+            "mode": mode.rawValue,
+            "lang": language,
+            "app_bundle": appBundle,
+            "inserted_text": insertedText,
+            "user_final_span": finalSpan,
+            "similarity": (analysis.similarity * 100).rounded() / 100,
+            "is_rewrite": analysis.isRewrite,
+            "edit_blocks": analysis.blocks.map {
+                [
+                    "type": $0.kind.rawValue,
+                    "before": $0.before,
+                    "after": $0.after,
+                    "pinyin_distance": $0.pinyinDistance,
+                ] as [String: Any]
+            },
+            "window_ms": windowMS,
+            "terminated_by": terminatedBy,
+            "anchor_method": anchorMethod,
+        ])
+    }
+
     private static func append(_ entry: [String: Any]) {
+        // Single master-switch chokepoint for EVERY learning write (edit,
+        // retry, undo, insertion, post-insert). Turning learning off stops all
+        // journaling immediately, including the legacy translate/retry/undo
+        // entries that predate the setting.
+        guard MacLearningSettings.learningEnabled else {
+            return
+        }
         guard let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return
         }

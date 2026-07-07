@@ -11,6 +11,8 @@
 		2C627C4D5E0DA9C2E5FFC87B /* Velora in Frameworks */ = {isa = PBXBuildFile; productRef = A97C82CF642E0D002B8B1956 /* Velora */; };
 		3E43A03D7403E830BA90EA54 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CA10A53132B4BA9DF8EF533A /* Assets.xcassets */; };
 		453F17C5AF600FEB309DCC0C /* VeloraKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9545F761AB24D97926A5A619 /* VeloraKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		46B85E19B2B882AB9E98C169 /* MacLearningSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B7EAE81CD7DA05DD8A5A75 /* MacLearningSettings.swift */; };
+		566DD99FE1EB07DA8EF3F889 /* MacPostInsertObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9F6F2F566A29E56B1D054A /* MacPostInsertObserver.swift */; };
 		6EBA2CDEB1AC284201E639F2 /* MacDeveloperMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6C8E65D51FB96316F97CCE /* MacDeveloperMode.swift */; };
 		85DDBE30B56A24CD8CE35C89 /* Velora in Frameworks */ = {isa = PBXBuildFile; productRef = 35D51D794D7565B1D8BD86C3 /* Velora */; };
 		8ED3F81F5C9DFC6485D20A40 /* MacHotKeySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226A68B828E93B249A625B5F /* MacHotKeySettings.swift */; };
@@ -50,6 +52,7 @@
 /* Begin PBXFileReference section */
 		09068E3EC860A09976ADCF37 /* VeloraiOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VeloraiOS.entitlements; sourceTree = "<group>"; };
 		0B4113597C550ED8DE13029C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		0C9F6F2F566A29E56B1D054A /* MacPostInsertObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPostInsertObserver.swift; sourceTree = "<group>"; };
 		142347E1EA2B889E947AA263 /* MacSystemInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSystemInputController.swift; sourceTree = "<group>"; };
 		226A68B828E93B249A625B5F /* MacHotKeySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHotKeySettings.swift; sourceTree = "<group>"; };
 		43C19FEF6F629D5765D3A775 /* Velora */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Velora; path = Velora; sourceTree = SOURCE_ROOT; };
@@ -62,6 +65,7 @@
 		A31BEB5C2C5B8F2B49ACFE09 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		B3392DF2BE8717E42BB56D4B /* PrototypePipelineViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrototypePipelineViewModel.swift; sourceTree = "<group>"; };
 		B4D3ADD4196E337B158ED0C1 /* VeloraKeyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VeloraKeyboard.entitlements; sourceTree = "<group>"; };
+		B8B7EAE81CD7DA05DD8A5A75 /* MacLearningSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacLearningSettings.swift; sourceTree = "<group>"; };
 		CA10A53132B4BA9DF8EF533A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DA6C8E65D51FB96316F97CCE /* MacDeveloperMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDeveloperMode.swift; sourceTree = "<group>"; };
 		FB45C326B351948D95487A38 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -122,6 +126,8 @@
 				73A098DC95318E22319D318D /* Info.plist */,
 				DA6C8E65D51FB96316F97CCE /* MacDeveloperMode.swift */,
 				226A68B828E93B249A625B5F /* MacHotKeySettings.swift */,
+				B8B7EAE81CD7DA05DD8A5A75 /* MacLearningSettings.swift */,
+				0C9F6F2F566A29E56B1D054A /* MacPostInsertObserver.swift */,
 				142347E1EA2B889E947AA263 /* MacSystemInputController.swift */,
 				FDD948E02EB19B1F0AA71F74 /* VeloraMacApp.swift */,
 			);
@@ -315,6 +321,8 @@
 			files = (
 				6EBA2CDEB1AC284201E639F2 /* MacDeveloperMode.swift in Sources */,
 				8ED3F81F5C9DFC6485D20A40 /* MacHotKeySettings.swift in Sources */,
+				46B85E19B2B882AB9E98C169 /* MacLearningSettings.swift in Sources */,
+				566DD99FE1EB07DA8EF3F889 /* MacPostInsertObserver.swift in Sources */,
 				EF28F65B86D14C8169380DFC /* MacSystemInputController.swift in Sources */,
 				93E0673C1AB87BF14A0091FE /* PrototypePipelineViewModel.swift in Sources */,
 				05C0CAC20748C60320B544A0 /* VeloraMacApp.swift in Sources */,

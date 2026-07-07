@@ -48,25 +48,60 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--tokens", required=True)
     parser.add_argument("--threads", type=int, default=4)
+    # HomophoneReplacer assets (optional): learned hotwords compiled into an
+    # in-decoder pinyin-replacement FST (see scripts/build_hotword_fst.py).
+    # This is the official hotword channel for SenseVoice — sherpa-onnx
+    # contextual biasing only exists for transducer models.
+    parser.add_argument("--hr-dict-dir", default="")
+    parser.add_argument("--hr-lexicon", default="")
+    parser.add_argument("--hr-rule-fsts", default="")
     args = parser.parse_args()
 
     if not Path(args.model).exists() or not Path(args.tokens).exists():
         emit({"ready": False, "error": f"model_or_tokens_missing"})
         return 1
 
-    try:
-        recognizer = sherpa_onnx.OfflineRecognizer.from_sense_voice(
+    hr_enabled = bool(
+        args.hr_dict_dir and args.hr_lexicon and args.hr_rule_fsts
+        and Path(args.hr_dict_dir).is_dir()
+        and Path(args.hr_lexicon).exists()
+        and Path(args.hr_rule_fsts).exists()
+    )
+
+    def build(with_hr):
+        kwargs = dict(
             model=args.model,
             tokens=args.tokens,
             num_threads=args.threads,
             use_itn=True,
             language="auto",
         )
+        if with_hr:
+            kwargs.update(
+                hr_dict_dir=args.hr_dict_dir,
+                hr_lexicon=args.hr_lexicon,
+                hr_rule_fsts=args.hr_rule_fsts,
+            )
+        return sherpa_onnx.OfflineRecognizer.from_sense_voice(**kwargs)
+
+    try:
+        try:
+            recognizer = build(hr_enabled)
+        except TypeError:
+            # Older sherpa-onnx without hr_* kwargs: degrade to plain decode
+            # rather than dying — HR is an enhancement, not a dependency.
+            hr_enabled = False
+            recognizer = build(False)
     except Exception as exc:  # noqa: BLE001 — surface any load failure to the app
         emit({"ready": False, "error": f"load_failed:{exc}"})
         return 1
 
-    emit({"ready": True, "engine": "sensevoice", "model": Path(args.model).name})
+    emit({
+        "ready": True,
+        "engine": "sensevoice",
+        "model": Path(args.model).name,
+        "hr": hr_enabled,
+    })
 
     for line in sys.stdin:
         line = line.strip()
