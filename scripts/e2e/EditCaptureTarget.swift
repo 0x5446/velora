@@ -106,6 +106,20 @@ final class TargetAppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         guard let rule = rules.first(where: { text.contains($0.from) }) else {
+            // Text landed but no rule matches — the pipeline may have already
+            // applied the learned correction upstream. Report and idle out.
+            edited = true
+            print("PASTED:\(text)")
+            print("NOMATCH")
+            fflush(stdout)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.previousFrontmost?.activate()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + idleExitSeconds) {
+                print("DONE")
+                fflush(stdout)
+                NSApp.terminate(nil)
+            }
             return
         }
         edited = true
