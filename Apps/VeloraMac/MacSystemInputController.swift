@@ -887,6 +887,7 @@ final class MacDictationController {
         guard MacDeveloperModeStore.shared.isEnabled else {
             return
         }
+        MacLearningDebugLog.log("debug inject clip=\(url.lastPathComponent) pid=\(targetPID.map(String.init) ?? "frontmost")")
         var targetOverride: MacInsertionTarget?
         if let targetPID {
             guard let app = NSRunningApplication(processIdentifier: targetPID), !app.isTerminated else {
@@ -1117,6 +1118,7 @@ final class MacDictationController {
                         )
                     )
                 case .targetUnavailable:
+                    MacLearningDebugLog.log("insert outcome: target_unavailable")
                     floatingPanel.show(
                         MacFloatingStatus(
                             phase: .review,
@@ -1138,6 +1140,7 @@ final class MacDictationController {
             } catch is CancellationError {
                 return
             } catch PipelineError.asrUnavailable("no_speech_detected") {
+                MacLearningDebugLog.log("pipeline: no_speech_detected")
                 // Silence is a normal outcome, not a failure — quiet hint only.
                 floatingPanel.show(
                     MacFloatingStatus(
@@ -1149,6 +1152,9 @@ final class MacDictationController {
                 )
                 floatingPanel.hide(after: 1.6)
             } catch {
+                // Dev-gated breadcrumb: a failed pipeline is otherwise only a
+                // 1.6s floating panel nobody can read after the fact.
+                MacLearningDebugLog.log("pipeline error: \(error)")
                 floatingPanel.show(
                     MacFloatingStatus(
                         phase: .error,
@@ -1588,8 +1594,19 @@ enum MacPasteboardInserter {
             guard target.activateBeforeInsertion() else {
                 return .targetUnavailable
             }
-            RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.08))
-            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier else {
+            // Cooperative activation can lose the race against the user's
+            // live focus (or plain scheduling): re-assert briefly instead of
+            // failing on a single 80ms check. Still fail-closed after ~0.5s.
+            var isFront = false
+            for _ in 0..<5 {
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+                if NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier {
+                    isFront = true
+                    break
+                }
+                _ = target.activateBeforeInsertion()
+            }
+            guard isFront else {
                 return .targetUnavailable
             }
         }

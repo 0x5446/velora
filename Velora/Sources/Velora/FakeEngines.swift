@@ -103,13 +103,13 @@ public struct InMemoryHotwordStore: MemoryStore {
             term: "prom injection",
             replacement: "prompt injection",
             score: 8.0,
-            reasons: ["accepted_correction"]
+            reasons: ["accepted_correction", HotwordCorrector.hardReplaceReason]
         ),
         HotwordCandidate(
             term: "velora",
             replacement: "Velora",
             score: 7.6,
-            reasons: ["accepted_correction"]
+            reasons: ["accepted_correction", HotwordCorrector.hardReplaceReason]
         ),
         HotwordCandidate(
             term: "agenda",
@@ -127,25 +127,25 @@ public struct InMemoryHotwordStore: MemoryStore {
             term: "拥护",
             replacement: "用户",
             score: 7.4,
-            reasons: ["input_product_term"]
+            reasons: ["input_product_term", HotwordCorrector.hardReplaceReason]
         ),
         HotwordCandidate(
             term: "上评",
             replacement: "上屏",
             score: 7.3,
-            reasons: ["input_product_term"]
+            reasons: ["input_product_term", HotwordCorrector.hardReplaceReason]
         ),
         HotwordCandidate(
             term: "据认",
             replacement: "确认",
             score: 7.1,
-            reasons: ["input_product_term"]
+            reasons: ["input_product_term", HotwordCorrector.hardReplaceReason]
         ),
         HotwordCandidate(
             term: "终于门对照",
             replacement: "中英文对照",
             score: 7.0,
-            reasons: ["input_product_term"]
+            reasons: ["input_product_term", HotwordCorrector.hardReplaceReason]
         ),
         // 研发场景高频 ASR 同音误识。评测证实（pocs/tuning/homophone_eval.py）：
         // 这类"错字序列自身通顺"的术语错误，LLM 无论 prompt 怎么写都修不动，
@@ -154,19 +154,19 @@ public struct InMemoryHotwordStore: MemoryStore {
             term: "发不说明",
             replacement: "发布说明",
             score: 6.9,
-            reasons: ["asr_homophone_term"]
+            reasons: ["asr_homophone_term", HotwordCorrector.hardReplaceReason]
         ),
         HotwordCandidate(
             term: "疑程",
             replacement: "议程",
             score: 6.9,
-            reasons: ["asr_homophone_term"]
+            reasons: ["asr_homophone_term", HotwordCorrector.hardReplaceReason]
         ),
         HotwordCandidate(
             term: "回归册是",
             replacement: "回归测试",
             score: 6.9,
-            reasons: ["asr_homophone_term"]
+            reasons: ["asr_homophone_term", HotwordCorrector.hardReplaceReason]
         ),
     ]
 }

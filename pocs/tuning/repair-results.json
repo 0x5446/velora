@@ -1,159 +1,33 @@
 [
  {
-  "cand": "baseline",
+  "cand": "shipped",
   "text": "count_repair",
-  "wall": 1273,
-  "ok": false,
+  "wall": 1149,
+  "ok": true,
   "contains_ok": true,
-  "absent_ok": false,
-  "polished": "对了，我有三点想说一下：\n1. 我不是两点，第一点需要理点需求；\n2. 第二点需要充分测试。"
+  "absent_ok": true,
+  "polished": "我有两点想说一下：\n1. 需要理清需求；\n2. 需要充分测试。"
  },
  {
-  "cand": "baseline",
+  "cand": "shipped",
   "text": "soft_should_be",
-  "wall": 535,
-  "ok": false,
-  "contains_ok": true,
-  "absent_ok": false,
-  "polished": "预算大概五万，应该是八万。"
- },
- {
-  "cand": "baseline",
-  "text": "casual_switch",
-  "wall": 701,
-  "ok": false,
-  "contains_ok": true,
-  "absent_ok": false,
-  "polished": "周三开会啊，不周四下午三点，算了，还是周五上午吧。"
- },
- {
-  "cand": "baseline",
-  "text": "three_way",
-  "wall": 439,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "发给小张。"
- },
- {
-  "cand": "baseline",
-  "text": "restate",
-  "wall": 413,
-  "ok": false,
-  "contains_ok": false,
-  "absent_ok": true,
-  "polished": "这个方案可以。"
- },
- {
-  "cand": "baseline",
-  "text": "time_repair",
-  "wall": 484,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "会议定在周四下午三点。"
- },
- {
-  "cand": "baseline",
-  "text": "name_repair",
-  "wall": 487,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "把文档发给小李。"
- },
- {
-  "cand": "baseline",
-  "text": "no_repair_negation",
-  "wall": 535,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "我不是本地人，是从北京过来的。"
- },
- {
-  "cand": "baseline",
-  "text": "no_repair_quote",
-  "wall": 577,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "他说的不是周三是周四，你确认一下。"
- },
- {
-  "cand": "baseline",
-  "text": "no_repair_clean",
-  "wall": 695,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "帮我回复他，说好的没问题，我明天上午把文档发过去。"
- },
- {
-  "cand": "baseline",
-  "text": "no_repair_disagree",
-  "wall": 557,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "我不是不同意，就是想再确认一下时间。"
- },
- {
-  "cand": "baseline",
-  "text": "no_repair_list",
-  "wall": 936,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "我有两点想说：\n1. 进度没问题；\n2. 预算要加。"
- },
- {
-  "cand": "baseline",
-  "text": "no_repair_speculation",
-  "wall": 646,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "他应该是去开会了，你等他回来再问吧。"
- },
- {
-  "cand": "baseline",
-  "text": "no_repair_choice",
-  "wall": 531,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "你觉得会议定在周三还是周四比较好。"
- },
- {
-  "cand": "repair_v2",
-  "text": "count_repair",
-  "wall": 1163,
-  "ok": false,
-  "contains_ok": false,
-  "absent_ok": false,
-  "polished": "对了，我有三点想说一下：\n1. 第一点需要理点需求；\n2. 第二点需要充分测试。"
- },
- {
-  "cand": "repair_v2",
-  "text": "soft_should_be",
-  "wall": 438,
+  "wall": 448,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "预算大概八万。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "casual_switch",
-  "wall": 442,
+  "wall": 453,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "周五上午开会吧。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "three_way",
   "wall": 451,
   "ok": true,
@@ -162,216 +36,90 @@
   "polished": "发给小张。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "restate",
-  "wall": 443,
+  "wall": 447,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "前面那个方案可以。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "time_repair",
-  "wall": 487,
+  "wall": 495,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "会议定在周四下午三点。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "name_repair",
-  "wall": 485,
+  "wall": 495,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "把文档发给小李。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "no_repair_negation",
-  "wall": 533,
+  "wall": 537,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "我不是本地人，是从北京过来的。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "no_repair_quote",
-  "wall": 581,
+  "wall": 594,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "他说的不是周三是周四，你确认一下。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "no_repair_clean",
-  "wall": 700,
+  "wall": 713,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "帮我回复他，说好的没问题，我明天上午把文档发过去。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "no_repair_disagree",
-  "wall": 556,
+  "wall": 570,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "我不是不同意，就是想再确认一下时间。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "no_repair_list",
-  "wall": 935,
+  "wall": 948,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "我有两点想说：\n1. 进度没问题；\n2. 预算要加。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "no_repair_speculation",
-  "wall": 659,
+  "wall": 671,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
   "polished": "他应该是去开会了，你等他回来再问吧。"
  },
  {
-  "cand": "repair_v2",
+  "cand": "shipped",
   "text": "no_repair_choice",
-  "wall": 538,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "你觉得会议定在周三还是周四比较好。"
- },
- {
-  "cand": "repair_v3",
-  "text": "count_repair",
-  "wall": 1188,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "对了，我有两点想说一下：\n1. 需要理点需求；\n2. 需要充分测试。"
- },
- {
-  "cand": "repair_v3",
-  "text": "soft_should_be",
-  "wall": 440,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "预算大概八万。"
- },
- {
-  "cand": "repair_v3",
-  "text": "casual_switch",
-  "wall": 439,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "周五上午开会吧。"
- },
- {
-  "cand": "repair_v3",
-  "text": "three_way",
-  "wall": 441,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "发给小张。"
- },
- {
-  "cand": "repair_v3",
-  "text": "restate",
-  "wall": 439,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "前面那个方案可以。"
- },
- {
-  "cand": "repair_v3",
-  "text": "time_repair",
-  "wall": 498,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "会议定在周四下午三点。"
- },
- {
-  "cand": "repair_v3",
-  "text": "name_repair",
-  "wall": 513,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "把文档发给小李。"
- },
- {
-  "cand": "repair_v3",
-  "text": "no_repair_negation",
-  "wall": 536,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "我不是本地人，是从北京过来的。"
- },
- {
-  "cand": "repair_v3",
-  "text": "no_repair_quote",
-  "wall": 578,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "他说的不是周三是周四，你确认一下。"
- },
- {
-  "cand": "repair_v3",
-  "text": "no_repair_clean",
-  "wall": 704,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "帮我回复他，说好的没问题，我明天上午把文档发过去。"
- },
- {
-  "cand": "repair_v3",
-  "text": "no_repair_disagree",
-  "wall": 556,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "我不是不同意，就是想再确认一下时间。"
- },
- {
-  "cand": "repair_v3",
-  "text": "no_repair_list",
-  "wall": 937,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "我有两点想说：\n1. 进度没问题；\n2. 预算要加。"
- },
- {
-  "cand": "repair_v3",
-  "text": "no_repair_speculation",
-  "wall": 653,
-  "ok": true,
-  "contains_ok": true,
-  "absent_ok": true,
-  "polished": "他应该是去开会了，你等他回来再问吧。"
- },
- {
-  "cand": "repair_v3",
-  "text": "no_repair_choice",
-  "wall": 558,
+  "wall": 548,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,

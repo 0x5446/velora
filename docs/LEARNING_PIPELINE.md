@@ -74,11 +74,16 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 
 学到的词对先进候选池（`promoted=0`，不参与 rank）：**同一词对 ≥2 次且跨 ≥2 个 session** 才生效。既有反污染保留：拒绝衰减 0.8/次、三连拒自动禁用；新增：90 天未命中降回候选、生效学习词上限 200（低分先降）。手动/种子词不受候选池约束。
 
-## 热词兑现三通道
+## 热词兑现：语境优先（apply_mode）
 
-1. **HomophoneReplacer（ASR 内解码后替换，首选）**：sherpa-onnx 官方对 SenseVoice 的热词答案（transducer 专属的 hotwords 不适用于 CTC）。`scripts/build_hotword_fst.py` 把生效词表编译成 `replace.fst`（pypinyin TONE3 + pynini），资产放 `Application Support/Velora/hr/{dict,lexicon.txt,replace.fst}`，sidecar 启动时自动加载（缺失/旧版 sherpa 自动降级）。注意 HR 同音必换、仅中文——所以只喂"生效"词，候选池绝不进入。
-2. **HotwordCorrector**（ASR 后字面替换，既有）：与 HR 互补，覆盖拉丁词与字面命中。
-3. **LLM glossary**：原仅翻译模式，现扩展到输入模式（`inputSystem` 规则 9），并加拼音域预筛——只注入本句发音里真实出现的词对，防大词表误纠。**提示词已变更：合并前需重跑三套 eval 门禁 `pocs/tuning/repair_eval.py`、`pocs/tuning/format_eval.py`、`pocs/tuning/homophone_eval.py`。**
+无条件替换只有在左侧不是真词时才安全（"拥护→用户"会污染真实的"拥护"句子），而自动信号无法证明这一点。因此每个词条带 `apply_mode`：
+
+- **contextual（默认，含全部自动学习词）**：只作为语境信息给润色 LLM，两条形态——
+  - **sound_alike 近音组**（`inputSystem` 规则 9）：注入无方向的"X / Y"组（拼音预筛，只注入本句发音真实出现的组，≤8），模型按语境**选择**正确者。刻意不用"X => Y"映射：8B 模型见指令式映射就想执行，歧义 eval 实测"选择题"框架才能在全新词对上不误换（`pocs/tuning/ambiguity_eval.py` 11/11）。
+  - **correction_history 三元组 few-shot**（规则 10）：ingest 时把「误识句 → 用户改正句」完整句对抽进 `correction_examples` 表（拼音键、300 条上限、120 字窗口），听写时按发音命中检索 ≤2 条注入——模型看到的是这个用户真实的错误模式及其语境。
+- **hard（词典 UI「必换」显式勾选）**：进 HotwordCorrector 字面替换与 HomophoneReplacer FST（`build_hotword_fst.py` 只吃 hard 词）。适合"薇拉→Velora"这类左侧非真词/拼写锁定条目；乱码型术语（"发不说明"）实测 glossary 提示下 LLM 也能修，硬替换仅作兜底。
+
+**提示词已变更：合并前需重跑四套 eval 门禁 `repair_eval.py`、`format_eval.py`、`homophone_eval.py`、`ambiguity_eval.py`（候选文件由 `VELORA_EXPORT_PROMPTS=1 swift test --filter exportPromptCandidates` 从源码导出，保证测的就是发的）。**
 
 > 注意作用域：只有源语言的 `asr_fix`（同音验证过的听写纠错）进入 `terms` 热词表，参与 HotwordCorrector 与 HR。翻译确认卡片的**译文侧编辑不进热词表**（只留在 journal 供微调），避免另一种语言的术语偏好污染 ASR 后的字面替换。
 

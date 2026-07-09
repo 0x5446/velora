@@ -18,7 +18,8 @@ import Testing
 }
 
 @Test func hotwordCorrectorRespectsLatinWordBoundaries() {
-    let hotword = HotwordCandidate(term: "velora", replacement: "Velora", score: 8, reasons: [])
+    // Boundary rules are a hard-replace concern; contextual terms never reach this pass.
+    let hotword = HotwordCandidate(term: "velora", replacement: "Velora", score: 8, reasons: [HotwordCorrector.hardReplaceReason])
 
     let standalone = HotwordCorrector.correct(text: "try velora today", hotwords: [hotword])
     #expect(standalone.correctedText == "try Velora today")
@@ -33,7 +34,7 @@ import Testing
 }
 
 @Test func hotwordCorrectorReplacesCJKTermsWithoutBoundaries() {
-    let hotword = HotwordCandidate(term: "上评", replacement: "上屏", score: 7, reasons: [])
+    let hotword = HotwordCandidate(term: "上评", replacement: "上屏", score: 7, reasons: [HotwordCorrector.hardReplaceReason])
 
     let result = HotwordCorrector.correct(text: "确认之后再上评，就完成了", hotwords: [hotword])
 

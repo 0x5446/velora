@@ -34,13 +34,20 @@ def han_only(text: str) -> bool:
 
 def load_pairs(memory_path: Path):
     conn = sqlite3.connect(memory_path)
-    rows = conn.execute(
-        """
-        SELECT term, replacement, edit_count FROM terms
-        WHERE disabled = 0 AND promoted = 1 AND language = 'zh'
-        ORDER BY edit_count DESC
-        """
-    ).fetchall()
+    try:
+        # HR replaces UNCONDITIONALLY on a pinyin hit, so it only ever gets
+        # terms the user explicitly marked hard-replace; contextual terms go
+        # through the polish LLM instead. A store from before the apply_mode
+        # column simply has no hard terms yet.
+        rows = conn.execute(
+            """
+            SELECT term, replacement, edit_count FROM terms
+            WHERE disabled = 0 AND promoted = 1 AND language = 'zh' AND apply_mode = 'hard'
+            ORDER BY edit_count DESC
+            """
+        ).fetchall()
+    except sqlite3.OperationalError:
+        rows = []
     conn.close()
     return [(t, r, c) for t, r, c in rows if han_only(t) and han_only(r) and t != r]
 

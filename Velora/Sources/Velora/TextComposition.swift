@@ -3,12 +3,24 @@ import Foundation
 /// Hotword replacement pass. Conceptually part of the ASR capability boundary:
 /// text leaving "ASR" is already hotword-corrected. Kept as its own unit so the
 /// structured edits stay visible to diagnostics and feedback learning.
+///
+/// Unconditional replacement is only safe when the LEFT side is not itself a
+/// legitimate word ("拥护→用户" would corrupt real 拥护 sentences), and no
+/// automatic signal can prove that — so this pass applies ONLY terms the user
+/// explicitly marked hard-replace in the dictionary. Everything else reaches
+/// the polish LLM as glossary/history context, which decides IN CONTEXT.
 public enum HotwordCorrector {
+    /// Reason marker set by the memory store for apply_mode='hard' terms.
+    public static let hardReplaceReason = "hard_replace"
+
     public static func correct(text: String, hotwords: [HotwordCandidate]) -> CorrectionResult {
         var corrected = text
         var edits: [TextEdit] = []
 
         for hotword in hotwords {
+            guard hotword.reasons.contains(Self.hardReplaceReason) else {
+                continue
+            }
             guard hotword.term != hotword.replacement else {
                 continue
             }

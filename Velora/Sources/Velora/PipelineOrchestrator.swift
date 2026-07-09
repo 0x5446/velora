@@ -59,6 +59,10 @@ public struct PipelineOrchestrator: Sendable {
 
         let hotwordStart = wallClock.mark()
         let hotwords = try await memoryStore.rankHotwords(for: context, limit: 12)
+        // Correction history rides along to the compose call, which picks the
+        // few examples whose sound occurs in this utterance (pinyin-keyed at
+        // ingest, so this fetch is a cheap recency read).
+        let correctionExamples = memoryStore.recentCorrectionExamples(limit: 200)
         trace.stages.append(
             LatencyStage(
                 name: "hotword_rank",
@@ -134,7 +138,8 @@ public struct PipelineOrchestrator: Sendable {
                 sourceLanguage: resolvedDirection?.sourceLanguage ?? request.sourceLanguage,
                 targetLanguage: resolvedDirection?.targetLanguage,
                 context: context,
-                glossary: hotwords
+                glossary: hotwords,
+                correctionExamples: correctionExamples
             )
         )
         try Task.checkCancellation()

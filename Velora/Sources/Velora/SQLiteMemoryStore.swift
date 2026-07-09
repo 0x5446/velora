@@ -49,6 +49,15 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS correction_examples (
+            before_span TEXT NOT NULL,
+            after_span TEXT NOT NULL,
+            before_text TEXT NOT NULL,
+            after_text TEXT NOT NULL,
+            pinyin_key TEXT NOT NULL,
+            created_at REAL NOT NULL DEFAULT 0,
+            PRIMARY KEY (before_span, after_span, before_text)
+        );
         """)
         // Additive migrations for stores created before the candidate-pool
         // columns existed. Check the actual schema first so a real failure
@@ -61,6 +70,11 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
             ("promoted", "ALTER TABLE terms ADD COLUMN promoted INTEGER NOT NULL DEFAULT 1"),
             ("session_count", "ALTER TABLE terms ADD COLUMN session_count INTEGER NOT NULL DEFAULT 0"),
             ("last_session_id", "ALTER TABLE terms ADD COLUMN last_session_id TEXT NOT NULL DEFAULT ''"),
+            // 'contextual' terms only inform the polish LLM; unconditional
+            // replacement is reserved for pairs the user marked 'hard'.
+            // Existing rows migrate to contextual — blanket replacement of a
+            // possibly-legitimate word is the riskier default.
+            ("apply_mode", "ALTER TABLE terms ADD COLUMN apply_mode TEXT NOT NULL DEFAULT 'contextual'"),
         ]
         for addition in additions where !existing.contains(addition.name) {
             try execute(addition.ddl)
@@ -110,7 +124,7 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
             var candidates: [HotwordCandidate] = []
             // Candidates (promoted = 0) accumulate evidence but never bias
             // live recognition until they clear the promotion gate.
-            let sql = "SELECT term, replacement, edit_count, base_score, last_seen_at FROM terms WHERE disabled = 0 AND promoted = 1"
+            let sql = "SELECT term, replacement, edit_count, base_score, last_seen_at, apply_mode FROM terms WHERE disabled = 0 AND promoted = 1"
             var statement: OpaquePointer?
             guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
                 return []
@@ -123,9 +137,15 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
                 let editCount = Double(sqlite3_column_int(statement, 2))
                 let baseScore = sqlite3_column_double(statement, 3)
                 let lastSeen = sqlite3_column_double(statement, 4)
+                let applyMode = String(cString: sqlite3_column_text(statement, 5))
 
                 var score = baseScore
                 var reasons: [String] = ["memory_term"]
+                if applyMode == "hard" {
+                    // HotwordCorrector applies ONLY terms carrying this marker;
+                    // everything else reaches the LLM as context instead.
+                    reasons.append(HotwordCorrector.hardReplaceReason)
+                }
                 if nearby.contains(term.lowercased()) || nearby.contains(replacement.lowercased()) {
                     score += 4.0
                     reasons.append("nearby_text_match")
@@ -258,6 +278,7 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
         public var disabled: Bool
         public var promoted: Bool
         public var lastSeenAt: Date?
+        public var hardReplace: Bool
 
         public var id: String { "\(term)→\(replacement)" }
         public var isAutoLearned: Bool { source == "accepted_correction" }
@@ -267,7 +288,7 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
         queue.sync {
             var records: [TermRecord] = []
             let sql = """
-            SELECT term, replacement, language, source, edit_count, disabled, promoted, last_seen_at
+            SELECT term, replacement, language, source, edit_count, disabled, promoted, last_seen_at, apply_mode
             FROM terms ORDER BY promoted DESC, last_seen_at DESC, edit_count DESC LIMIT ?
             """
             var statement: OpaquePointer?
@@ -287,7 +308,8 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
                         editCount: Int(sqlite3_column_int(statement, 4)),
                         disabled: sqlite3_column_int(statement, 5) == 1,
                         promoted: sqlite3_column_int(statement, 6) == 1,
-                        lastSeenAt: lastSeen > 0 ? Date(timeIntervalSince1970: lastSeen) : nil
+                        lastSeenAt: lastSeen > 0 ? Date(timeIntervalSince1970: lastSeen) : nil,
+                        hardReplace: String(cString: sqlite3_column_text(statement, 8)) == "hard"
                     )
                 )
             }
@@ -482,6 +504,12 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
                    let after = entry.object["source_after"] as? String,
                    let pair = Self.singleSpanDiff(before: before, after: after) {
                     recordAcceptedCorrection(term: pair.before, replacement: pair.after, sessionKey: entry.sessionKey)
+                    recordCorrectionExample(
+                        beforeSpan: pair.before,
+                        afterSpan: pair.after,
+                        beforeText: before,
+                        afterText: after
+                    )
                     summary.acceptedPairs += 1
                 } else {
                     summary.skippedEntries += 1
@@ -523,6 +551,12 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
                         language: language,
                         sessionKey: sessionKey
                     )
+                    recordCorrectionExample(
+                        beforeSpan: before,
+                        afterSpan: after,
+                        beforeText: object["inserted_text"] as? String ?? "",
+                        afterText: object["user_final_span"] as? String ?? ""
+                    )
                     summary.acceptedPairs += 1
                 case "reverted_hotword":
                     // The user undid OUR replacement: reject the pair as it
@@ -544,6 +578,111 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
         }
         performMaintenance()
         return summary
+    }
+
+    // MARK: - Correction examples (few-shot history for the polish LLM)
+
+    /// Sentence pairs are capped in length (windowed around the span) and the
+    /// table is capped by recency: this is prompt material, not an archive —
+    /// the journal remains the full record.
+    public static let correctionExampleCap = 300
+    private static let exampleTextLimit = 120
+
+    func recordCorrectionExample(
+        beforeSpan: String,
+        afterSpan: String,
+        beforeText: String,
+        afterText: String
+    ) {
+        guard !beforeSpan.isEmpty, !afterSpan.isEmpty, beforeSpan != afterSpan,
+              !beforeText.isEmpty, !afterText.isEmpty else {
+            return
+        }
+        let before = Self.windowed(beforeText, around: beforeSpan, limit: Self.exampleTextLimit)
+        let after = Self.windowed(afterText, around: afterSpan, limit: Self.exampleTextLimit)
+        queue.sync {
+            run(
+                """
+                INSERT INTO correction_examples (before_span, after_span, before_text, after_text, pinyin_key, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(before_span, after_span, before_text) DO UPDATE SET created_at = excluded.created_at
+                """,
+                binds: [
+                    .text(beforeSpan), .text(afterSpan), .text(before), .text(after),
+                    .text(VeloraPinyin.latinized(beforeSpan)), .double(Date().timeIntervalSince1970),
+                ]
+            )
+            run(
+                """
+                DELETE FROM correction_examples WHERE rowid NOT IN (
+                    SELECT rowid FROM correction_examples ORDER BY created_at DESC LIMIT \(Self.correctionExampleCap)
+                )
+                """,
+                binds: []
+            )
+        }
+    }
+
+    public func recentCorrectionExamples(limit: Int) -> [VeloraCorrectionExample] {
+        queue.sync {
+            var examples: [VeloraCorrectionExample] = []
+            let sql = """
+            SELECT before_span, after_span, before_text, after_text, pinyin_key
+            FROM correction_examples ORDER BY created_at DESC LIMIT ?
+            """
+            var statement: OpaquePointer?
+            guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+                return []
+            }
+            defer { sqlite3_finalize(statement) }
+            sqlite3_bind_int(statement, 1, Int32(limit))
+            while sqlite3_step(statement) == SQLITE_ROW {
+                examples.append(
+                    VeloraCorrectionExample(
+                        beforeSpan: String(cString: sqlite3_column_text(statement, 0)),
+                        afterSpan: String(cString: sqlite3_column_text(statement, 1)),
+                        beforeText: String(cString: sqlite3_column_text(statement, 2)),
+                        afterText: String(cString: sqlite3_column_text(statement, 3)),
+                        pinyinKey: String(cString: sqlite3_column_text(statement, 4))
+                    )
+                )
+            }
+            return examples
+        }
+    }
+
+    /// Keeps the span visible with symmetric context when the sentence is
+    /// longer than the prompt budget allows.
+    static func windowed(_ text: String, around span: String, limit: Int) -> String {
+        guard text.count > limit else {
+            return text
+        }
+        let chars = Array(text)
+        let spanChars = Array(span)
+        var spanStart = 0
+        if !spanChars.isEmpty {
+            for start in 0...(chars.count - Swift.min(spanChars.count, chars.count)) {
+                if Array(chars[start..<Swift.min(start + spanChars.count, chars.count)]) == spanChars {
+                    spanStart = start
+                    break
+                }
+            }
+        }
+        let half = Swift.max(0, (limit - spanChars.count) / 2)
+        let lower = Swift.max(0, spanStart - half)
+        let upper = Swift.min(chars.count, lower + limit)
+        return String(chars[lower..<upper])
+    }
+
+    /// Dictionary UI: flip a term between context-only (LLM decides) and
+    /// hard replacement (HotwordCorrector + FST).
+    public func setTermApplyMode(term: String, replacement: String, hard: Bool) {
+        queue.sync {
+            run(
+                "UPDATE terms SET apply_mode = ? WHERE term = ? AND replacement = ?",
+                binds: [.text(hard ? "hard" : "contextual"), .text(term), .text(replacement)]
+            )
+        }
     }
 
     private var ingesting = false

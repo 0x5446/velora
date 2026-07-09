@@ -207,6 +207,32 @@ public struct CorrectionResult: Codable, Sendable, Equatable {
     }
 }
 
+/// One past "misrecognized → user fixed it" event, carried into the polish
+/// call as few-shot evidence of THIS user's real error patterns. The pinyin
+/// key is precomputed at ingest so per-utterance relevance ranking is pure
+/// string work.
+public struct VeloraCorrectionExample: Codable, Sendable, Equatable {
+    public var beforeSpan: String
+    public var afterSpan: String
+    public var beforeText: String
+    public var afterText: String
+    public var pinyinKey: String
+
+    public init(
+        beforeSpan: String,
+        afterSpan: String,
+        beforeText: String,
+        afterText: String,
+        pinyinKey: String
+    ) {
+        self.beforeSpan = beforeSpan
+        self.afterSpan = afterSpan
+        self.beforeText = beforeText
+        self.afterText = afterText
+        self.pinyinKey = pinyinKey
+    }
+}
+
 /// Single text-intelligence call: mandatory tiered polish, plus an optional
 /// second-language output when mode is translate. Engines must honor
 /// `deadlineMS` and return a best-effort (rule-tier) result instead of blocking.
@@ -218,6 +244,10 @@ public struct ComposeRequest: Codable, Sendable, Equatable {
     public var targetLanguage: String?
     public var context: ContextSnapshot
     public var glossary: [HotwordCandidate]
+    /// Recent correction history (recency-ordered); the engine selects the
+    /// few whose SOUND occurs in this utterance. Optional so serialized
+    /// requests from before this field keep decoding.
+    public var correctionExamples: [VeloraCorrectionExample]?
     public var deadlineMS: Int
 
     public static let defaultInputDeadlineMS = 4_000
@@ -231,6 +261,7 @@ public struct ComposeRequest: Codable, Sendable, Equatable {
         targetLanguage: String? = nil,
         context: ContextSnapshot,
         glossary: [HotwordCandidate] = [],
+        correctionExamples: [VeloraCorrectionExample]? = nil,
         deadlineMS: Int? = nil
     ) {
         self.text = text
@@ -240,6 +271,7 @@ public struct ComposeRequest: Codable, Sendable, Equatable {
         self.targetLanguage = mode == .translate ? targetLanguage : nil
         self.context = context
         self.glossary = glossary
+        self.correctionExamples = correctionExamples
         self.deadlineMS = deadlineMS
             ?? (mode == .translate ? Self.defaultTranslateDeadlineMS : Self.defaultInputDeadlineMS)
     }
@@ -454,6 +486,16 @@ public protocol ContextProvider: Sendable {
 
 public protocol MemoryStore: Sendable {
     func rankHotwords(for snapshot: ContextSnapshot, limit: Int) async throws -> [HotwordCandidate]
+    /// Recent "misrecognized → user fixed" sentence pairs, newest first.
+    /// Default empty so stores without correction history keep compiling.
+    func recentCorrectionExamples(limit: Int) -> [VeloraCorrectionExample]
+}
+
+public extension MemoryStore {
+    func recentCorrectionExamples(limit: Int) -> [VeloraCorrectionExample] {
+        _ = limit
+        return []
+    }
 }
 
 /// Single-call text intelligence: tiered polish plus optional target language.
