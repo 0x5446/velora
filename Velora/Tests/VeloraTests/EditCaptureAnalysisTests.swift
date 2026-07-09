@@ -485,3 +485,78 @@ private func iTermGrid(_ text: String, width: Int) -> String {
     #expect(terms.count == 1)
     #expect(terms.first?.term == "会画")
 }
+
+// MARK: - Contextual-by-default correction channels
+
+@Test func hotwordCorrectorOnlyAppliesHardTerms() {
+    let contextual = HotwordCandidate(term: "拥护", replacement: "用户", score: 8, reasons: ["memory_term"])
+    let hard = HotwordCandidate(
+        term: "薇拉", replacement: "Velora", score: 8,
+        reasons: ["memory_term", HotwordCorrector.hardReplaceReason]
+    )
+    let result = HotwordCorrector.correct(text: "大家都拥护薇拉这个方案", hotwords: [contextual, hard])
+    // The legitimate word 拥护 must survive; only the explicit hard pair applies.
+    #expect(result.correctedText == "大家都拥护Velora这个方案")
+    #expect(result.edits.count == 1)
+}
+
+@Test func rankHotwordsMarksHardTermsAndUIRoundTripsApplyMode() async throws {
+    let store = try temporaryPromotionStore()
+    store.addManualTerm(term: "薇拉", replacement: "Velora")
+    var ranked = try await store.rankHotwords(for: ContextSnapshot(appBundle: "t", mode: .input), limit: 5)
+    // Default is contextual — no hard marker anywhere.
+    #expect(ranked.allSatisfy { !$0.reasons.contains(HotwordCorrector.hardReplaceReason) })
+
+    store.setTermApplyMode(term: "薇拉", replacement: "Velora", hard: true)
+    ranked = try await store.rankHotwords(for: ContextSnapshot(appBundle: "t", mode: .input), limit: 5)
+    #expect(ranked.first { $0.term == "薇拉" }?.reasons.contains(HotwordCorrector.hardReplaceReason) == true)
+    #expect(store.listTerms().first { $0.term == "薇拉" }?.hardReplace == true)
+}
+
+@Test func correctionExamplesIngestRetrieveAndSelectByPinyin() throws {
+    let store = try temporaryPromotionStore()
+    let journal = URL(fileURLWithPath: NSTemporaryDirectory() + "velora-journal-ex-\(UUID().uuidString).jsonl")
+    defer { try? FileManager.default.removeItem(at: journal) }
+    let entry = #"{"kind":"post_insert_edit","session_id":"s1","lang":"zh","inserted_text":"新开的会画，看看这个问题还存不存在。","user_final_span":"新开的会话，看看这个问题还存不存在。","edit_blocks":[{"type":"asr_fix","before":"会画","after":"会话"}]}"#
+    try (entry + "\n").write(to: journal, atomically: true, encoding: .utf8)
+    _ = store.ingestCorrectionJournal(at: journal)
+
+    let examples = store.recentCorrectionExamples(limit: 10)
+    #expect(examples.count == 1)
+    #expect(examples.first?.beforeSpan == "会画")
+    #expect(examples.first?.pinyinKey == VeloraPinyin.latinized("会画"))
+
+    // Selection: sound present in the utterance → included; absent → not.
+    let hit = OllamaTextIntelligenceEngine.relevantCorrectionExamples(text: "再开一个会画确认一下", examples: examples)
+    #expect(hit.contains("会话"))
+    let miss = OllamaTextIntelligenceEngine.relevantCorrectionExamples(text: "明天上午发布版本", examples: examples)
+    #expect(miss.isEmpty)
+}
+
+@Test func correctionExampleWindowKeepsSpanVisible() {
+    let long = String(repeating: "前", count: 100) + "目标词" + String(repeating: "后", count: 100)
+    let window = SQLiteMemoryStore.windowed(long, around: "目标词", limit: 60)
+    #expect(window.count == 60)
+    #expect(window.contains("目标词"))
+}
+
+/// Not a test of behavior: exports the SHIPPED system prompt into the eval
+/// candidate files so pocs/tuning gates always run against the real thing.
+/// Inert unless VELORA_EXPORT_PROMPTS=1.
+@Test func exportPromptCandidatesWhenRequested() throws {
+    guard ProcessInfo.processInfo.environment["VELORA_EXPORT_PROMPTS"] == "1" else {
+        return
+    }
+    let dir = URL(fileURLWithPath: "/tmp/velora-eval")
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let candidates: [[String: Any]] = [[
+        "id": "shipped",
+        "model": ProcessInfo.processInfo.environment["VELORA_OLLAMA_MODEL"] ?? "qwen3:8b",
+        "system": OllamaPromptLibrary.inputSystem,
+        "options": ["temperature": 0.1, "num_ctx": 4096, "repeat_penalty": 1.0, "num_predict": 400],
+    ]]
+    let data = try JSONSerialization.data(withJSONObject: candidates)
+    for name in ["repair_candidates.json", "format_candidates.json", "homophone_candidates.json", "ambiguity_candidates.json"] {
+        try data.write(to: dir.appendingPathComponent(name))
+    }
+}

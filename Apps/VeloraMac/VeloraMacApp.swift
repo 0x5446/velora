@@ -526,6 +526,13 @@ private struct MacDictionaryRowView: View {
                 .font(VeloraFont.caption(11))
                 .disabled(commitDisabled)
             }
+            Toggle("必换", isOn: Binding(
+                get: { record.hardReplace },
+                set: { model.setHardReplace(record, hard: $0) }
+            ))
+            .toggleStyle(.checkbox)
+            .font(VeloraFont.caption(10))
+            .help("开：每次出现左侧词都无条件替换（仅适合「薇拉→Velora」这类左侧不是真词的条目）。关：交给润色模型按语境判断。")
             Button(record.disabled ? "启用" : "停用") {
                 model.setDisabled(record, disabled: !record.disabled)
             }
@@ -578,6 +585,11 @@ final class MacDictionaryModel: ObservableObject {
             newTerm: newTerm,
             newReplacement: newReplacement
         )
+        refresh()
+    }
+
+    func setHardReplace(_ record: SQLiteMemoryStore.TermRecord, hard: Bool) {
+        store?.setTermApplyMode(term: record.term, replacement: record.replacement, hard: hard)
         refresh()
     }
 }
