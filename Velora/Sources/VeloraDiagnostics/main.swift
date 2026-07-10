@@ -562,13 +562,17 @@ final class AudioProbeRecorder: @unchecked Sendable {
     }
 
     func stop() {
+        // Engine teardown must happen OUTSIDE the lock: removeTap(onBus:)
+        // waits for in-flight tap callbacks, which take this same lock in
+        // write(_:) — holding it here deadlocks.
         lock.lock()
-        defer { lock.unlock() }
+        let engine = self.engine
+        self.engine = nil
+        self.file = nil
+        lock.unlock()
 
         engine?.inputNode.removeTap(onBus: 0)
         engine?.stop()
-        engine = nil
-        file = nil
     }
 
     private func write(_ buffer: AVAudioPCMBuffer) {

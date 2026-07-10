@@ -679,19 +679,25 @@ final class MacAudioCaptureService: @unchecked Sendable {
     }
 
     func stop() -> MacRecordedAudioClip? {
+        // Claim the recording state under the lock, but tear the engine down
+        // OUTSIDE it: removeTap(onBus:) blocks until in-flight tap callbacks
+        // drain, and those callbacks take this same lock in write(_:) — doing
+        // both under the lock deadlocks the main thread (lock inversion with
+        // AVFAudio's RealtimeMessenger mutex). With file nil'd first, a late
+        // callback degrades to a no-op instead.
         lock.lock()
-        defer { lock.unlock() }
-
         guard let engine, let fileURL, let startedAt else {
+            lock.unlock()
             return nil
         }
-
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
         self.engine = nil
         self.file = nil
         self.fileURL = nil
         self.startedAt = nil
+        lock.unlock()
+
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
 
         return MacRecordedAudioClip(
             url: fileURL,
