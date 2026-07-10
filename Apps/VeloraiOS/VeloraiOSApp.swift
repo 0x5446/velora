@@ -316,6 +316,7 @@ final class iOSAudioCaptureService: @unchecked Sendable {
     private var file: AVAudioFile?
     private var fileURL: URL?
     private var startedAt: Date?
+    private var isTearingDown = false
 
     var recordPermission: AVAudioApplication.recordPermission {
         AVAudioApplication.shared.recordPermission
@@ -331,20 +332,31 @@ final class iOSAudioCaptureService: @unchecked Sendable {
     }
 
     func stop() -> iOSRecordedAudioClip? {
+        // Claim the recording state under the lock, but tear the engine down
+        // OUTSIDE it: removeTap(onBus:) blocks until in-flight tap callbacks
+        // drain, and those callbacks take this same lock in write(_:) — doing
+        // both under the lock deadlocks the caller (lock inversion with
+        // AVFAudio's RealtimeMessenger mutex). With file nil'd first, a late
+        // callback degrades to a no-op instead.
         lock.lock()
-        defer { lock.unlock() }
-
         guard let engine, let fileURL, let startedAt else {
+            lock.unlock()
             return nil
         }
-
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         self.engine = nil
         self.file = nil
         self.fileURL = nil
         self.startedAt = nil
+        isTearingDown = true
+        lock.unlock()
+
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+
+        lock.lock()
+        isTearingDown = false
+        lock.unlock()
 
         return iOSRecordedAudioClip(
             url: fileURL,
@@ -365,7 +377,11 @@ final class iOSAudioCaptureService: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        guard engine == nil else {
+        // isTearingDown covers the window where stop() has cleared the state
+        // but the old engine's tap is still draining outside the lock — and,
+        // on iOS, where the old stop()'s setActive(false) could otherwise land
+        // after this new session's setActive(true).
+        guard engine == nil, !isTearingDown else {
             throw iOSAudioCaptureError.recordingAlreadyRunning
         }
 

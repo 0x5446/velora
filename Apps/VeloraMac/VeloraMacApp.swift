@@ -662,6 +662,7 @@ final class MacAudioCaptureService: @unchecked Sendable {
     private var fileURL: URL?
     private var startedAt: Date?
     private var levelHandler: ((Float) -> Void)?
+    private var isTearingDown = false
 
     func setLevelHandler(_ handler: ((Float) -> Void)?) {
         lock.lock()
@@ -679,19 +680,30 @@ final class MacAudioCaptureService: @unchecked Sendable {
     }
 
     func stop() -> MacRecordedAudioClip? {
+        // Claim the recording state under the lock, but tear the engine down
+        // OUTSIDE it: removeTap(onBus:) blocks until in-flight tap callbacks
+        // drain, and those callbacks take this same lock in write(_:) — doing
+        // both under the lock deadlocks the main thread (lock inversion with
+        // AVFAudio's RealtimeMessenger mutex). With file nil'd first, a late
+        // callback degrades to a no-op instead.
         lock.lock()
-        defer { lock.unlock() }
-
         guard let engine, let fileURL, let startedAt else {
+            lock.unlock()
             return nil
         }
-
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
         self.engine = nil
         self.file = nil
         self.fileURL = nil
         self.startedAt = nil
+        isTearingDown = true
+        lock.unlock()
+
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
+
+        lock.lock()
+        isTearingDown = false
+        lock.unlock()
 
         return MacRecordedAudioClip(
             url: fileURL,
@@ -712,7 +724,10 @@ final class MacAudioCaptureService: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        guard engine == nil else {
+        // isTearingDown covers the window where stop() has cleared the state
+        // but the old engine's tap is still draining outside the lock — a new
+        // recording started then could receive the old tap's late buffers.
+        guard engine == nil, !isTearingDown else {
             throw MacAudioCaptureError.recordingAlreadyRunning
         }
 
