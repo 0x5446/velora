@@ -316,6 +316,7 @@ final class iOSAudioCaptureService: @unchecked Sendable {
     private var file: AVAudioFile?
     private var fileURL: URL?
     private var startedAt: Date?
+    private var isTearingDown = false
 
     var recordPermission: AVAudioApplication.recordPermission {
         AVAudioApplication.shared.recordPermission
@@ -346,11 +347,16 @@ final class iOSAudioCaptureService: @unchecked Sendable {
         self.file = nil
         self.fileURL = nil
         self.startedAt = nil
+        isTearingDown = true
         lock.unlock()
 
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+
+        lock.lock()
+        isTearingDown = false
+        lock.unlock()
 
         return iOSRecordedAudioClip(
             url: fileURL,
@@ -371,7 +377,11 @@ final class iOSAudioCaptureService: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        guard engine == nil else {
+        // isTearingDown covers the window where stop() has cleared the state
+        // but the old engine's tap is still draining outside the lock — and,
+        // on iOS, where the old stop()'s setActive(false) could otherwise land
+        // after this new session's setActive(true).
+        guard engine == nil, !isTearingDown else {
             throw iOSAudioCaptureError.recordingAlreadyRunning
         }
 

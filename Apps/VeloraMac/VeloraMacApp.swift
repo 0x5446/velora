@@ -662,6 +662,7 @@ final class MacAudioCaptureService: @unchecked Sendable {
     private var fileURL: URL?
     private var startedAt: Date?
     private var levelHandler: ((Float) -> Void)?
+    private var isTearingDown = false
 
     func setLevelHandler(_ handler: ((Float) -> Void)?) {
         lock.lock()
@@ -694,10 +695,15 @@ final class MacAudioCaptureService: @unchecked Sendable {
         self.file = nil
         self.fileURL = nil
         self.startedAt = nil
+        isTearingDown = true
         lock.unlock()
 
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
+
+        lock.lock()
+        isTearingDown = false
+        lock.unlock()
 
         return MacRecordedAudioClip(
             url: fileURL,
@@ -718,7 +724,10 @@ final class MacAudioCaptureService: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        guard engine == nil else {
+        // isTearingDown covers the window where stop() has cleared the state
+        // but the old engine's tap is still draining outside the lock — a new
+        // recording started then could receive the old tap's late buffers.
+        guard engine == nil, !isTearingDown else {
             throw MacAudioCaptureError.recordingAlreadyRunning
         }
 
