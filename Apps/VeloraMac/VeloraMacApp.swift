@@ -42,6 +42,7 @@ struct MacSettingsView: View {
     @AppStorage(OllamaLocalClient.residentKeepAliveDefaultsKey) private var keepModelResident = false
     @AppStorage(MacLearningSettings.learningEnabledKey) private var learningEnabled = true
     @AppStorage(MacLearningSettings.audioRetentionKey) private var retainAudioClips = false
+    @AppStorage("velora.settings.dictionaryExpanded") private var dictionaryExpanded = false
     @StateObject private var dictionary = MacDictionaryModel()
     @State private var newDictionaryTerm = ""
     @State private var newDictionaryReplacement = ""
@@ -64,7 +65,7 @@ struct MacSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
+        .frame(width: 520)
         .frame(height: developerMode.isEnabled ? 920 : 640)
         .onAppear {
             refreshPermissions()
@@ -180,7 +181,8 @@ struct MacSettingsView: View {
             if learningEnabled {
                 Toggle("保留录音用于将来改进模型", isOn: $retainAudioClips)
             }
-            DisclosureGroup("词典 · \(dictionary.terms.count) 条") {
+            DisclosureGroup("词典 · \(dictionary.terms.count) 条", isExpanded: $dictionaryExpanded) {
+                dictionaryColumnHeader
                 ForEach(dictionary.terms.prefix(100)) { record in
                     MacDictionaryRowView(record: record, model: dictionary)
                 }
@@ -198,18 +200,42 @@ struct MacSettingsView: View {
         }
     }
 
+    private var dictionaryColumnHeader: some View {
+        HStack(spacing: 8) {
+            Text("识别结果")
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "arrow.right")
+                .frame(width: 14)
+                .accessibilityHidden(true)
+            Text("期望词")
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Color.clear
+                .frame(width: 28, height: 1)
+                .accessibilityHidden(true)
+        }
+        .font(VeloraFont.caption(10, weight: .medium))
+        .foregroundStyle(Color.veloraInkSecondary)
+        .padding(.horizontal, 2)
+    }
+
     private var dictionaryAddRow: some View {
-        HStack(spacing: 6) {
-            TextField("误识别词", text: $newDictionaryTerm)
+        HStack(spacing: 8) {
+            TextField("识别结果", text: $newDictionaryTerm, prompt: Text("新增识别词"))
+                .labelsHidden()
+                .accessibilityLabel("新增识别结果")
                 .textFieldStyle(.roundedBorder)
                 .font(VeloraFont.body(12))
-                .frame(width: 140)
-            Text("→")
+                .frame(minWidth: 100, maxWidth: .infinity)
+            Image(systemName: "arrow.right")
                 .foregroundStyle(Color.veloraInkSecondary)
-            TextField("替换为", text: $newDictionaryReplacement)
+                .frame(width: 14)
+                .accessibilityHidden(true)
+            TextField("期望词", text: $newDictionaryReplacement, prompt: Text("新增期望词"))
+                .labelsHidden()
+                .accessibilityLabel("新增期望词")
                 .textFieldStyle(.roundedBorder)
                 .font(VeloraFont.body(12))
-                .frame(width: 140)
+                .frame(minWidth: 100, maxWidth: .infinity)
             Button("添加") {
                 dictionary.add(term: newDictionaryTerm, replacement: newDictionaryReplacement)
                 newDictionaryTerm = ""
@@ -221,9 +247,9 @@ struct MacSettingsView: View {
                     || newDictionaryTerm == newDictionaryReplacement
             )
             .font(VeloraFont.caption(11))
-            Spacer()
+            .frame(minWidth: 44, minHeight: 28)
         }
-        .padding(.top, 2)
+        .padding(.vertical, 4)
     }
 
     private var attentionSection: some View {
@@ -492,65 +518,99 @@ private struct MacDictionaryRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 6) {
-            TextField("误识别词", text: $term)
-                .textFieldStyle(.plain)
-                .font(VeloraFont.body(12))
-                .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
-                .strikethrough(record.disabled && !edited)
-                .frame(width: 140)
-            Text("→")
-                .foregroundStyle(Color.veloraInkSecondary)
-            TextField("替换为", text: $replacement)
-                .textFieldStyle(.plain)
-                .font(VeloraFont.body(12))
-                .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
-                .strikethrough(record.disabled && !edited)
-                .frame(width: 140)
-            if record.isAutoLearned {
-                Text("✨")
-                    .font(.system(size: 10))
-                    .help("从你的修改中自动学到")
-            }
-            if !record.promoted && !record.disabled {
-                Text("候选")
-                    .font(VeloraFont.caption(9, weight: .medium))
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                TextField("识别结果", text: $term)
+                    .labelsHidden()
+                    .accessibilityLabel("识别结果")
+                    .textFieldStyle(.plain)
+                    .font(VeloraFont.body(12))
+                    .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
+                    .strikethrough(record.disabled && !edited)
+                    .frame(minWidth: 100, maxWidth: .infinity)
+                Image(systemName: "arrow.right")
                     .foregroundStyle(Color.veloraInkSecondary)
-            }
-            Spacer()
-            if edited {
-                Button("保存") {
-                    model.update(record, newTerm: term, newReplacement: replacement)
+                    .frame(width: 14)
+                    .accessibilityHidden(true)
+                TextField("期望词", text: $replacement)
+                    .labelsHidden()
+                    .accessibilityLabel("期望词")
+                    .textFieldStyle(.plain)
+                    .font(VeloraFont.body(12))
+                    .foregroundStyle(record.disabled ? Color.veloraInkSecondary : Color.veloraInkPrimary)
+                    .strikethrough(record.disabled && !edited)
+                    .frame(minWidth: 100, maxWidth: .infinity)
+                if edited {
+                    Button {
+                        model.update(record, newTerm: term, newReplacement: replacement)
+                    } label: {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
+                    .buttonStyle(.borderless)
+                    .frame(width: 28, height: 28)
+                    .accessibilityLabel("保存词条")
+                    .help("保存修改")
+                    .disabled(commitDisabled)
                 }
-                .buttonStyle(.borderless)
-                .font(VeloraFont.caption(11))
-                .disabled(commitDisabled)
+                actionsMenu
             }
-            Toggle("必换", isOn: Binding(
-                get: { record.hardReplace },
-                set: { model.setHardReplace(record, hard: $0) }
-            ))
-            .toggleStyle(.checkbox)
-            .font(VeloraFont.caption(10))
-            .help("开：每次出现左侧词都无条件替换（仅适合「薇拉→Velora」这类左侧不是真词的条目）。关：交给润色模型按语境判断。")
-            Button(record.disabled ? "启用" : "停用") {
-                model.setDisabled(record, disabled: !record.disabled)
+
+            HStack(spacing: 10) {
+                if record.isAutoLearned {
+                    Label("自动学习", systemImage: "sparkles")
+                        .help("从你的修改中自动学到")
+                } else {
+                    Label(record.source == "manual" ? "手动词条" : "内置词条",
+                          systemImage: record.source == "manual" ? "person.crop.circle" : "shippingbox")
+                }
+                if !record.promoted && !record.disabled {
+                    Label("待再次确认", systemImage: "clock")
+                        .help("同一修正在另一次听写中再次出现后才会生效")
+                }
+                if record.hardReplace {
+                    Label("强制替换", systemImage: "bolt.fill")
+                        .help("每次出现识别词都会直接替换，不经过语境判断")
+                }
+                if record.disabled {
+                    Label("已停用", systemImage: "pause.circle")
+                }
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.borderless)
-            .font(VeloraFont.caption(11))
-            Button(role: .destructive) {
-                model.remove(record)
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 10))
-            }
-            .buttonStyle(.borderless)
+            .font(VeloraFont.caption(9, weight: .medium))
+            .foregroundStyle(Color.veloraInkSecondary)
+            .lineLimit(1)
         }
+        .padding(.vertical, 4)
         .onSubmit {
             if edited && !commitDisabled {
                 model.update(record, newTerm: term, newReplacement: replacement)
             }
         }
+    }
+
+    private var actionsMenu: some View {
+        Menu {
+            Toggle("每次强制替换", isOn: Binding(
+                get: { record.hardReplace },
+                set: { model.setHardReplace(record, hard: $0) }
+            ))
+            Button(record.disabled ? "启用词条" : "停用词条") {
+                model.setDisabled(record, disabled: !record.disabled)
+            }
+            Divider()
+            Button("删除词条", role: .destructive) {
+                model.remove(record)
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: 14))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .accessibilityLabel("词条操作")
+        .help("强制替换、停用或删除")
     }
 }
 
