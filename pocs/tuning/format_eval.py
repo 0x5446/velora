@@ -11,11 +11,11 @@ OLLAMA = "http://127.0.0.1:11434/api/generate"
 # want_list: output should contain list markers + newlines
 # want_flat: output must stay single-line (no list markers, no newline)
 CASES = [
-    {"id": "ordinal_3", "text": "这次改动主要有三块第一是把asr换成了sensevoice第二是加了记忆层第三是录音期并行化", "expect": "list", "must": ["1.", "2.", "3."]},
-    {"id": "shopping", "text": "帮我记一下要买牛奶鸡蛋面包还有酸奶", "expect": "list", "must": ["-"]},
-    {"id": "yishi_ershi", "text": "问题有两个一是延迟太高二是偶尔会崩溃", "expect": "list", "must": ["1.", "2."]},
-    {"id": "todo", "text": "今天的任务是修复登录bug然后写周报最后回复邮件", "expect": "list", "must": []},
-    {"id": "steps", "text": "部署流程首先拉最新代码然后跑测试接着打包最后上线", "expect": "list", "must": []},
+    {"id": "ordinal_3", "text": "这次改动主要有三块第一是把asr换成了sensevoice第二是加了记忆层第三是录音期并行化", "profile": "document: complete punctuation, topic paragraphs, and lists for explicit enumerations", "expect": "list", "must": ["1.", "2.", "3."]},
+    {"id": "shopping", "text": "帮我记一下要买牛奶鸡蛋面包还有酸奶", "profile": "personal_chat: short natural paragraphs with light punctuation", "expect": "list", "must": ["-"]},
+    {"id": "yishi_ershi", "text": "问题有两个一是延迟太高二是偶尔会崩溃", "profile": "work_chat: concise paragraphs with light punctuation; avoid formal email framing", "expect": "list", "must": ["1.", "2."]},
+    {"id": "todo", "text": "今天的任务是修复登录bug然后写周报最后回复邮件", "profile": "document: complete punctuation, topic paragraphs, and lists for explicit enumerations", "expect": "list", "must": []},
+    {"id": "steps", "text": "部署流程首先拉最新代码然后跑测试接着打包最后上线", "profile": "developer: preserve code identifiers, paths, flags, acronyms, and Markdown; use lists only for explicit enumerations", "expect": "list", "must": []},
     # flat guards — must NOT become a list / multi-line
     {"id": "flat_reply", "text": "帮我回复他说好的没问题我明天上午把文档发过去", "expect": "flat"},
     {"id": "flat_one", "text": "明天上午十点开会帮我确认一下议程", "expect": "flat"},
@@ -41,9 +41,11 @@ def call(model, system, prompt, options):
 
 results = []
 for cand in CANDS:
-    call(cand["model"], cand["system"], "输入：预热", {**cand["options"], "num_predict": 8})
+    warm_profile = "other: neutral punctuation; preserve wording and use structure only when clearly signaled"
+    call(cand["model"], cand["system"], f"app_format_profile={warm_profile}\n输入：预热", {**cand["options"], "num_predict": 8})
     for case in CASES:
-        body, ms = call(cand["model"], cand["system"], f"输入：{case['text']}", cand["options"])
+        profile = case.get("profile", warm_profile)
+        body, ms = call(cand["model"], cand["system"], f"app_format_profile={profile}\n输入：{case['text']}", cand["options"])
         try:
             pol = json.loads(body.get("response", "")).get("polished", "") or ""
         except json.JSONDecodeError:
@@ -63,3 +65,5 @@ json.dump(results, open("/tmp/velora-eval/format-results.json", "w"), ensure_asc
 for cand in CANDS:
     rs = [r for r in results if r["cand"] == cand["id"]]
     print(f"== {cand['id']}: {sum(r['ok'] for r in rs)}/{len(rs)}")
+if any(not r["ok"] for r in results):
+    raise SystemExit(1)

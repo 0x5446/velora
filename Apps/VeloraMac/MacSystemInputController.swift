@@ -330,15 +330,15 @@ final class MacDictationController {
         memoryStore ?? InMemoryHotwordStore()
     }
 
-    private func ingestJournalIncrementally() {
+    private func ingestJournalIncrementally() async {
         guard let memoryStore,
               let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return
         }
         let journal = directory.appendingPathComponent("Velora/corrections.jsonl")
-        Task.detached(priority: .utility) {
+        _ = await Task.detached(priority: .utility) {
             memoryStore.ingestCorrectionJournal(at: journal)
-        }
+        }.value
     }
     private var globalEscapeMonitor: Any?
     private var localEscapeMonitor: Any?
@@ -624,7 +624,8 @@ final class MacDictationController {
                     appliedEdits: review.appliedEdits,
                     targetBundleID: review.target?.bundleIdentifier,
                     language: insertedLanguage,
-                    audioRef: review.audioRef
+                    audioRef: review.audioRef,
+                    composeObservability: review.composeObservability
                 )
                 if let target = review.target {
                     postInsertObserver.begin(
@@ -788,9 +789,12 @@ final class MacDictationController {
         // DURING recording (the user is still speaking — this time is free),
         // so the after-release critical path starts straight at ASR.
         contextPrepTask?.cancel()
-        ingestJournalIncrementally()
         let memoryStore = activeMemoryStore
         contextPrepTask = Task {
+            // Ingest must finish before the snapshot is built. The previous
+            // fire-and-forget task raced hotword ranking and also meant freshly
+            // captured correction examples regularly missed the next request.
+            await ingestJournalIncrementally()
             let probeRequest = PipelineRunRequest(
                 platform: .macOS,
                 mode: settings.mode,
@@ -803,7 +807,12 @@ final class MacDictationController {
                 return nil
             }
             let hotwords = (try? await memoryStore.rankHotwords(for: snapshot, limit: 12)) ?? []
-            return MacPreparedPipelineContext(snapshot: snapshot, hotwords: hotwords)
+            let correctionExamples = memoryStore.recentCorrectionExamples(limit: 200)
+            return MacPreparedPipelineContext(
+                snapshot: snapshot,
+                hotwords: hotwords,
+                correctionExamples: correctionExamples
+            )
         }
 
         recordingStartTask = Task {
@@ -900,7 +909,6 @@ final class MacDictationController {
             )
         }
         postInsertObserver.harvestBeforeNextDictation()
-        ingestJournalIncrementally()
         let duration: TimeInterval
         if let file = try? AVAudioFile(forReading: url), file.fileFormat.sampleRate > 0 {
             duration = Double(file.length) / file.fileFormat.sampleRate
@@ -908,14 +916,20 @@ final class MacDictationController {
             duration = 0
         }
         let now = Date()
-        runPipeline(
-            with: MacRecordedAudioClip(
-                url: url,
-                startedAt: now.addingTimeInterval(-duration),
-                endedAt: now
-            ),
-            targetOverride: targetOverride
-        )
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+            await self.ingestJournalIncrementally()
+            self.runPipeline(
+                with: MacRecordedAudioClip(
+                    url: url,
+                    startedAt: now.addingTimeInterval(-duration),
+                    endedAt: now
+                ),
+                targetOverride: targetOverride
+            )
+        }
     }
 
     /// Everything downstream of "we have a finished recording". Split from
@@ -982,6 +996,20 @@ final class MacDictationController {
                         insertionStrategy: .none
                     )
                 )
+                let historyPool = prepared?.correctionExamples
+                    ?? activeMemoryStore.recentCorrectionExamples(limit: 200)
+                let composeObservability = MacComposeObservability(
+                    engine: result.compose.engine,
+                    durationMS: result.trace.stages.first {
+                        $0.name == "compose" || $0.name == "compose_bilingual"
+                    }?.durationMS ?? 0,
+                    warnings: result.compose.warnings,
+                    contextSource: prepared == nil ? "release_live" : "recording_prepared",
+                    historyHitCount: OllamaTextIntelligenceEngine.relevantCorrectionExampleCount(
+                        text: result.correction.correctedText,
+                        examples: historyPool
+                    )
+                )
                 guard !Task.isCancelled else {
                     return
                 }
@@ -1040,7 +1068,8 @@ final class MacDictationController {
                         preferredInsertLanguage: settings.preferredInsertLanguage,
                         target: insertionTarget,
                         audioRef: audioRef,
-                        learnBlocked: learnBlocked
+                        learnBlocked: learnBlocked,
+                        composeObservability: composeObservability
                     )
                     return
                 }
@@ -1078,7 +1107,8 @@ final class MacDictationController {
                             appliedEdits: result.correction.edits + result.compose.edits,
                             targetBundleID: insertionTarget?.bundleIdentifier,
                             language: result.asr.language,
-                            audioRef: audioRef
+                            audioRef: audioRef,
+                            composeObservability: composeObservability
                         )
                         if let insertionTarget {
                             postInsertObserver.begin(
@@ -1174,7 +1204,8 @@ final class MacDictationController {
         preferredInsertLanguage: String,
         target: MacInsertionTarget?,
         audioRef: String? = nil,
-        learnBlocked: Bool = false
+        learnBlocked: Bool = false,
+        composeObservability: MacComposeObservability
     ) {
         guard let translation = result.translation else {
             floatingPanel.show(
@@ -1208,6 +1239,7 @@ final class MacDictationController {
             learnBlocked: learnBlocked,
             appliedEdits: result.correction.edits + result.compose.edits,
             target: target,
+            composeObservability: composeObservability,
             preferredSelection: preferredSelection
         )
         pendingReview = review
@@ -1326,7 +1358,12 @@ final class MacDictationController {
                 ?? WhisperCLIASREngine(configuration: .configuration(for: settings.asrModelMode)),
             contextProvider: prepared.map { MacPreparedContextProvider(snapshot: $0.snapshot) }
                 ?? MacContextProvider() as any ContextProvider,
-            memoryStore: prepared.map { MacPreparedMemoryStore(hotwords: $0.hotwords) }
+            memoryStore: prepared.map {
+                MacPreparedMemoryStore(
+                    hotwords: $0.hotwords,
+                    correctionExamples: $0.correctionExamples
+                )
+            }
                 ?? activeMemoryStore,
             textEngine: OllamaTextIntelligenceEngine(),
             translationEngine: OllamaTranslationEngine(),
@@ -1341,6 +1378,7 @@ final class MacDictationController {
 struct MacPreparedPipelineContext: Sendable {
     var snapshot: ContextSnapshot
     var hotwords: [HotwordCandidate]
+    var correctionExamples: [VeloraCorrectionExample]
 }
 
 struct MacPreparedContextProvider: ContextProvider {
@@ -1356,9 +1394,14 @@ struct MacPreparedContextProvider: ContextProvider {
 
 struct MacPreparedMemoryStore: MemoryStore {
     var hotwords: [HotwordCandidate]
+    var correctionExamples: [VeloraCorrectionExample]
 
     func rankHotwords(for snapshot: ContextSnapshot, limit: Int) async throws -> [HotwordCandidate] {
         Array(hotwords.prefix(limit))
+    }
+
+    func recentCorrectionExamples(limit: Int) -> [VeloraCorrectionExample] {
+        Array(correctionExamples.prefix(limit))
     }
 }
 
@@ -1430,7 +1473,33 @@ struct MacContextProvider: ContextProvider {
               let value = copyAXAttribute(element, kAXValueAttribute) as? String else {
             return ""
         }
-        return value.oneLinePreview(maxLength: 400)
+
+        // Context must be local to the insertion point. Prefix-truncating the
+        // whole AXValue gave terminals and long documents their oldest text,
+        // which is usually the least relevant part. AX ranges use NSString
+        // offsets, so slice in UTF-16 space and keep a little more history than
+        // look-ahead. If the host exposes no caret range, the tail is the safest
+        // fallback for append-oriented fields and terminal grids.
+        let nsValue = value as NSString
+        if let rawRange = copyAXAttribute(element, kAXSelectedTextRangeAttribute),
+           CFGetTypeID(rawRange) == AXValueGetTypeID() {
+            var selectedRange = CFRange()
+            let axValue = rawRange as! AXValue
+            if AXValueGetValue(axValue, .cfRange, &selectedRange),
+               selectedRange.location >= 0,
+               selectedRange.length >= 0,
+               selectedRange.location <= nsValue.length {
+                let caretEnd = min(nsValue.length, selectedRange.location + selectedRange.length)
+                let lower = max(0, selectedRange.location - 280)
+                let upper = min(nsValue.length, caretEnd + 120)
+                if upper > lower {
+                    return nsValue.substring(with: NSRange(location: lower, length: upper - lower))
+                }
+            }
+        }
+
+        let lower = max(0, nsValue.length - 400)
+        return nsValue.substring(from: lower)
     }
 
     /// Design §10.3: never read from password fields — neither for context
@@ -1715,6 +1784,7 @@ struct MacPendingTranslationReview: Identifiable {
     var learnBlocked: Bool
     var appliedEdits: [TextEdit]
     var target: MacInsertionTarget?
+    var composeObservability: MacComposeObservability
     /// The side the settings panel promises to insert on plain confirm
     /// (hotkey / ⌘⏎ / menu). The overlay buttons can still pick either side.
     var preferredSelection: MacTranslationReviewSelection = .target
@@ -1736,6 +1806,20 @@ enum MacTranslationReviewSelection {
 
     var actionTitle: String {
         self == .source ? "上屏原文" : "上屏译文"
+    }
+}
+
+struct MacComposeObservability: Sendable {
+    var engine: String
+    var durationMS: Int
+    var warnings: [String]
+    var contextSource: String
+    var historyHitCount: Int
+
+    var usedFallback: Bool {
+        engine == "rules" || warnings.contains { warning in
+            warning.contains("fallback") || warning.contains("llm_error") || warning.contains("_guard:")
+        }
     }
 }
 
@@ -1817,11 +1901,12 @@ enum MacCorrectionJournal {
         appliedEdits: [TextEdit],
         targetBundleID: String?,
         language: String,
-        audioRef: String?
+        audioRef: String?,
+        composeObservability: MacComposeObservability? = nil
     ) {
         // Privacy is enforced by the caller's unified gate (focusedBlockReason
         // at release time); the learning master switch is enforced in append.
-        append([
+        var entry: [String: Any] = [
             "kind": "insertion",
             "at": ISO8601DateFormatter().string(from: Date()),
             "session_id": sessionID,
@@ -1833,7 +1918,16 @@ enum MacCorrectionJournal {
             "final_text": finalText,
             "llm_edits": appliedEdits.map { ["from": $0.from, "to": $0.to, "reason": $0.reason] },
             "audio_ref": audioRef ?? NSNull(),
-        ])
+        ]
+        if let composeObservability {
+            entry["compose_engine"] = composeObservability.engine
+            entry["compose_duration_ms"] = composeObservability.durationMS
+            entry["compose_fallback"] = composeObservability.usedFallback
+            entry["compose_warnings"] = composeObservability.warnings
+            entry["context_source"] = composeObservability.contextSource
+            entry["correction_history_hit_count"] = composeObservability.historyHitCount
+        }
+        append(entry)
     }
 
     static func recordPostInsertEdit(
@@ -2836,8 +2930,10 @@ final class MacFloatingStatusPanelController {
     private let model = MacFloatingStatusModel()
     private lazy var panel: NSPanel = makePanel()
     private var hideTask: Task<Void, Never>?
+    private var presentationID: UInt64 = 0
 
     func show(_ status: MacFloatingStatus) {
+        presentationID &+= 1
         hideTask?.cancel()
         model.status = status
         if status.phase != .listening {
@@ -2855,7 +2951,12 @@ final class MacFloatingStatusPanelController {
             hide(after: 6.0)
         case .review:
             hide(after: 5.0)
-        case .idle, .requestingPermission, .listening, .transcribing, .inserted:
+        case .inserted:
+            // Success is always transient. Keeping the policy here prevents a
+            // new caller from accidentally creating a permanent click-through
+            // window by forgetting to schedule its own hide.
+            hide(after: 1.2)
+        case .idle, .requestingPermission, .listening, .transcribing:
             break
         }
     }
@@ -2865,19 +2966,26 @@ final class MacFloatingStatusPanelController {
     }
 
     func hide(after delay: TimeInterval) {
+        let expectedPresentationID = presentationID
         hideTask?.cancel()
-        hideTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            guard !Task.isCancelled else {
+        hideTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: UInt64(max(0, delay) * 1_000_000_000))
+            } catch {
                 return
             }
-            model.isVisible = false
-            // Let the exit transition finish before the window disappears.
-            try? await Task.sleep(nanoseconds: 260_000_000)
-            guard !Task.isCancelled else {
+            guard let self,
+                  !Task.isCancelled,
+                  self.presentationID == expectedPresentationID else {
                 return
             }
-            panel.orderOut(nil)
+            // Native window visibility is the source of truth. Do not wait for
+            // a SwiftUI exit transaction: when the target app is switching tabs
+            // or Spaces its backing surface can otherwise remain composited
+            // until the next redraw even though `isVisible` is already false.
+            self.panel.orderOut(nil)
+            self.model.isVisible = false
+            self.hideTask = nil
         }
     }
 

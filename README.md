@@ -36,24 +36,35 @@ Most dictation tools make you choose between quality and privacy. Velora refuses
 - **Truly local.** ASR, text polishing, and translation all run on your machine. Unplug the network and everything still works.
 - **System-wide.** A menu-bar utility that types into *any* app — your editor, browser, chat — right at the cursor.
 - **One key.** Tap `Fn` to start, tap again to finish. Velora owns the key end-to-end via a CGEventTap, so the macOS input-source switcher never fights you.
-- **Polished output, not raw transcripts.** Every utterance passes through a compose layer: rule-based cleanup always, local-LLM polish when it beats the deadline. You get sentences, not word soup.
+- **Polished output, not raw transcripts.** Every utterance passes through a tiered compose layer: deterministic cleanup, context-constrained correction, app-category formatting, then local-LLM polish when it beats the deadline. Preservation guards reject rewrites that lose numbers, URLs, code identifiers, learned terms, or the source language.
 
 ## How it works
 
 Two user-facing modes, one pipeline:
 
 ```
-Dictate  (Fn):    ASR (w/ hotword correction) → compose { polished }         → insert
-Translate (Fn⇧):  ASR (w/ hotword correction) → compose { polished, target } → review card → insert
+Dictate  (Fn):    ASR + constrained correction → app-aware compose { polished }         → guards → insert
+Translate (Fn⇧):  ASR + constrained correction → app-aware compose { polished, target } → guards → review → insert
 ```
 
 | Stage | Engine | Notes |
 |---|---|---|
 | Speech-to-text | [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) via a resident `sherpa-onnx` sidecar | Model loaded once, stays warm — ~18× faster than spawning per utterance. `whisper.cpp` and Apple Speech available as alternates. |
-| Polish / translate | Local LLM via [Ollama](https://ollama.com) (default `qwen3:8b`) | Single compose call; translation is an extra output field, not an extra hop. Falls back to rule-based cleanup if the LLM misses its latency budget. |
-| Hotword learning | SQLite memory layer | Your manual edits on the review card feed future recognition. |
+| Polish / translate | Local LLM via [Ollama](https://ollama.com) (default `qwen3:8b`) | Single compose call; translation is an extra output field, not an extra hop. Formatting is routed by app category (developer, chat, email, document, other). Falls back to rule cleanup on timeout, invalid JSON, language mismatch, or preservation-guard failure. |
+| Local learning | SQLite memory + correction journal | Source-side review edits and edits made shortly after direct insertion become local feedback. Pinyin-gated correction examples and promoted terms can affect the next matching utterance. |
 
 Latency is treated as a product feature: recording-time preparation, resident models, and a hard compose deadline keep tap-to-text fast. See [`docs/PRODUCT_TECH_DESIGN.md`](docs/PRODUCT_TECH_DESIGN.md) for the full architecture.
+
+### Adaptive, but bounded
+
+Velora currently evolves through a conservative local feedback loop, not online model training:
+
+- it observes only the span Velora just inserted, for a bounded window, and never learns from secure fields or blocked apps;
+- correction examples are retrieved only when their pronunciation occurs in the new utterance; automatically learned term pairs need evidence from two separate sessions before promotion;
+- punctuation, whitespace, and line-break edits are retained as style signals, but per-app statistical style learning and automatic LoRA are intentionally not active yet;
+- the fine-tuning exporter uses the exact shipped system prompt, app-format input field, and `{"polished": ...}` JSON contract so future offline training cannot silently drift from production.
+
+The competitor/academic review behind this design is in [`docs/VOICE_DICTATION_BEST_PRACTICES.md`](docs/VOICE_DICTATION_BEST_PRACTICES.md); the implemented feedback loop is documented in [`docs/LEARNING_PIPELINE.md`](docs/LEARNING_PIPELINE.md).
 
 ## Getting started
 
@@ -87,7 +98,7 @@ xcodegen generate
 xcodebuild -project Velora.xcodeproj -scheme Velora -configuration Debug build
 ```
 
-> **Signing note:** `project.yml` pins a development team for stable TCC grants (Accessibility permission survives rebuilds — ad-hoc signatures reset it on every compile). Building on your own machine? Change `DEVELOPMENT_TEAM` to yours, or set `CODE_SIGN_IDENTITY: "-"` and live with re-granting.
+> **Signing note:** `project.yml` pins a development team for stable TCC grants. Use the normal signed command above for any runnable local build. Do **not** run `CODE_SIGNING_ALLOWED=NO` against the same DerivedData path as the installed/running debug app: it overwrites the signed bundle with an ad-hoc build and macOS will stop recognizing its Accessibility grant. If CI needs a no-sign compile check, isolate it with a separate `-derivedDataPath`.
 
 ### 3. First-run setup
 
@@ -116,6 +127,7 @@ Hotkeys are remappable in Settings (⌥Space fallback available). Translation ta
 - Audio is captured only while you're actively dictating, processed in memory, and never uploaded — there is no server.
 - The mic-in-use indicator in the menu bar is macOS's own; Velora never records outside an explicit `Fn` session.
 - The only network dependency is `localhost` (Ollama).
+- Learning feedback stays under `~/Library/Application Support/Velora/`. Audio retention for future experiments is a separate opt-in setting, off by default, with a 2 GB local ring-buffer quota.
 
 ## Project layout
 
@@ -136,7 +148,7 @@ UI follows a small warm "tech-retro" design system (cream paper, ink text, clay 
 | Symptom | Fix |
 |---|---|
 | `Fn` also opens the macOS input-source switcher | Set *"Press 🌐 key to"* → Do Nothing (see setup step 3) |
-| `Fn` does nothing at all | Accessibility not granted (or was reset) — re-toggle Velora in System Settings, then relaunch the app |
+| `Fn` does nothing at all | Accessibility not granted (or the app was rebuilt ad-hoc) — rebuild with the configured Apple Development identity, re-toggle Velora in System Settings if needed, then relaunch |
 | Output is rough / translation missing | Ollama not running or model missing — Velora degrades to rule-based cleanup; run `ollama serve` & `ollama pull qwen3:8b` |
 | "需要无障碍权限" in the menu | Same as above — grant Accessibility, relaunch |
 
@@ -145,7 +157,8 @@ UI follows a small warm "tech-retro" design system (cream paper, ink text, clay 
 - [ ] Notarized release builds (hardened runtime re-enabled)
 - [ ] iOS keyboard: dictation directly inside the extension
 - [ ] Pluggable ASR/LLM engine matrix (MLX, llama.cpp server)
-- [ ] Per-app insertion profiles
+- [ ] Per-app statistical style learning and explicit user overrides
+- [ ] Offline LoRA evaluation and opt-in rollout (no automatic online training)
 
 ## Contributing
 

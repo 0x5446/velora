@@ -240,6 +240,68 @@ import Testing
     #expect(!TranslationLanguageResolver.canDetect("de"))
 }
 
+@Test func appFormatProfileRoutesDeveloperChatAndEmailWithoutFreeformToneInstructions() {
+    let developer = OllamaTextIntelligenceEngine.appFormatProfile(
+        for: ContextSnapshot(appBundle: "com.googlecode.iterm2", windowTitle: "Codex", mode: .input)
+    )
+    #expect(developer.hasPrefix("developer:"))
+    #expect(developer.contains("identifiers"))
+
+    let chat = OllamaTextIntelligenceEngine.appFormatProfile(
+        for: ContextSnapshot(appBundle: "com.tinyspeck.slackmacgap", mode: .input)
+    )
+    #expect(chat.hasPrefix("work_chat:"))
+
+    let email = OllamaTextIntelligenceEngine.appFormatProfile(
+        for: ContextSnapshot(appBundle: "com.apple.mail", mode: .input)
+    )
+    #expect(email.hasPrefix("email:"))
+    #expect(email.contains("do not invent"))
+}
+
+@Test func polishPreservationGuardProtectsOpaqueFactsAndAllowsFormatting() {
+    let source = "请看 https://example.com/a 文档，运行 deploy_prod --dry-run，超时 1500ms"
+    let safe = "请看 https://example.com/a 文档。运行 deploy_prod --dry-run，超时 1500ms。"
+    #expect(OllamaTextIntelligenceEngine.preservationViolations(source: source, output: safe).isEmpty)
+
+    let lost = "请看文档，然后运行部署命令。"
+    let violations = OllamaTextIntelligenceEngine.preservationViolations(source: source, output: lost)
+    #expect(violations.contains("protected_literal_loss"))
+    #expect(violations.contains("excessive_rewrite"))
+}
+
+@Test func polishPreservationGuardProtectsLearnedEntitiesButAllowsMappedCorrection() {
+    let glossary = [HotwordCandidate(term: "会画", replacement: "会话", score: 4, reasons: [])]
+    #expect(OllamaTextIntelligenceEngine.preservationViolations(
+        source: "再开一个会画讨论",
+        output: "再开一个会话讨论。",
+        glossary: glossary
+    ).isEmpty)
+    #expect(OllamaTextIntelligenceEngine.preservationViolations(
+        source: "再开一个会画讨论",
+        output: "再讨论一下。",
+        glossary: glossary
+    ).contains("glossary_entity_loss"))
+}
+
+@Test func polishPreservationGuardDoesNotRejectExplicitNumberRepair() {
+    let violations = OllamaTextIntelligenceEngine.preservationViolations(
+        source: "预算是50000不对应该是80000",
+        output: "预算是 80000。"
+    )
+    #expect(!violations.contains("protected_literal_loss"))
+    #expect(!violations.contains("excessive_rewrite"))
+}
+
+@Test func correctionHistoryHitCountDeduplicatesAndRequiresMatchingSound() {
+    let examples = [
+        VeloraCorrectionExample(beforeSpan: "会画", afterSpan: "会话", beforeText: "开会画", afterText: "开会话", pinyinKey: VeloraPinyin.latinized("会画")),
+        VeloraCorrectionExample(beforeSpan: "会画", afterSpan: "会话", beforeText: "另一个会画", afterText: "另一个会话", pinyinKey: VeloraPinyin.latinized("会画")),
+    ]
+    #expect(OllamaTextIntelligenceEngine.relevantCorrectionExampleCount(text: "开个会画", examples: examples) == 1)
+    #expect(OllamaTextIntelligenceEngine.relevantCorrectionExampleCount(text: "发布版本", examples: examples) == 0)
+}
+
 #if os(macOS)
 @Test func whisperNonSpeechMarkersAreRecognized() {
     #expect(WhisperCLIASREngine.containsOnlyNonSpeechMarkers("[BLANK_AUDIO]"))

@@ -36,24 +36,35 @@
 - **真·本地。** 语音识别、润色、翻译全部在本机运行。断网照样工作。
 - **全系统可用。** 菜单栏常驻，往任何 App 的光标处上屏——编辑器、浏览器、聊天窗口都行。
 - **一个键搞定。** 轻按 `Fn` 开始，再按结束。通过 CGEventTap 完整接管这个键，系统输入法切换器不会再来捣乱。
-- **产出的是成句，不是逐字流水账。** 每次输出都经过 compose 层：规则清理永远兜底，本地 LLM 润色在时限内返回就采用。
+- **产出的是成句，不是逐字流水账。** 每次输出都经过分层 compose：确定性清理、受语境约束的纠错、按应用类别排版，再在时限内采用本地 LLM 润色。若模型丢失数字、URL、代码标识、已学习术语或改变原语言，保真护栏会拒绝该结果。
 
 ## 工作原理
 
 面向用户只有两个模式，底下是同一条管线：
 
 ```
-输入模式（Fn）：  ASR（含热词纠错）→ compose { polished }         → 上屏
-翻译模式（Fn⇧）： ASR（含热词纠错）→ compose { polished, target } → 确认卡片 → 上屏
+输入模式（Fn）：  ASR + 受约束纠错 → 场景化 compose { polished }         → 保真护栏 → 上屏
+翻译模式（Fn⇧）： ASR + 受约束纠错 → 场景化 compose { polished, target } → 保真护栏 → 确认 → 上屏
 ```
 
 | 环节 | 引擎 | 说明 |
 |---|---|---|
 | 语音识别 | [SenseVoice](https://github.com/FunAudioLLM/SenseVoice)（常驻 `sherpa-onnx` sidecar） | 模型只加载一次、常驻内存，比每句拉起进程快约 18 倍。可选 `whisper.cpp`、Apple Speech。 |
-| 润色 / 翻译 | 本地 LLM，走 [Ollama](https://ollama.com)（默认 `qwen3:8b`） | 一次 compose 调用；翻译只是多一个输出字段，不是多一跳。LLM 超时则回退规则清理。 |
-| 热词学习 | SQLite 记忆层 | 你在确认卡片上的手动修改会反哺后续识别。 |
+| 润色 / 翻译 | 本地 LLM，走 [Ollama](https://ollama.com)（默认 `qwen3:8b`） | 一次 compose 调用；翻译只是多一个输出字段，不是多一跳。按开发工具、聊天、邮件、文档等应用类别控制排版；超时、JSON 异常、语言错误或保真护栏失败时回退规则层。 |
+| 本地学习 | SQLite 记忆层 + correction journal | 翻译确认卡片的源文修改，以及输入模式上屏后短时间内的修改，都会成为本地反馈；拼音门控的历史句例和已晋升词条可在下一次匹配输入中生效。 |
 
 延迟被当作产品功能来做：录音期并行准备、模型常驻、compose 硬时限。完整架构见 [`docs/PRODUCT_TECH_DESIGN.md`](docs/PRODUCT_TECH_DESIGN.md)。
+
+### 会进化，但有边界
+
+Velora 当前通过保守的本地反馈闭环进化，并不是在线自动训练模型：
+
+- 只在有限时间窗内观察 Velora 刚插入的那一段；安全输入框和受限应用一律不学习；
+- 只有新输入包含相同发音时才召回历史纠错；自动词对至少要在两个独立 session 获得证据才会晋升；
+- 标点、空格和换行修改会作为 style signal 保留，但按 App 的风格统计学习和自动 LoRA 目前明确未启用；
+- 微调导出器强制使用线上同一份 system prompt、app-format 输入字段和 `{"polished": ...}` JSON 契约，避免未来离线训练与生产链路漂移。
+
+设计依据与竞品/论文调研见 [`docs/VOICE_DICTATION_BEST_PRACTICES.md`](docs/VOICE_DICTATION_BEST_PRACTICES.md)，已实现的反馈闭环见 [`docs/LEARNING_PIPELINE.md`](docs/LEARNING_PIPELINE.md)。
 
 ## 快速开始
 
@@ -87,7 +98,7 @@ xcodegen generate
 xcodebuild -project Velora.xcodeproj -scheme Velora -configuration Debug build
 ```
 
-> **签名说明：** `project.yml` 固定了一个开发团队，目的是让 TCC 授权跨构建保持（ad-hoc 签名每次编译都变，辅助功能权限会被反复清空）。在自己机器上构建时，把 `DEVELOPMENT_TEAM` 换成你的，或改回 `CODE_SIGN_IDENTITY: "-"`（代价是每次重编要重新授权）。
+> **签名说明：** `project.yml` 固定了开发团队，用于稳定 TCC 授权。任何要实际运行的本地版本都应使用上面的正常签名命令。不要在已安装/正在运行的 Debug App 所用 DerivedData 路径上执行 `CODE_SIGNING_ALLOWED=NO`：它会用 ad-hoc 产物覆盖开发者签名包，macOS 随即不再认可原辅助功能授权。CI 若只做免签编译检查，必须使用独立的 `-derivedDataPath`。
 
 ### 3. 首次运行设置
 
@@ -116,6 +127,7 @@ xcodebuild -project Velora.xcodeproj -scheme Velora -configuration Debug build
 - 只在你主动听写时采集音频，内存中处理，从不上传——根本没有服务器。
 - 菜单栏的麦克风使用指示是 macOS 系统自带的；Velora 绝不在 `Fn` 会话之外录音。
 - 唯一的网络依赖是 `localhost`（Ollama）。
+- 学习反馈只保存在 `~/Library/Application Support/Velora/`。用于未来实验的音频保留是独立 opt-in 设置，默认关闭，并受 2 GB 本地环形配额限制。
 
 ## 目录结构
 
@@ -136,7 +148,7 @@ UI 遵循一套小而完整的暖色"科技复古"设计系统（米色纸面、
 | 症状 | 处理 |
 |---|---|
 | 按 `Fn` 还会弹系统输入法切换器 | 把"按下🌐键时"设为无操作（见首次设置第 3 步） |
-| 按 `Fn` 完全没反应 | 辅助功能未授权（或被重置）——去系统设置重新勾选 Velora，然后重启应用 |
+| 按 `Fn` 完全没反应 | 辅助功能未授权（或 App 被免签重编）——先用配置好的 Apple Development 身份重建，必要时在系统设置里重新开关 Velora，然后重启应用 |
 | 输出粗糙 / 没有译文 | Ollama 没跑或模型缺失——Velora 会降级为规则清理；`ollama serve` + `ollama pull qwen3:8b` |
 | 菜单里显示"需要无障碍权限" | 同上——授权后重启应用 |
 
@@ -145,7 +157,8 @@ UI 遵循一套小而完整的暖色"科技复古"设计系统（米色纸面、
 - [ ] 公证发布版（重新开启 hardened runtime）
 - [ ] iOS 键盘扩展内直接听写
 - [ ] 可插拔 ASR/LLM 引擎矩阵（MLX、llama.cpp server）
-- [ ] 按 App 定制的上屏策略
+- [ ] 按 App 的统计风格学习与显式用户覆盖
+- [ ] 离线 LoRA 评测与 opt-in 上线（不做在线自动训练）
 
 ## 参与贡献
 

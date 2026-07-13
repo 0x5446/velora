@@ -51,9 +51,10 @@ def call(model, system, prompt, options):
 
 results = []
 for cand in CANDIDATES:
-    call(cand["model"], cand["system"], "输入：预热", {**cand["options"], "num_predict": 8})
+    profile = "other: neutral punctuation; preserve wording and use structure only when clearly signaled"
+    call(cand["model"], cand["system"], f"app_format_profile={profile}\n输入：预热", {**cand["options"], "num_predict": 8})
     for item in TEXTS:
-        body, wall = call(cand["model"], cand["system"], f"输入：{item['text']}", cand["options"])
+        body, wall = call(cand["model"], cand["system"], f"app_format_profile={profile}\n输入：{item['text']}", cand["options"])
         try:
             polished = json.loads(body.get("response", "")).get("polished", "") or ""
         except json.JSONDecodeError:
@@ -70,3 +71,5 @@ json.dump(results, open("/tmp/velora-eval/repair-results.json", "w"), ensure_asc
 for cand in CANDIDATES:
     rs = [r for r in results if r["cand"] == cand["id"]]
     print(f"== {cand['id']}: {sum(r['ok'] for r in rs)}/{len(rs)} pass")
+if any(not r["ok"] for r in results):
+    raise SystemExit(1)

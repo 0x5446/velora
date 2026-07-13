@@ -9,9 +9,12 @@ OLLAMA = "http://127.0.0.1:11434/api/generate"
 TEXTS = [
     # ASR 同音误识：上下文能确定原意，应当修正
     {"id": "hp_timeout", "text": "这个接口超市了你看下日志", "contains": ["接口超时"], "absent": ["超市"]},
-    {"id": "hp_release_note", "text": "帮我把发不说明整理一下再发出去", "contains": ["发布说明"], "absent": ["发不说明"]},
-    {"id": "hp_agenda", "text": "下午的会先过一遍疑程", "contains": ["议程"], "absent": ["疑程"]},
-    {"id": "hp_regression", "text": "把回归册是跑完再上线", "contains": ["回归测试"], "absent": ["回归册是"]},
+    # These three are seeded production hotwords. Mirror composeWithLLM's
+    # sound_alike block instead of evaluating an unrealistically signal-free
+    # prompt after pretending the deterministic correction tier did not run.
+    {"id": "hp_release_note", "text": "帮我把发不说明整理一下再发出去", "glossary": "发不说明 / 发布说明", "contains": ["发布说明"], "absent": ["发不说明"]},
+    {"id": "hp_agenda", "text": "下午的会先过一遍疑程", "glossary": "疑程 / 议程", "contains": ["议程"], "absent": ["疑程"]},
+    {"id": "hp_regression", "text": "把回归册是跑完再上线", "glossary": "回归册是 / 回归测试", "contains": ["回归测试"], "absent": ["回归册是"]},
     {"id": "hp_feedback", "text": "有个用户反愦了一个登录的问题", "contains": ["反馈"], "absent": ["反愦"]},
     {"id": "hp_rollout", "text": "这个功能还在灰度先别全量方开", "contains": ["放开"], "absent": ["方开"]},
     # 防误杀：同音词在此语境下是本意，禁止改
@@ -37,9 +40,14 @@ def call(model, system, prompt, options):
 
 results = []
 for cand in CANDIDATES:
-    call(cand["model"], cand["system"], "输入：预热", {**cand["options"], "num_predict": 8})
+    profile = "work_chat: concise paragraphs with light punctuation; avoid formal email framing"
+    call(cand["model"], cand["system"], f"app_format_profile={profile}\n输入：预热", {**cand["options"], "num_predict": 8})
     for item in TEXTS:
-        body, wall = call(cand["model"], cand["system"], f"输入：{item['text']}", cand["options"])
+        prompt = f"app_format_profile={profile}\n"
+        if item.get("glossary"):
+            prompt += f"sound_alike:\n{item['glossary']}\n"
+        prompt += f"输入：{item['text']}"
+        body, wall = call(cand["model"], cand["system"], prompt, cand["options"])
         try:
             polished = json.loads(body.get("response", "")).get("polished", "") or ""
         except json.JSONDecodeError:
@@ -52,3 +60,5 @@ json.dump(results, open("/tmp/velora-eval/homophone-results.json", "w"), ensure_
 for cand in CANDIDATES:
     rs = [r for r in results if r["cand"] == cand["id"]]
     print(f"== {cand['id']}: {sum(r['ok'] for r in rs)}/{len(rs)} pass")
+if any(not r["ok"] for r in results):
+    raise SystemExit(1)

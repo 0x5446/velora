@@ -79,9 +79,10 @@ def call(model, system, prompt, options):
 
 results = []
 for cand in CANDIDATES:
-    call(cand["model"], cand["system"], "输入：预热", {**cand["options"], "num_predict": 8})
+    profile = "work_chat: concise paragraphs with light punctuation; avoid formal email framing"
+    call(cand["model"], cand["system"], f"app_format_profile={profile}\n输入：预热", {**cand["options"], "num_predict": 8})
     for case in CASES:
-        prompt = ""
+        prompt = f"app_format_profile={profile}\n"
         if case.get("glossary"):
             pair = case["glossary"].replace(" => ", " / ")
             prompt += f"sound_alike:\n{pair}\n"
@@ -104,3 +105,5 @@ json.dump(results, open("/tmp/velora-eval/ambiguity-results.json", "w"), ensure_
 for cand in CANDIDATES:
     rs = [r for r in results if r["cand"] == cand["id"]]
     print(f"== {cand['id']}: {sum(r['ok'] for r in rs)}/{len(rs)} pass")
+if any(not r["ok"] for r in results):
+    raise SystemExit(1)

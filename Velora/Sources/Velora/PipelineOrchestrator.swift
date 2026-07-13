@@ -126,6 +126,12 @@ public struct PipelineOrchestrator: Sendable {
             resolvedDirection = nil
         }
 
+        let composeSourceLanguage = resolvedDirection?.sourceLanguage
+            ?? Self.resolvedInputSourceLanguage(
+                configured: request.sourceLanguage,
+                detected: asr.language
+            )
+
         // Single text-intelligence call: mandatory tiered polish; translate mode
         // asks the same call for one more output field (the target language).
         try Task.checkCancellation()
@@ -135,7 +141,7 @@ public struct PipelineOrchestrator: Sendable {
                 text: correction.correctedText,
                 mode: request.mode,
                 style: request.composeStyle,
-                sourceLanguage: resolvedDirection?.sourceLanguage ?? request.sourceLanguage,
+                sourceLanguage: composeSourceLanguage,
                 targetLanguage: resolvedDirection?.targetLanguage,
                 context: context,
                 glossary: hotwords,
@@ -330,6 +336,19 @@ public struct PipelineOrchestrator: Sendable {
         }
         .prefix(16)
         .map { $0 }
+    }
+
+    /// Input mode is multilingual in practice even when settings retain a
+    /// preferred language. Filler rules and language-preservation guards should
+    /// follow what ASR actually detected; unusable labels fall back to settings.
+    static func resolvedInputSourceLanguage(configured: String, detected: String) -> String {
+        let cleaned = detected.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = cleaned.lowercased().replacingOccurrences(of: "_", with: "-")
+        guard !cleaned.isEmpty,
+              !["auto", "und", "unknown", "mul"].contains(normalized) else {
+            return configured
+        }
+        return cleaned
     }
 }
 

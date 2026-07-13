@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Translate-mode self-repair eval: polished keeps only the corrected version
 AND target translates only the corrected version; guards must survive."""
-import json, time, urllib.request
+import json, os, time, urllib.request
 
 OLLAMA = "http://127.0.0.1:11434/api/generate"
-SYSTEM = json.load(open("/tmp/velora-eval/translate_system.json"))["system"]
+SYSTEM = open("/tmp/velora-eval/translate_system.txt").read()
+MODEL = os.environ.get("VELORA_OLLAMA_MODEL", "qwen3:8b")
 OPTS = {"temperature": 0.1, "num_ctx": 4096, "repeat_penalty": 1.0, "num_predict": 640}
 
 CASES = [
@@ -28,7 +29,7 @@ CASES = [
 ]
 
 def call(prompt):
-    payload = {"model": "qwen3:8b", "system": SYSTEM, "prompt": prompt, "stream": False,
+    payload = {"model": MODEL, "system": SYSTEM, "prompt": prompt, "stream": False,
                "keep_alive": "30m", "think": False, "format": "json", "options": OPTS}
     req = urllib.request.Request(OLLAMA, data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
@@ -36,10 +37,11 @@ def call(prompt):
     with urllib.request.urlopen(req, timeout=90) as resp:
         return json.loads(resp.read()), int((time.monotonic() - t0) * 1000)
 
-call("source_language=zh\ntarget_language=en\n输入：预热")
+PROFILE = "work_chat: concise paragraphs with light punctuation; avoid formal email framing"
+call(f"app_format_profile={PROFILE}\nsource_language=zh\ntarget_language=en\n输入：预热")
 results = []
 for c in CASES:
-    body, ms = call(f"source_language=zh\ntarget_language=en\n输入：{c['text']}")
+    body, ms = call(f"app_format_profile={PROFILE}\nsource_language=zh\ntarget_language=en\n输入：{c['text']}")
     try:
         obj = json.loads(body.get("response", ""))
         pol, tgt = obj.get("polished", "") or "", obj.get("target", "") or ""
@@ -52,3 +54,5 @@ for c in CASES:
 
 json.dump(results, open("/tmp/velora-eval/translate-repair-results.json", "w"), ensure_ascii=False, indent=1)
 print(f"== {sum(r['ok'] for r in results)}/{len(results)} pass")
+if any(not r["ok"] for r in results):
+    raise SystemExit(1)

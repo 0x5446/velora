@@ -91,12 +91,26 @@ import Testing
     #expect(!analysis.blocks.contains { $0.kind == .asrFix })
 }
 
-@Test func analyzeIgnoresPunctuationChurn() {
+@Test func analyzeCapturesPunctuationChurnAsStyle() {
     let analysis = VeloraEditAnalyzer.analyze(
         inserted: "好的，明天见。",
         userFinal: "好的，明天见！"
     )
-    #expect(analysis.blocks.isEmpty)
+    #expect(analysis.blocks.count == 1)
+    #expect(analysis.blocks.first?.kind == .style)
+    #expect(analysis.blocks.first?.before == "。")
+    #expect(analysis.blocks.first?.after == "！")
+}
+
+@Test func analyzeCapturesInsertedLineBreakAsStyle() {
+    let analysis = VeloraEditAnalyzer.analyze(
+        inserted: "第一点。第二点。",
+        userFinal: "第一点。\n第二点。"
+    )
+    #expect(analysis.blocks.count == 1)
+    #expect(analysis.blocks.first?.kind == .style)
+    #expect(analysis.blocks.first?.before == "")
+    #expect(analysis.blocks.first?.after == "\n")
 }
 
 // MARK: - Learn gate
@@ -526,6 +540,11 @@ private func iTermGrid(_ text: String, width: Int) -> String {
     #expect(examples.first?.beforeSpan == "会画")
     #expect(examples.first?.pinyinKey == VeloraPinyin.latinized("会画"))
 
+    // The schema backfill and incremental ingest may both see the same event;
+    // the projection must remain idempotent across future launches.
+    _ = store.ingestCorrectionJournal(at: journal)
+    #expect(store.recentCorrectionExamples(limit: 10).count == 1)
+
     // Selection: sound present in the utterance → included; absent → not.
     let hit = OllamaTextIntelligenceEngine.relevantCorrectionExamples(text: "再开一个会画确认一下", examples: examples)
     #expect(hit.contains("会话"))
@@ -559,4 +578,14 @@ private func iTermGrid(_ text: String, width: Int) -> String {
     for name in ["repair_candidates.json", "format_candidates.json", "homophone_candidates.json", "ambiguity_candidates.json"] {
         try data.write(to: dir.appendingPathComponent(name))
     }
+    try OllamaPromptLibrary.inputSystem.write(
+        to: dir.appendingPathComponent("input_system.txt"),
+        atomically: true,
+        encoding: .utf8
+    )
+    try OllamaPromptLibrary.translateSystem.write(
+        to: dir.appendingPathComponent("translate_system.txt"),
+        atomically: true,
+        encoding: .utf8
+    )
 }

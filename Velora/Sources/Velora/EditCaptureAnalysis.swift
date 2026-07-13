@@ -223,9 +223,16 @@ public enum VeloraEditAnalyzer {
         let trimmedBefore = before.trimmingCharacters(in: .whitespaces)
         let trimmedAfter = after.trimmingCharacters(in: .whitespaces)
 
-        // Pure punctuation/whitespace churn carries no signal at all.
-        if isPunctuationOnly(trimmedBefore) && isPunctuationOnly(trimmedAfter) {
-            return nil
+        // Punctuation, spaces and line breaks are exactly the supervision needed
+        // for per-app formatting preferences and punctuation-model training.
+        // They are low-risk style signals and must never enter the ASR term pool.
+        if isFormattingOnly(trimmedBefore) && isFormattingOnly(trimmedAfter) {
+            return VeloraEditBlock(
+                kind: .style,
+                before: before,
+                after: after,
+                pinyinDistance: 0
+            )
         }
 
         // Reverting our own hotword replacement is the strongest negative
@@ -273,8 +280,8 @@ public enum VeloraEditAnalyzer {
         )
     }
 
-    static func isPunctuationOnly(_ text: String) -> Bool {
-        !text.isEmpty && text.allSatisfy { $0.isPunctuation || $0.isSymbol || $0.isWhitespace }
+    static func isFormattingOnly(_ text: String) -> Bool {
+        text.isEmpty || text.allSatisfy { $0.isPunctuation || $0.isSymbol || $0.isWhitespace }
     }
 
     /// Both sides express a number/date/unit in different notations.

@@ -458,6 +458,10 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
         guard let data = try? Data(contentsOf: url) else {
             return summary
         }
+        // `journal_offset` predates correction_examples. Without a separate
+        // one-time replay, upgraded installs keep their offset at EOF and all
+        // historical sentence-level feedback remains invisible forever.
+        backfillCorrectionExamplesIfNeeded(from: data)
         let offset = queue.sync { Int(scalarText("SELECT value FROM meta WHERE key = 'journal_offset'").flatMap(Int.init) ?? 0) }
         guard data.count > offset else {
             return summary
@@ -587,6 +591,77 @@ public final class SQLiteMemoryStore: MemoryStore, @unchecked Sendable {
     /// the journal remains the full record.
     public static let correctionExampleCap = 300
     private static let exampleTextLimit = 120
+    private static let correctionExamplesBackfillKey = "correction_examples_backfill_v1"
+
+    /// Replays only the sentence-example projection, never term counts or
+    /// rejection signals. The examples table has an idempotent primary key, and
+    /// a dedicated schema marker prevents rescanning the journal on every run.
+    private func backfillCorrectionExamplesIfNeeded(from data: Data) {
+        let alreadyBackfilled = queue.sync {
+            scalarText("SELECT value FROM meta WHERE key = '\(Self.correctionExamplesBackfillKey)'") == "1"
+        }
+        guard !alreadyBackfilled,
+              let text = String(data: data, encoding: .utf8) else {
+            return
+        }
+
+        var latestPostInsert: [String: [String: Any]] = [:]
+        var translateEdits: [[String: Any]] = []
+        for line in text.split(separator: "\n") {
+            guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+                  let kind = object["kind"] as? String else {
+                continue
+            }
+            switch kind {
+            case "post_insert_edit":
+                let key = (object["session_id"] as? String) ?? (object["at"] as? String) ?? UUID().uuidString
+                latestPostInsert[key] = object
+            case "translate_review_edit":
+                translateEdits.append(object)
+            default:
+                break
+            }
+        }
+
+        for object in latestPostInsert.values {
+            let beforeText = object["inserted_text"] as? String ?? ""
+            let afterText = object["user_final_span"] as? String ?? ""
+            let blocks = object["edit_blocks"] as? [[String: Any]] ?? []
+            for block in blocks where block["type"] as? String == "asr_fix" {
+                guard let before = block["before"] as? String,
+                      let after = block["after"] as? String else {
+                    continue
+                }
+                recordCorrectionExample(
+                    beforeSpan: before,
+                    afterSpan: after,
+                    beforeText: beforeText,
+                    afterText: afterText
+                )
+            }
+        }
+
+        for object in translateEdits {
+            guard let before = object["source_before"] as? String,
+                  let after = object["source_after"] as? String,
+                  let pair = Self.singleSpanDiff(before: before, after: after) else {
+                continue
+            }
+            recordCorrectionExample(
+                beforeSpan: pair.before,
+                afterSpan: pair.after,
+                beforeText: before,
+                afterText: after
+            )
+        }
+
+        queue.sync {
+            run(
+                "INSERT INTO meta (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = '1'",
+                binds: [.text(Self.correctionExamplesBackfillKey)]
+            )
+        }
+    }
 
     func recordCorrectionExample(
         beforeSpan: String,

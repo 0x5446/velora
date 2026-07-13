@@ -225,6 +225,13 @@ import Testing
     #expect(result.finalText == "明天上午十点开会。")
 }
 
+@Test func inputPolishUsesDetectedLanguageWithConfiguredFallback() {
+    #expect(PipelineOrchestrator.resolvedInputSourceLanguage(configured: "zh", detected: "en") == "en")
+    #expect(PipelineOrchestrator.resolvedInputSourceLanguage(configured: "zh", detected: "en-US") == "en-US")
+    #expect(PipelineOrchestrator.resolvedInputSourceLanguage(configured: "zh", detected: "auto") == "zh")
+    #expect(PipelineOrchestrator.resolvedInputSourceLanguage(configured: "en", detected: "") == "en")
+}
+
 @Test func pipelineAcceptsAudioPathWithoutSampleText() async throws {
     let pipeline = PipelineOrchestrator.testPipeline()
 

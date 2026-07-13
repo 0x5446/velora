@@ -20,7 +20,8 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
         └─ post_insert_edit 事件落盘
 下次听写开始
   ├─ harvest：结算存活观察 + 懒 diff 上一段（30 分钟内免费召回）
-  └─ ingestCorrectionJournal → SQLite terms（候选池 → 晋升）
+  └─ await ingestCorrectionJournal → SQLite terms / correction_examples
+       （完成后才构建录音期 prepared snapshot；新反馈可进入紧接着的下一次听写）
 ```
 
 ## 隐私契约（反键盘记录器设计，代码中硬性约束）
@@ -48,6 +49,9 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 {"kind":"insertion","at":"…","session_id":"…","mode":"input","lang":"zh",
  "app_bundle":"com.apple.mail","asr_text":"…","polished_text":"…","final_text":"…",
  "llm_edits":[{"from":"…","to":"…","reason":"llm_compose"}],
+ "compose_engine":"ollama:qwen3:8b","compose_duration_ms":420,"compose_fallback":false,
+ "compose_warnings":[],"context_source":"recording_prepared",
+ "correction_history_hit_count":1,
  "audio_ref":null}                       // opt-in 时为 "clips/<session>.wav"
 
 {"kind":"post_insert_edit","at":"…","session_id":"…","mode":"input","lang":"zh",
@@ -66,7 +70,7 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 ## 编辑三分类（VeloraEditAnalyzer，全部确定性规则）
 
 - **asr_fix**：块两侧 1–6 字、拼音近音（CFStringTransform 拉丁化 + 编辑距离预算 ≈ 长度/3）、通过 `VeloraLearnGate`（停用词表 / 无数字URL / 长度上限）→ 热词候选；
-- **style**：非近音但整体相似度 ≥0.75，或 ITN 数字格式差异（白名单豁免，绝不进热词）→ 只作润色反馈；
+- **style**：非近音但整体相似度 ≥0.75，ITN 数字格式差异，或纯标点/空格/换行修改（绝不进热词）→ 只作润色反馈；当前只沉淀 journal，不启用 per-app 统计风格学习；
 - **content**：纯增删或整段改写（相似度 <0.75 时全体降级）→ 无监督信号；
 - **reverted_hotword**：用户把我们的热词替换改了回去 → 最强负反馈，直通拒绝衰减通道。
 
@@ -83,15 +87,19 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
   - **correction_history 三元组 few-shot**（规则 10）：ingest 时把「误识句 → 用户改正句」完整句对抽进 `correction_examples` 表（拼音键、300 条上限、120 字窗口），听写时按发音命中检索 ≤2 条注入——模型看到的是这个用户真实的错误模式及其语境。
 - **hard（词典 UI「必换」显式勾选）**：进 HotwordCorrector 字面替换与 HomophoneReplacer FST（`build_hotword_fst.py` 只吃 hard 词）。适合"薇拉→Velora"这类左侧非真词/拼写锁定条目；乱码型术语（"发不说明"）实测 glossary 提示下 LLM 也能修，硬替换仅作兜底。
 
-**提示词已变更：合并前需重跑四套 eval 门禁 `repair_eval.py`、`format_eval.py`、`homophone_eval.py`、`ambiguity_eval.py`（候选文件由 `VELORA_EXPORT_PROMPTS=1 swift test --filter exportPromptCandidates` 从源码导出，保证测的就是发的）。**
+历史兼容：`journal_offset` 早于 `correction_examples` 存在；升级后会用独立 schema marker 对旧 journal 做一次幂等句例回填，不重复增加词频或拒绝计数。本机计数验证从 1 条恢复到 4 条，验证过程不输出用户文本。
+
+**提示词已变更：合并前需重跑五套 eval 门禁 `repair_eval.py`、`format_eval.py`、`homophone_eval.py`、`ambiguity_eval.py`、`translate_repair_eval.py`（候选和 system prompt 由 `VELORA_EXPORT_PROMPTS=1 swift test --filter exportPromptCandidates` 从源码导出，保证测的就是发的）。当前 `qwen3:8b` 结果：14/14、10/10、10/10、11/11、8/8；脚本任一 case 失败即非零退出。**
 
 > 注意作用域：只有源语言的 `asr_fix`（同音验证过的听写纠错）进入 `terms` 热词表，参与 HotwordCorrector 与 HR。翻译确认卡片的**译文侧编辑不进热词表**（只留在 journal 供微调），避免另一种语言的术语偏好污染 ASR 后的字面替换。
 
 ## 微调数据与本地 QLoRA
 
 - 文本三元组默认落盘；**音频 opt-in**（设置 → 学习），16k mono WAV，2GB 环形配额，取消的翻译连同音频一起删除。不留音频只能微调润色 LLM；留音频才可能微调 ASR（后者暂不列规划）。
-- `scripts/finetune/prepare_polish_dataset.py`：清洗（编辑比率 >0.25 弃、长度比 [0.5,2]、去重、~10% 零编辑正则化）→ mlx chat 格式。
+- `scripts/finetune/prepare_polish_dataset.py`：清洗（编辑比率 >0.25 弃、长度比 [0.5,2]、去重、~10% 零编辑正则化）→ mlx chat 格式。训练必须先导出生产 system prompt；user 内容携带与线上一致的 `app_format_profile` + `输入：`，assistant 内容是与线上一致的 `{"polished": ...}` JSON，拒绝用短版 prompt 或裸文本标签训练。
 - `scripts/finetune/run_qlora.sh`：mlx_lm.lora（QLoRA，`--mask-prompt`）→ fuse `--de-quantize` → llama.cpp GGUF → `ollama create velora-polish`。文献口径：100–500 对高质量数据可见效。产出必须过 `pocs/tuning/` eval 门禁再切换。
+
+当前状态：只具备本地语料沉淀与离线导出工具，**没有在线自动训练、自动切换 LoRA，也没有 per-app 风格统计学习**；这些能力等正式进入模型层工作时再统一设计数据契约、评测和用户控制。
 
 ## 运维速查
 
