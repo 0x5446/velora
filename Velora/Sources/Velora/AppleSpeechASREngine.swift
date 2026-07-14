@@ -42,6 +42,11 @@ public struct AppleSpeechASREngine: ASREngine {
 
         let speechRequest = SFSpeechURLRecognitionRequest(url: URL(fileURLWithPath: audioPath))
         speechRequest.shouldReportPartialResults = false
+        if !request.contextualPhrases.isEmpty {
+            // Same hotword/nearby-text list the whisper engine gets as
+            // --prompt; Apple's API takes it as vocabulary-bias phrases.
+            speechRequest.contextualStrings = request.contextualPhrases
+        }
 
         if requiresOnDeviceRecognition {
             guard recognizer.supportsOnDeviceRecognition else {
