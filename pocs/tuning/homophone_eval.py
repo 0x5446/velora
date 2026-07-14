@@ -40,7 +40,7 @@ def call(model, system, prompt, options):
 
 results = []
 for cand in CANDIDATES:
-    profile = "work_chat: concise paragraphs with light punctuation; avoid formal email framing"
+    profile = "work_chat: short paragraphs, one independent topic per paragraph, light punctuation; avoid formal email framing"
     call(cand["model"], cand["system"], f"app_format_profile={profile}\n输入：预热", {**cand["options"], "num_predict": 8})
     for item in TEXTS:
         prompt = f"app_format_profile={profile}\n"

@@ -2,16 +2,16 @@
  {
   "cand": "shipped",
   "text": "count_repair",
-  "wall": 1149,
+  "wall": 1215,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
-  "polished": "我有两点想说一下：\n1. 需要理清需求；\n2. 需要充分测试。"
+  "polished": "对了，我有两点想说：\n1. 需要理点需求；\n2. 需要充分测试。"
  },
  {
   "cand": "shipped",
   "text": "soft_should_be",
-  "wall": 448,
+  "wall": 460,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -20,7 +20,7 @@
  {
   "cand": "shipped",
   "text": "casual_switch",
-  "wall": 453,
+  "wall": 458,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -29,7 +29,7 @@
  {
   "cand": "shipped",
   "text": "three_way",
-  "wall": 451,
+  "wall": 488,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -38,7 +38,7 @@
  {
   "cand": "shipped",
   "text": "restate",
-  "wall": 447,
+  "wall": 476,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -47,7 +47,7 @@
  {
   "cand": "shipped",
   "text": "time_repair",
-  "wall": 495,
+  "wall": 523,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -56,7 +56,7 @@
  {
   "cand": "shipped",
   "text": "name_repair",
-  "wall": 495,
+  "wall": 527,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -65,7 +65,7 @@
  {
   "cand": "shipped",
   "text": "no_repair_negation",
-  "wall": 537,
+  "wall": 553,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -74,7 +74,7 @@
  {
   "cand": "shipped",
   "text": "no_repair_quote",
-  "wall": 594,
+  "wall": 600,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -83,7 +83,7 @@
  {
   "cand": "shipped",
   "text": "no_repair_clean",
-  "wall": 713,
+  "wall": 721,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -92,7 +92,7 @@
  {
   "cand": "shipped",
   "text": "no_repair_disagree",
-  "wall": 570,
+  "wall": 576,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -101,7 +101,7 @@
  {
   "cand": "shipped",
   "text": "no_repair_list",
-  "wall": 948,
+  "wall": 955,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -110,7 +110,7 @@
  {
   "cand": "shipped",
   "text": "no_repair_speculation",
-  "wall": 671,
+  "wall": 673,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,
@@ -119,7 +119,7 @@
  {
   "cand": "shipped",
   "text": "no_repair_choice",
-  "wall": 548,
+  "wall": 549,
   "ok": true,
   "contains_ok": true,
   "absent_ok": true,

@@ -1,0 +1,90 @@
+[
+ {
+  "cand": "shipped",
+  "case": "inline_nage",
+  "ok": true,
+  "fails": [],
+  "ms": 634,
+  "polished": "冰箱里没有过期的牛奶了，对吧？"
+ },
+ {
+  "cand": "shipped",
+  "case": "zhege_a_zhexie",
+  "ok": true,
+  "fails": [],
+  "ms": 547,
+  "polished": "帮我把这些错别字都清理一下。"
+ },
+ {
+  "cand": "shipped",
+  "case": "jiushi_hedge",
+  "ok": true,
+  "fails": [],
+  "ms": 594,
+  "polished": "我感觉这版界面比上一版清爽。"
+ },
+ {
+  "cand": "shipped",
+  "case": "zhege_nage_stutter",
+  "ok": true,
+  "fails": [],
+  "ms": 505,
+  "polished": "麻烦把这个部署文档更新一下。"
+ },
+ {
+  "cand": "shipped",
+  "case": "ranhou_chain",
+  "ok": true,
+  "fails": [],
+  "ms": 670,
+  "polished": "然后我就想说，我们可以先灰度，然后再全量。"
+ },
+ {
+  "cand": "shipped",
+  "case": "guard_demonstrative_zhege",
+  "ok": true,
+  "fails": [],
+  "ms": 653,
+  "polished": "这个接口超时了，你看下是不是后端的问题。"
+ },
+ {
+  "cand": "shipped",
+  "case": "guard_demonstrative_nage",
+  "ok": true,
+  "fails": [],
+  "ms": 512,
+  "polished": "那个新开的超市周末去看看。"
+ },
+ {
+  "cand": "shipped",
+  "case": "guard_jiushi_copula",
+  "ok": true,
+  "fails": [],
+  "ms": 549,
+  "polished": "他就是负责人，你直接找他。"
+ },
+ {
+  "cand": "shipped",
+  "case": "guard_ranhou_seq",
+  "ok": true,
+  "fails": [],
+  "ms": 552,
+  "polished": "先拉最新代码，然后跑测试。"
+ },
+ {
+  "cand": "shipped",
+  "case": "guard_mood_a",
+  "ok": true,
+  "fails": [],
+  "ms": 550,
+  "polished": "今天天气挺好啊，出去走走。"
+ },
+ {
+  "cand": "shipped",
+  "case": "guard_duiba",
+  "ok": true,
+  "fails": [],
+  "ms": 572,
+  "polished": "部署脚本已经没问题了，对吧？"
+ }
+]

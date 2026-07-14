@@ -572,10 +572,12 @@ private func iTermGrid(_ text: String, width: Int) -> String {
         "id": "shipped",
         "model": ProcessInfo.processInfo.environment["VELORA_OLLAMA_MODEL"] ?? "qwen3:8b",
         "system": OllamaPromptLibrary.inputSystem,
-        "options": ["temperature": 0.1, "num_ctx": 4096, "repeat_penalty": 1.0, "num_predict": 400],
+        // num_predict matches the production input-mode CAP (predictBudget),
+        // so paragraph/list eval outputs are never truncated by the harness.
+        "options": ["temperature": 0.1, "num_ctx": 4096, "repeat_penalty": 1.0, "num_predict": 1_024],
     ]]
     let data = try JSONSerialization.data(withJSONObject: candidates)
-    for name in ["repair_candidates.json", "format_candidates.json", "homophone_candidates.json", "ambiguity_candidates.json"] {
+    for name in ["repair_candidates.json", "format_candidates.json", "homophone_candidates.json", "ambiguity_candidates.json", "filler_candidates.json"] {
         try data.write(to: dir.appendingPathComponent(name))
     }
     try OllamaPromptLibrary.inputSystem.write(

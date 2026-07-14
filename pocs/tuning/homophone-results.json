@@ -4,69 +4,69 @@
   "text": "hp_timeout",
   "ok": true,
   "polished": "这个接口超时了，你看下日志。",
-  "wall": 601
+  "wall": 596
  },
  {
   "cand": "shipped",
   "text": "hp_release_note",
-  "ok": false,
-  "polished": "帮我把发的不说明整理一下，再发出去。",
-  "wall": 640
+  "ok": true,
+  "polished": "帮我把发布说明整理一下再发出去。",
+  "wall": 665
  },
  {
   "cand": "shipped",
   "text": "hp_agenda",
-  "ok": false,
-  "polished": "下午的会先过一遍疑程。",
-  "wall": 557
+  "ok": true,
+  "polished": "下午的会先过一遍议程。",
+  "wall": 553
  },
  {
   "cand": "shipped",
   "text": "hp_regression",
-  "ok": false,
-  "polished": "把回归册跑完再上线。",
-  "wall": 524
+  "ok": true,
+  "polished": "把回归测试跑完再上线。",
+  "wall": 527
  },
  {
   "cand": "shipped",
   "text": "hp_feedback",
   "ok": true,
   "polished": "有个用户反馈了一个登录的问题。",
-  "wall": 487
+  "wall": 505
  },
  {
   "cand": "shipped",
   "text": "hp_rollout",
   "ok": true,
   "polished": "这个功能还在灰度，先别全量放开。",
-  "wall": 635
+  "wall": 623
  },
  {
   "cand": "shipped",
   "text": "guard_supermarket",
   "ok": true,
   "polished": "我下班去趟超市买点东西。",
-  "wall": 537
+  "wall": 547
  },
  {
   "cand": "shipped",
   "text": "guard_roster",
   "ok": true,
   "polished": "这份名册是最新的，你直接用。",
-  "wall": 574
+  "wall": 569
  },
  {
   "cand": "shipped",
   "text": "guard_steady",
   "ok": true,
   "polished": "先把需求文档稳稳当当过一遍。",
-  "wall": 580
+  "wall": 574
  },
  {
   "cand": "shipped",
   "text": "guard_ambiguous",
   "ok": true,
   "polished": "他说想去看看那个新开的超市。",
-  "wall": 513
+  "wall": 520
  }
 ]

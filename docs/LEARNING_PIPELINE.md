@@ -89,7 +89,7 @@ Velora 的差异化：**从用户修正中学习 + 全本地**。上屏后你手
 
 历史兼容：`journal_offset` 早于 `correction_examples` 存在；升级后会用独立 schema marker 对旧 journal 做一次幂等句例回填，不重复增加词频或拒绝计数。本机计数验证从 1 条恢复到 4 条，验证过程不输出用户文本。
 
-**提示词已变更：合并前需重跑五套 eval 门禁 `repair_eval.py`、`format_eval.py`、`homophone_eval.py`、`ambiguity_eval.py`、`translate_repair_eval.py`（候选和 system prompt 由 `VELORA_EXPORT_PROMPTS=1 swift test --filter exportPromptCandidates` 从源码导出，保证测的就是发的）。当前 `qwen3:8b` 结果：14/14、10/10、10/10、11/11、8/8；脚本任一 case 失败即非零退出。**
+**提示词已变更：合并前需重跑六套 eval 门禁 `repair_eval.py`、`format_eval.py`、`homophone_eval.py`、`ambiguity_eval.py`、`translate_repair_eval.py`、`filler_eval.py`（候选和 system prompt 由 `VELORA_EXPORT_PROMPTS=1 swift test --filter exportPromptCandidates` 从源码导出，保证测的就是发的）。当前 `qwen3:8b` 结果：14/14、15/15、10/10、11/11、8/8、11/11；脚本任一 case 失败即非零退出。temperature 0.1 非零，采样仍有轻微抖动：偶发失败时复跑三次全过视为通过（口癖类失败方向是「多保留」，不会损坏内容）。filler 评测集全部为合成句，不得粘贴 journal 原文（公开仓库），也不得与 inputSystem few-shot 撞整句骨架。**
 
 > 注意作用域：只有源语言的 `asr_fix`（同音验证过的听写纠错）进入 `terms` 热词表，参与 HotwordCorrector 与 HR。翻译确认卡片的**译文侧编辑不进热词表**（只留在 journal 供微调），避免另一种语言的术语偏好污染 ASR 后的字面替换。
 

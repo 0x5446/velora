@@ -37,7 +37,7 @@ def call(prompt):
     with urllib.request.urlopen(req, timeout=90) as resp:
         return json.loads(resp.read()), int((time.monotonic() - t0) * 1000)
 
-PROFILE = "work_chat: concise paragraphs with light punctuation; avoid formal email framing"
+PROFILE = "work_chat: short paragraphs, one independent topic per paragraph, light punctuation; avoid formal email framing"
 call(f"app_format_profile={PROFILE}\nsource_language=zh\ntarget_language=en\n输入：预热")
 results = []
 for c in CASES:

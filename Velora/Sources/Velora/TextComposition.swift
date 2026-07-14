@@ -126,9 +126,13 @@ public enum VeloraTextComposer {
     /// (verified across 7 prompt candidates, 2026-07-05).
     ///
     /// Every rule here survived an adversarial false-positive review:
-    /// - 嗯/呃 are removed only when glued between Han characters (or at line
-    ///   start glued to Han) — standalone "嗯，好的" is an intentional reply
-    ///   and stays. 呃 keeps a lookahead for the medical term 呃逆.
+    /// - 嗯/呃 glued to a Han character on the LEFT are removed regardless of
+    ///   what follows (Han, punctuation, Latin, or end) — journal evidence
+    ///   showed 「看呃，」/「看呃LLM」 surviving the old Han-both-sides rule.
+    ///   打呃 (hiccup) is excluded via the lookbehind; 呃逆 via lookahead.
+    /// - Line-start 嗯 is removed only when glued to Han: standalone
+    ///   "嗯，好的" is an intentional reply and stays. Line-start 呃 has no
+    ///   such reading, so it is swept together with a trailing comma.
     /// - 唔 is never touched (Cantonese negation: 我唔知道).
     /// - Stutter collapse is a filler-word whitelist, not a generic Han-block
     ///   fold — generic folding destroys ABAB verbs (商量商量, 考虑考虑).
@@ -149,10 +153,21 @@ public enum VeloraTextComposer {
             )
         }
 
-        // The look-around Han classes exclude 嗯/呃 themselves, otherwise a
-        // run like 嗯嗯，收到 backtracks until one 嗯 satisfies the lookahead.
-        replace(#"(?<=[\p{Han}&&[^嗯呃]])(?:嗯|呃(?!逆))+(?=[\p{Han}&&[^嗯呃]])"#, with: "")
-        replace(#"(?m)^(?:嗯|呃(?!逆))+(?=[\p{Han}&&[^嗯呃]])"#, with: "")
+        // The lookbehind Han class excludes 嗯/呃 themselves, otherwise a run
+        // like 嗯嗯，收到 backtracks until one 嗯 satisfies it. 打 is excluded
+        // so 打呃 (hiccup) survives. Reporting verbs (说/回/答/复/道) are also
+        // excluded here: 「他说嗯，好的」 quotes someone's reply, deleting it
+        // loses content (deep-review 2026-07-14, reproduced). 嗯哼 is an
+        // interjection, never split. No lookahead otherwise: left-glued
+        // hesitation is filler whatever follows (Han, punctuation, Latin, end).
+        replace(#"(?<=[\p{Han}&&[^嗯呃打说回答复道]])(?:嗯(?!哼)|呃(?!逆))+"#, with: "")
+        // After a reporting verb, only Han-glued hesitation is filler
+        // (「想说嗯这个方案」); 「说嗯，」/「说呃，」 keep the quoted reply.
+        replace(#"(?<=[说回答复道])(?:嗯(?!哼)|呃(?!逆))+(?=[\p{Han}&&[^嗯呃]])"#, with: "")
+        replace(#"(?m)^(?:嗯(?!哼)|呃(?!逆))+(?=[\p{Han}&&[^嗯呃]])"#, with: "")
+        // Line-start 呃 is never an intentional reply (unlike 嗯，好的), so
+        // the run goes together with any trailing pause comma.
+        replace(#"(?m)^(?:呃(?!逆)[，、,]?\s*)+"#, with: "")
         replace(#"(这个|那个|就是|然后|其实|所以|什么)\1+"#, with: "$1")
         if TranslationLanguageResolver.normalizedLanguage(sourceLanguage) == "en" {
             replace(#"(?:^|(?<=\s))[Uu](?:m+|h+),\s*"#, with: "")

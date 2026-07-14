@@ -258,7 +258,7 @@ ASR（已落码 `WhisperCLIConfiguration.tunedDecodeArguments`）：
 
 润色（已落码 `OllamaPromptLibrary` + `VeloraTextComposer.strippedFillers`）：
 
-- qwen3:8b 无论怎么写 prompt 都不删口癖（7 组候选实测），口癖清理下沉规则层：嗯/呃 仅限汉字夹缝与句首粘连形态（"嗯，好的"保留、唔 永不删、呃逆 豁免）；口吃折叠用填充词白名单（商量商量 类 ABAB 动词零误杀）；英文 um/uh 只删逗号定界形态且仅限英文源。
+- 口癖清理分两层（2026-07-14 修订）。规则层删发音填充：嗯/呃 只要左侧粘连汉字就删（右侧标点/英文/句尾均可，「看呃，LLM」类 journal 实证缺口的产物）；句首 呃 连停顿逗号一起删（呃 没有「嗯，好的」式应答义）；报告动词（说/回/答/复/道）后面跟停顿的 嗯/呃 是引述的应答（「他说嗯，好的」），保留——只有右侧粘汉字才删（「想说嗯这个方案」）；「嗯，好的」保留、嗯哼 永不拆、唔 永不删、呃逆/打呃 豁免；口吃折叠用填充词白名单（商量商量 类 ABAB 动词零误杀）；英文 um/uh 只删逗号定界形态且仅限英文源。LLM 层删语境填充：早期结论「qwen3:8b 无论怎么写 prompt 都不删口癖」在「删除规则 + 显式保留清单 + few-shot」组合下被推翻——句中 hedge 的 这个/那个/就是/啊这些 能删，指代义 这个/那个、系词 就是、顺序 然后、句尾语气词、叠词副词（稳稳当当）显式保留，门禁 `filler_eval.py` 11/11（含 6 个防误杀 guard）。句首「然后」有意保留：听写常是上一条消息的衔接。
 - prompt 重构为前缀可缓存：静态指令+few-shot 全在 system（字节级恒定），动态字段在用户段；实测 prefill 0.53s→0.11s。
 - options：num_ctx 统一 4096（2048 会被真实最坏 prompt 静默击穿）；repeat_penalty 显式 1.0（qwen3:8b Modelfile 本值，1.1/1.05 会把照抄推向同义改写）；num_predict 随输入长度动态；预热必须用真实 system + 相同 options，否则预热本身制造首次重载。
 - 可观测：load_duration>500ms 记 `ollama_model_reload` warning；prompt token 逼近 num_ctx 记 `ollama_ctx_pressure`。

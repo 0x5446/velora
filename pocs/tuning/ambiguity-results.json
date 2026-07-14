@@ -2,49 +2,49 @@
  {
   "cand": "shipped",
   "case": "keep_yonghu_legit",
-  "wall": 551,
+  "wall": 554,
   "ok": true,
   "polished": "大家都拥护这个决定，没有反对意见。"
  },
  {
   "cand": "shipped",
   "case": "keep_chaoshi_legit",
-  "wall": 547,
+  "wall": 556,
   "ok": true,
   "polished": "下班顺路去超市买点菜。"
  },
  {
   "cand": "shipped",
   "case": "keep_shangxian_legit",
-  "wall": 570,
+  "wall": 576,
   "ok": true,
   "polished": "新功能明天正式上线，大家关注一下。"
  },
  {
   "cand": "shipped",
   "case": "keep_shifen_legit",
-  "wall": 570,
+  "wall": 575,
   "ok": true,
   "polished": "这个方案十分靠谱，就按它来。"
  },
  {
   "cand": "shipped",
   "case": "fix_yonghu_error",
-  "wall": 543,
+  "wall": 579,
   "ok": true,
-  "polished": "这个功能上线后用户反馈很多问题。"
+  "polished": "这个功能上线后，用户反馈很多问题。"
  },
  {
   "cand": "shipped",
   "case": "fix_chaoshi_error",
-  "wall": 564,
+  "wall": 578,
   "ok": true,
   "polished": "接口老是超时，需要加重试。"
  },
  {
   "cand": "shipped",
   "case": "fix_gibberish_fabu",
-  "wall": 512,
+  "wall": 503,
   "ok": true,
   "polished": "记得更新发布说明再打包。"
  },
@@ -58,21 +58,21 @@
  {
   "cand": "shipped",
   "case": "history_fix_same_error",
-  "wall": 641,
+  "wall": 646,
   "ok": true,
   "polished": "再开一个会话讨论一下细节。"
  },
  {
   "cand": "shipped",
   "case": "history_keep_legit_huihua",
-  "wall": 647,
+  "wall": 648,
   "ok": true,
   "polished": "他的会话作品得了一等奖，画得真好。"
  },
  {
   "cand": "shipped",
   "case": "no_signal_clean",
-  "wall": 494,
+  "wall": 498,
   "ok": true,
   "polished": "我们下午三点开会讨论预算。"
  }

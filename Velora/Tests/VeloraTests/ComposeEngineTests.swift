@@ -121,6 +121,74 @@ import Testing
     #expect(VeloraTextComposer.strippedFillers("持续呃逆是一种症状") == "持续呃逆是一种症状")
 }
 
+@Test func fillerStripperRemovesPunctuationAndLatinAdjacentHesitations() {
+    // Journal-verified gaps (2026-07-14): 嗯/呃 glued to a Han char on the
+    // LEFT are fillers no matter what follows — punctuation, Latin, or end.
+    #expect(VeloraTextComposer.strippedFillers("目前看呃，LLM的polish没清理干净。") == "目前看，LLM的polish没清理干净。")
+    #expect(VeloraTextComposer.strippedFillers("目前看呃LLM的polish") == "目前看LLM的polish")
+    #expect(VeloraTextComposer.strippedFillers("我觉得嗯，这个方案可以") == "我觉得，这个方案可以")
+    #expect(VeloraTextComposer.strippedFillers("我先看呃") == "我先看")
+    // Sentence-initial 呃 is never an intentional reply (unlike 嗯) — it goes
+    // even when followed by punctuation, comma included.
+    #expect(VeloraTextComposer.strippedFillers("呃，专利的作者如何分配呢？") == "专利的作者如何分配呢？")
+    #expect(VeloraTextComposer.strippedFillers("呃呃，我想想") == "我想想")
+    // The 嗯 intentional-reply guard is unchanged.
+    #expect(VeloraTextComposer.strippedFillers("嗯，好的") == "嗯，好的")
+    // 打呃 (hiccup) and 呃逆 (medical) survive.
+    #expect(VeloraTextComposer.strippedFillers("他一直在打呃，很难受") == "他一直在打呃，很难受")
+    #expect(VeloraTextComposer.strippedFillers("呃逆是一种症状") == "呃逆是一种症状")
+}
+
+@Test func predictBudgetScalesWithInputAndRespectsCaps() {
+    // Input mode: floor 224, ×1.5 growth, cap 1024 (long dictation must not
+    // truncate mid-JSON — the old 512 cap silently shipped rule-floor text).
+    #expect(OllamaPromptLibrary.predictBudget(for: "短句", translate: false) == 224)
+    let mid = String(repeating: "字", count: 300)
+    #expect(OllamaPromptLibrary.predictBudget(for: mid, translate: false) == 300 * 3 / 2 + 32)
+    let long = String(repeating: "字", count: 700)
+    #expect(OllamaPromptLibrary.predictBudget(for: long, translate: false) == 1_024)
+    // Translate mode: floor 640, ×3 growth, same 1024 cap.
+    #expect(OllamaPromptLibrary.predictBudget(for: "短句", translate: true) == 640)
+    #expect(OllamaPromptLibrary.predictBudget(for: mid, translate: true) == 300 * 3 + 64)
+    #expect(OllamaPromptLibrary.predictBudget(for: long, translate: true) == 1_024)
+}
+
+@Test func ollamaRequestEncodesNumericKeepAliveAsJSONNumber() throws {
+    // Ollama rejects the bare string "-1" ("missing unit in duration"), which
+    // silently broke resident mode: every generate call 400'd and compose
+    // fell back to the rule floor. Numeric strings must encode as numbers.
+    func encodedKeepAlive(_ keepAlive: String) throws -> Any? {
+        let request = OllamaGenerateRequest(
+            model: "qwen3:8b",
+            system: "s",
+            prompt: "p",
+            stream: false,
+            keepAlive: keepAlive,
+            think: false,
+            format: "json",
+            options: .init(temperature: 0.1, numPredict: 8, numCtx: 4096, repeatPenalty: 1.0)
+        )
+        let object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(request))
+        return (object as? [String: Any])?["keep_alive"]
+    }
+    #expect(try encodedKeepAlive("-1") as? Int == -1)
+    #expect(try encodedKeepAlive("30m") as? String == "30m")
+}
+
+@Test func fillerStripperKeepsQuotedRepliesAndInterjections() {
+    // Reporting verb + 嗯/呃 + pause = quoted reply, must survive
+    // (deep-review 2026-07-14: the old broad rule deleted all of these).
+    #expect(VeloraTextComposer.strippedFillers("他说嗯，好的") == "他说嗯，好的")
+    #expect(VeloraTextComposer.strippedFillers("帮我回复嗯，好的") == "帮我回复嗯，好的")
+    #expect(VeloraTextComposer.strippedFillers("他说嗯嗯，收到") == "他说嗯嗯，收到")
+    #expect(VeloraTextComposer.strippedFillers("他说呃，先等等") == "他说呃，先等等")
+    // But hesitation glued into the sentence after 说 is still filler.
+    #expect(VeloraTextComposer.strippedFillers("我想说嗯这个方案不行") == "我想说这个方案不行")
+    // 嗯哼 is an interjection, never split into 哼.
+    #expect(VeloraTextComposer.strippedFillers("她嗯哼了一声") == "她嗯哼了一声")
+    #expect(VeloraTextComposer.strippedFillers("嗯哼，可以") == "嗯哼，可以")
+}
+
 @Test func fillerStripperCollapsesWhitelistedStuttersOnly() {
     #expect(VeloraTextComposer.strippedFillers("这个这个功能有问题") == "这个功能有问题")
     #expect(VeloraTextComposer.strippedFillers("就是就是那个那个意思") == "就是那个意思")
