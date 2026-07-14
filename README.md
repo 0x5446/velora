@@ -36,7 +36,7 @@ Most dictation tools make you choose between quality and privacy. Velora refuses
 - **Truly local.** ASR, text polishing, and translation all run on your machine. Unplug the network and everything still works.
 - **System-wide.** A menu-bar utility that types into *any* app — your editor, browser, chat — right at the cursor.
 - **One key.** Tap `Fn` to start, tap again to finish. Velora owns the key end-to-end via a CGEventTap, so the macOS input-source switcher never fights you.
-- **Polished output, not raw transcripts.** Every utterance passes through a tiered compose layer: deterministic cleanup, context-constrained correction, app-category formatting, then local-LLM polish when it beats the deadline. Preservation guards reject rewrites that lose numbers, URLs, code identifiers, learned terms, or the source language.
+- **Polished output, not raw transcripts.** Every utterance passes through a tiered compose layer: deterministic filler cleanup (嗯/呃 and stutter folding), context-constrained correction, app-category formatting (lists and multi-topic paragraphs), then local-LLM polish — including contextual removal of hedge fillers — when it beats the deadline. Preservation guards reject rewrites that lose numbers, URLs, code identifiers, learned terms, or the source language.
 
 ## How it works
 
@@ -120,7 +120,7 @@ xcodebuild -project Velora.xcodeproj -scheme Velora -configuration Debug build
 | Review card: re-translate after editing source | `⌘R` |
 | Review card: dismiss | `Esc` |
 
-Hotkeys are remappable in Settings (⌥Space fallback available). Translation target language, insert side, and developer diagnostics live there too.
+Hotkeys are remappable in Settings (⌥Space fallback available). Translation target language, insert side, keeping the polish model resident in memory (~6 GB; removes the model-load wait on the first utterance after idle), and developer diagnostics live there too.
 
 ## Privacy
 
