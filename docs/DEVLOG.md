@@ -19,3 +19,11 @@
 - Mac 摘要不是产品通过。质量 JSON 七个集合窗口合计 1304，不是口头的 1314。相对 4B / v4.1 和 e2e60 保持 not judged。草稿计时的 T4 为 null；9853/1024 那条是重复单元。详见 [`evidence/mac-2026-11-16/report.md`](evidence/mac-2026-11-16/report.md)。
 - F0：`python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'`，18 项，退出码 0。证据 [`evidence/f0/report.md`](evidence/f0/report.md)。这不关闭 M0 或 M1。
 - 未审查：`/Users/alpha/specdict/evidence/mac-draft-20261116-192758/` 里的原型源码。需要对照时只要 `sources/run_real_mlx_v2.py` 和写了差异的 `FINDINGS.md`。
+
+## 2026-11-16 · F1 端点契约，并更正 1314 与 1304
+
+- 更正上一则 devlog：1314 是实际推理条数，1304 是质量汇总排除 realx 5 条和 gentest 5 条之后的有效分母。JSON 记录的是这个分母。两者不是计数矛盾。相对 4B / v4.1 和 e2e60 仍是 not judged。说明改在 [`evidence/mac-2026-11-16/report.md`](evidence/mac-2026-11-16/report.md)。
+- 范围：在 F0 同一设施上加数字端点 schema、采集器、CPU 回放和计时契约。没有改 `Apps/` 或 `Velora/Sources/`，没有加载 4B，没有新的付费裁判，没有改研究仓库，没有合并或部署。
+- F1 通过规则写在 [`MILESTONE_GATES.md`](MILESTONE_GATES.md)。运行 `python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'`，32 项，退出码 0。证据 [`evidence/f1/report.md`](evidence/f1/report.md)。
+- 3099/442 的引用拆分保留 verify 3691.4 ms 和接受 289/1151，并写明逐块长度和逐块毫秒仍是 null。9853/1024 保持 constructed repeat，不能外推。CPU 回放没有生成这些毫秒，也没有 T4。
+- 未做：目标机器上的逐块日志和真实 ASR 端点日志。路径见 [`HANDOFF.md`](HANDOFF.md)。本环境没有访问 `/Users/alpha`。

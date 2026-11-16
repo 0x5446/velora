@@ -1,6 +1,6 @@
 # 交接
 
-更新时间：2026-11-16。当前阶段：F0 的 CPU 验收设施已通过。M0 未通过。不要改产品代码。
+更新时间：2026-11-16。当前阶段：F0 和 F1 的 CPU 验收设施已通过。M0 未通过。不要改产品代码。本环境没有访问 `/Users/alpha`。
 
 ## 现在在哪
 
@@ -22,7 +22,8 @@
 | 关 | 状态 |
 |---|---|
 | M0 审计与资产清单 | 未通过。阅读完成；用户工作区 `git status` 和权重哈希仍缺 |
-| F0 CPU 设施 | 通过。`python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'`，18 项，见 [`evidence/f0/report.md`](evidence/f0/report.md) |
+| F0 CPU 设施 | 通过。当时 18 项，见 [`evidence/f0/report.md`](evidence/f0/report.md)。同一命令现在会连同 F1 一起跑 |
+| F1 端点 schema / 采集器 / 回放 / 计时契约 | 通过。32 项，退出码 0，见 [`evidence/f1/report.md`](evidence/f1/report.md)。不是 M1 或 M5 |
 | M1 现行产品基线 | 未开始。Mac 离线，且新摘要不是 Velora 的 SenseVoice + Ollama 路径 |
 | M2 六套门禁 | 未开始。研究 rubric 的绝对通过率不能代替 |
 | M3 取消/焦点/离线的产品观察 | 未开始。F0 只覆盖假模型上的调度 |
@@ -31,14 +32,23 @@
 
 ## 下一最小交付
 
-Mac 回来之后，用公开或已授权的音频产生真实端点日志，套 `pocs/speculative_replay/fixtures/synthetic_endpoints.json` 的 schema，`t4_ms` 保持 null。另一次产品路径测量再写绝对 T4：p50/p90，拆 prefill、verify、generate，分冷热、输入/输出长度、接受率、窗口、取消、焦点和故障。要单列不加速的 case。不要只交一个相对倍数。最小效应仍然 TBD。
+本环境做不了目标机器上的动作。下面只是只读和采集清单，路径来自已归档摘要里的记录，不是本环境打开过的文件。不要把听写原文、提示词或音频贴进这个公开仓库。公共冻结语料的编号和脱敏数字优先。
 
-若要审查隔离原型和 `LocalPolisher` 是否一致，最小附件是：
+只读源码，用来对照 `pipeline/local_polish.py`，本环境仍未审阅：
 
 - `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/sources/run_real_mlx_v2.py`
-- 同目录 `FINDINGS.md` 里写明差异的部分
+- `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/run_real_mlx.py`（归档命令在证据目录里调用的是这个文件名）
+- 同目录 `FINDINGS.md` 里写明和 `pipeline/local_polish.py` 不同的部分
 
-不要上传权重，不要把 jsonl 原文贴进仓库。
+采集，文件目前不应被假定已经存在。只写数字，schema 用 `velora.block_trace.v1`，`source` 为 `recorded_block_log`，`t4_ms` 为 null。每个 verify / generate 块要有 `phase`、`context_tokens`、`block_len`、`accepted`、`elapsed_ms`。不要从 9853/1024 那条重复单元填这份日志。
+
+- `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/blocks-3099-442.json`
+
+公开冻结语料的端点日志用 `velora.endpoint_trace.v1`：`corpus_id` 是编号而不是路径，事件只有 `kind`、`confirmed_tokens`、`new_tokens`、`trailing_silence_ms`。不要带识别文本。
+
+- `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/endpoint-trace.json`
+
+另一次产品路径测量再写绝对 T4：p50/p90，拆 prefill、verify、generate，分冷热、输入/输出长度、接受率、窗口、取消、焦点和故障。要单列不加速的 case。不要只交一个相对倍数。最小效应仍然 TBD。M0 的用户工作区 `git status` 和权重哈希仍未交接，但那不是这次 F1 还缺的日志。
 
 ## 不要做
 

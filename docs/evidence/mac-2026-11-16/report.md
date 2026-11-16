@@ -13,7 +13,7 @@
 
 ## 质量摘要在说什么
 
-`quality-summary.json` 的 `complete` 为 true，`blocked` 为空。列出的每个文件 `n` 等于 `expected`。七个集合的窗口数是 realx 140、testid 570、gentest 397、xcorr 40、xgpt 17、xdev 40、AASR 100，合计 **1304**。用户口头说的 1314 与这个合计不一致；以 JSON 为准，不把差额补成通过。
+`quality-summary.json` 的 `complete` 为 true，`blocked` 为空。列出的每个文件 `n` 等于 `expected`。七个集合的窗口数是 realx 140、testid 570、gentest 397、xcorr 40、xgpt 17、xdev 40、AASR 100，合计 **1304**。这是质量汇总的有效分母：实际推理 **1314** 条，进入汇总前排除了 realx 5 条和 gentest 5 条。JSON 只记录打分后的 `n`/`expected`，不另列那 10 条。两者不是互相矛盾的计数。上一版把 1314 写成未解释差额，这里更正。相对 4B / v4.1 和 e2e60 仍然是 not judged，这个更正不把它们改成通过。
 
 主裁判是 DeepSeek V4.1 Flash。gentest 里 source=deepseek 的 130 段改用 Kimi 做主裁判，并有 Gemini 3.8 Flash 复核。第二裁判是 Kimi。Gemini 只覆盖这 130 段，不是七个集合的第三遍全量裁判。JSON 写明 `stamp_rows` 没跑，行上没有 fingerprint。
 

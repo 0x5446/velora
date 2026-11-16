@@ -1,0 +1,36 @@
+{
+  "schema": "velora.endpoint_trace.v1",
+  "source": "synthetic",
+  "corpus_id": "skeleton-token-counts",
+  "representative": false,
+  "t4_ms": null,
+  "hardware_ms": null,
+  "events": [
+    {
+      "index": 0,
+      "kind": "endpoint",
+      "confirmed_tokens": 12,
+      "new_tokens": 12,
+      "trailing_silence_ms": null
+    },
+    {
+      "index": 1,
+      "kind": "focus_change",
+      "trailing_silence_ms": null
+    },
+    {
+      "index": 2,
+      "kind": "endpoint",
+      "confirmed_tokens": 20,
+      "new_tokens": 8,
+      "trailing_silence_ms": null
+    },
+    {
+      "index": 3,
+      "kind": "end",
+      "confirmed_tokens": 20,
+      "new_tokens": null,
+      "trailing_silence_ms": null
+    }
+  ]
+}

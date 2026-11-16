@@ -15,7 +15,7 @@ Mac 微基准支持的只有：在合成端点上，历史草稿可以和贪心�
 
 ## 现在不改的产品代码
 
-`Apps/` 和 `Velora/Sources/` 在 F0 不动。现行路径仍是松键后 SenseVoice 整段识别，再调 Ollama `qwen3:8b`。F0 的 Python 设施只约束下一阶段要接入的调度和核对。
+`Apps/` 和 `Velora/Sources/` 在 F0 和 F1 都不动。现行路径仍是松键后 SenseVoice 整段识别，再调 Ollama `qwen3:8b`。Python 设施只约束下一阶段要接入的调度、核对和计时拆分。
 
 ## 还缺的源文件
 
@@ -24,4 +24,4 @@ Mac 微基准支持的只有：在合成端点上，历史草稿可以和贪心�
 - `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/sources/run_real_mlx_v2.py`
 - 同目录的 `FINDINGS.md`，只要它写了和 `pipeline/local_polish.py` 不同的地方
 
-不要把权重、音频或 jsonl 原文贴进公开仓库。真实端点日志用 `pocs/speculative_replay/fixtures/synthetic_endpoints.json` 的 schema，`t4_ms` 保持 null。
+不要把权重、音频或 jsonl 原文贴进公开仓库。真实端点日志用 `pocs/speculative_replay/fixtures/endpoint_trace_skeleton.json` 的数字 schema（`velora.endpoint_trace.v1`），不要带确认文本。`t4_ms` 保持 null。3099/442 的逐块毫秒还没有；引用合计在 `fixtures/recorded_request_citations.json`，不能当成新的测量。

@@ -2,7 +2,7 @@
 
 状态日期：2026-11-16。协议见 [`ENGINEERING_PROTOCOL.md`](ENGINEERING_PROTOCOL.md)。审计见 [`M0_RESEARCH_AUDIT.md`](M0_RESEARCH_AUDIT.md)。方向见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。
 
-**M0 未通过。F0 验收设施已在 Linux 上通过。M1 及以后的产品改动不得开始。** 质量阈值没有因为新的 Mac 摘要而降低。论文相对 4B / v4.1 的门槛改为 not judged，因为用户明确这次不跑 4B，也没有新的 v4.1 对照；不另写一个绝对百分比来顶替它们。
+**M0 未通过。F0 和 F1 验收设施已在 Linux 上通过。M1 及以后的产品改动不得开始。** 质量阈值没有因为新的 Mac 摘要而降低。论文相对 4B / v4.1 的门槛改为 not judged，因为用户明确这次不跑 4B，也没有新的 v4.1 对照；不另写一个绝对百分比来顶替它们。F1 通过不是 M1 或 M5 通过。
 
 ## 全局目标
 
@@ -14,7 +14,7 @@
 
 任一关出现下面情况即失败，停在该关：
 
-- 报告缺硬件、模型摘要或数据哈希。F0 不加载模型，所以没有权重哈希；它的报告里也必须没有毫秒数。这只说明设施测试本身，不是产品通过
+- 报告缺硬件、模型摘要或数据哈希。F0 和 F1 不加载模型，所以没有权重哈希。F0 的报告里必须没有毫秒数。F1 可以引用已经归档的请求完成毫秒，但必须标明是引用，不能写成这次测出的 T4。这只说明设施测试本身，不是产品通过
 - 用论文表格、调优报告、设计稿或 `docs/evidence/mac-2026-11-16/` 的合成请求毫秒数代替本次产品运行
 - 用相对加速比代替绝对 T4；用重复文本上的高接受率代替自然听写
 - 质量门禁失败后用“再跑几次”算通过（现行 `docs/LEARNING_PIPELINE.md` 的三次复跑规则只描述现状，不是后续关卡）
@@ -47,11 +47,34 @@
 python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'
 ```
 
-在本环境退出码 0，18 项。报告对象不含 `speedup`，`t4_ms` 为 null。
+在本环境退出码 0，当时 18 项。报告对象不含 `speedup`，`t4_ms` 为 null。F1 加入后同一命令会跑 32 项；F0 的通过记录仍以 [`docs/evidence/f0/`](evidence/f0/report.md) 为准。
 
 失败：测试未运行却标通过；fixture 里写入非 null 的 `t4_ms`；把 F0 写成 M1 或 M5 通过。
 
-F0 不测量真实 ASR 端点，也不测量松键到上屏。下一次 Mac 上的最小交付是：用同一 schema 回放真实端点日志，并另记绝对 T4（p50/p90，含 prefill / verify / generate、冷热、输入输出长度、接受率、窗口、取消、焦点和故障）。最小效应仍是 TBD，不从 5017 ms 或 1.52 倍倒推。
+F0 不测量真实 ASR 端点，也不测量松键到上屏。
+
+## F1 · 端点 fixture、采集器、回放与计时契约
+
+前置：F0 通过。不要求 M0 的资产清单。这是验收设施，不是产品关。允许的原因与 F0 相同：目标 Mac 离线，而用户要求先交付可运行的下一最小设施。
+
+范围：仍是 `pocs/speculative_replay/`。采集器只收数字元数据，拒绝听写原文。CPU 回放按上下文长度、块长和接受档留下块记录，毫秒保持 null。已归档的 5017.2 ms 请求作为引用行拆开，不由 fixture 重新生成。
+
+通过规则在本关测试之前登记，2026-11-16 的运行满足这些规则，证据 [`docs/evidence/f1/report.md`](evidence/f1/report.md)：
+
+```bash
+python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'
+```
+
+在本环境退出码 0，32 项，包含 `test_trace.py`。具体锁住的断言：
+
+- 采集器拒绝 `confirmed_text`、路径和其他字符串。合成 trace 不能标成 representative。`t4_ms` 为 null。
+- CPU 回放的报告不含 `speedup`，块上没有 `elapsed_ms`。分组后的 `elapsed_ms` 仍是 null。
+- 引用行 3099/442 保留 prompt 3099、窗口 16、接受 289/1151、verify 3691.4 ms、请求完成 5017.2 ms。组件中位数之和不等于总时间。`block_lengths_observed` 和 `per_block_milliseconds` 为 null。`may_generalize` 为 false。
+- 引用行 9853/1024 的 `constructed_repeat` 为 true，草稿长度 18，接受数 920 可以大于草稿长度。标成 representative 即失败。
+
+失败：把引用毫秒或 CPU 分组写成 T4；用 1.52 倍或 98.3% 接受率代替上述拆分；为了让本关通过而放宽 M1–M6。
+
+F1 没有逐块实测 3691.4 ms。归档摘要只有合计。逐块 `context_tokens`、`block_len`、`accepted` 和 `elapsed_ms` 仍要等目标机器上的数字日志。
 
 ## M1 · 产品基线（仍不改用户可见行为）
 

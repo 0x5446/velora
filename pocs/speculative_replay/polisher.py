@@ -56,6 +56,7 @@ def _blank_stats():
         "generate_forwards": 0,
         "out_tokens": 0,
         "stopped": "",
+        "blocks": [],
     }
 
 
@@ -102,7 +103,11 @@ class TokenPolisher:
         stats["prompt"] = len(prompt)
         stats["reused"] = common
         stats["rolled_back"] = rolled_back
+        prefill_len = len(prompt) - common
         y = self._forward(prompt[common:], stats, "prefill")[-1]
+        stats["blocks"].append(
+            {"phase": "prefill", "context_tokens": common, "block_len": prefill_len, "accepted": 0}
+        )
         out: list[int] = []
         ptr = None
         win = self.k
@@ -118,7 +123,11 @@ class TokenPolisher:
             if p is not None:
                 ptr = p
             if not prop:
+                context_tokens = len(self.cached)
                 preds = self._forward([y], stats, "generate")
+                stats["blocks"].append(
+                    {"phase": "generate", "context_tokens": context_tokens, "block_len": 1, "accepted": 0}
+                )
                 win = self.k
                 y = preds[0]
                 continue
@@ -130,6 +139,14 @@ class TokenPolisher:
             stats["proposed"] += len(prop)
             stats["accepted"] += accepted
             stats["max_proposed"] = max(stats["max_proposed"], len(prop))
+            stats["blocks"].append(
+                {
+                    "phase": "verify",
+                    "context_tokens": base,
+                    "block_len": len(prop),
+                    "accepted": accepted,
+                }
+            )
             out.extend(prop[:accepted])
             win = min(win * 2, self.kmax) if accepted == len(prop) else self.k
             self._trim_to(base + 1 + accepted)
