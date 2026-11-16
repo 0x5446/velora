@@ -91,6 +91,19 @@ class PolisherTests(unittest.TestCase):
         self.assertEqual(stats["stopped"], "max_tokens")
         self.assertLessEqual(len(out), 5)
 
+    def test_eos_inside_a_matching_draft_is_not_emitted(self):
+        def nxt(ctx):
+            return 9 if len(ctx) >= 4 else 3
+
+        model = FnLM(nxt)
+        out, stats = TokenPolisher(model, eos={9}, k=4, kmax=8).polish(
+            [1], draft=[3, 3, 9, 9], max_tokens=8
+        )
+        self.assertNotIn(9, out)
+        self.assertEqual(out, greedy_ids(model, [1], {9}, 8))
+        self.assertEqual(stats["stopped"], "eos")
+        self.assertLess(stats["accepted"], stats["proposed"])
+
     def test_eos_is_not_emitted(self):
         def nxt(ctx):
             return 7 if len(ctx) >= 4 else 1

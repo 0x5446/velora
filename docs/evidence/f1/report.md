@@ -8,7 +8,7 @@
 python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'
 ```
 
-结果：38 项测试，退出码 0。日志在同目录 `unittest.txt`。其中 F0 原有的调度与精确草稿测试仍然通过。
+结果：入库 3099 重跑块日志和公共端点摘要之后，同一命令是 41 项，退出码 0。日志在同目录 `unittest.txt`。其中 F0 原有的调度与精确草稿测试仍然通过。匹配草稿里的 EOS 不再输出。
 
 较早一次 32 项运行用 `confirmed_tokens` 判断结束事件是否和上一轮相同。token 数相同、内容不同时不会重新生成。那个通过记录作废。这次补上 `revision` 后重跑。
 

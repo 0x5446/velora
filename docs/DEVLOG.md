@@ -36,3 +36,11 @@
 - 重跑 `python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'`，38 项，退出码 0。证据更新在 [`evidence/f1/`](evidence/f1/report.md)。
 - 架构写明最短路径：端点识别和 1.7B 润色都是默认关闭的长驻 sidecar，日志只留 revision，草稿来自上一轮输出。没有改 `Apps/` 或 `Velora/Sources/`。M4 仍未通过。
 - M0 仍未通过。缺的是工作区 status 和权重哈希文件，不是产品 T4。交接命令在 [`HANDOFF.md`](HANDOFF.md)。
+
+## 2026-11-16 · M0 通过，并审阅隔离原型与新实测
+
+- 用户机器的 `HEAD` 是 `73e83ec`，tracked 与 staged diff 为空，未跟踪文件只有设计稿。本机 `origin/main` `accab725` 是过期 tracking，GitHub `main` 仍是 `73e83ec`。判定见 [`evidence/m0/report.md`](evidence/m0/report.md)。
+- 1.7B 单文件 sha256 前缀与冻结值一致，但完整哈希复用先前验证，这轮没有重读 3.4GB。test_id、checks、realx manifest、gentest v5 manifest 的哈希匹配。0.6B、pcm 串接和 4B 缓存记为未测。
+- 隔离原型的 `draft_core.py` 裁短 `max_tokens`、不输出匹配到的 EOS、异常时清空 cache。研究 `LocalPolisher` 不是这样。CPU 设施补上 EOS 不输出，仍不加载 MLX。
+- 新的 3099/442 块日志是 5 个请求、1919 块的重跑，不是 5017.2 ms 那一轮。当前块校验接受它。公共端点摘要没有 `revision`，采集器拒绝。三种条件的 decoder 完成时间是 937.214 / 3874.732 / 281.655 ms，T4 为 null。
+- M1 采集脚本在 [`evidence/m1/collect_baseline.sh`](evidence/m1/collect_baseline.sh)。本环境没有跑。没有改 `Apps/` 或 `Velora/Sources/`。

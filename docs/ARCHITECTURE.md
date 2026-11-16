@@ -19,7 +19,7 @@ Mac 微基准支持的只有：在合成端点上，历史草稿可以和贪心�
 
 ## 最短实施路径
 
-这是依赖接缝和部署形态的决定。M4 仍未通过，默认路径不切换。M0 的证据还没交到这个工作区，所以这里不改产品代码。
+这是依赖接缝和部署形态的决定。M0 的审计证据已经入库。M4 仍未通过，默认路径不切换，所以这里仍不改产品代码。隔离原型 `draft_core.py` 和 CPU 设施都不是这条默认路径。
 
 研究侧 `LocalPolisher.polish(text, draft)` 的缓存身份是 `prompt_ids(text)`：系统提示加 `<TRANSCRIPT>` 里的全文，经 chat template 变成 token id。草稿是上一轮输出文本再 `encode`。身份不是字符数，也不是 token 数。公开循环的 `out.extend` 可以越过 `max_tokens`；产品侧用本仓库已经截短的契约。模型必须是能截断 KV 的纯注意力 Qwen3。Qwen3-1.7B v5.3 符合这一点。不加载 4B，不用 mlx-lm 的 `draft_model`。
 

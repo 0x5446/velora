@@ -1,6 +1,6 @@
 # 交接
 
-更新时间：2026-11-16。当前阶段：F0 和 F1 的 CPU 验收设施已通过。F1 已改为用 token id 的 sha256 识别内容，不再用 token 数判断“没变”。M0 未通过，原因只是证据文件还没进本仓库。不要改产品代码。本环境没有访问 `/Users/alpha`。
+更新时间：2026-11-16。当前阶段：M0 已通过。F0 和 F1 的 CPU 设施已通过。M1 还没在目标 Mac 上跑。不要改产品代码。本环境没有访问 `/Users/alpha`。
 
 ## 现在在哪
 
@@ -21,10 +21,10 @@
 
 | 关 | 状态 |
 |---|---|
-| M0 审计与资产清单 | 未通过。阅读完成；用户工作区 `git status` 和权重哈希仍缺 |
+| M0 审计与资产清单 | 通过。见 [`evidence/m0/report.md`](evidence/m0/report.md)。1.7B 完整哈希是复用的先前验证；五个冻结清单匹配 |
 | F0 CPU 设施 | 通过。当时 18 项，见 [`evidence/f0/report.md`](evidence/f0/report.md)。同一命令现在会连同 F1 一起跑 |
-| F1 端点 schema / 采集器 / 回放 / 计时契约 | 通过。38 项，退出码 0，见 [`evidence/f1/report.md`](evidence/f1/report.md)。CPU mock 的 `mlx_token_identity` 为 null。不是 M1 或 M5 |
-| M1 现行产品基线 | 未开始。Mac 离线，且新摘要不是 Velora 的 SenseVoice + Ollama 路径 |
+| F1 端点 schema / 采集器 / 回放 / 计时契约 | 通过。同一命令现为 41 项，退出码 0。CPU mock 的 `mlx_token_identity` 为 null。公共端点摘要因没有 revision 被拒绝。不是 M1 或 M5 |
+| M1 现行产品基线 | 未开始。脚本 [`evidence/m1/collect_baseline.sh`](evidence/m1/collect_baseline.sh) 测的是现行 SenseVoice + Ollama `qwen3:8b`，不切换默认路径。本环境不能跑 Swift |
 | M2 六套门禁 | 未开始。研究 rubric 的绝对通过率不能代替 |
 | M3 取消/焦点/离线的产品观察 | 未开始。F0 只覆盖假模型上的调度 |
 | M4 产品决定 | 未通过。方向已写明，默认行为未切换 |
@@ -32,59 +32,18 @@
 
 ## 下一最小交付
 
-M0 还差两份已经可以在用户机器上产生、但还没进本仓库的文件。产品 T4 和真实 ASR 端到端不属于这两份。文件进仓库之后，下一步是写 `docs/evidence/m0/report.md` 并只按第 8 节判定 M0；通过之后才能做 M1。M1 的测量命令在审计第 8.3 节，本环境执行不了。
-
-在 `/Users/alpha/workspace/velora` 执行，输出存成 `docs/evidence/m0/workspace-status.txt`。不要粘贴 diff 正文：
+在用户机器上执行，输出写到 `/Users/alpha/specdict/evidence/m1-baseline-20261116`，不要写进 git 工作区：
 
 ```bash
-git rev-parse HEAD
-git status --short
-git diff --stat
-git diff --cached --stat
-git rev-parse origin/main
-git log --oneline origin/main..HEAD
+chmod +x /Users/alpha/workspace/velora/docs/evidence/m1/collect_baseline.sh
+/Users/alpha/workspace/velora/docs/evidence/m1/collect_baseline.sh /path/to/clip1.caf /path/to/clip2.wav
 ```
 
-权重只交哈希，不交文件本体。目录以冻结说明为准；若本机路径不同，JSON 里写实际路径。`concat_command` 找不到就写 null，不要编：
+脚本使用 `swift run --package-path Velora VeloraMac --mode input --sensevoice --audio … --source zh --json`。没有 `--copy`。音频缺失或 SenseVoice 文件缺失时退出码 2。回来时带 `env.txt`、`sensevoice.sha256` 和 `runs.json`。`runs.json` 只有引擎名、阶段毫秒和字符数。
 
-```bash
-python3 - <<'PY'
-import hashlib, json, os
-root = os.path.expanduser("/home/ubuntu/specdict/models/qwen3-1_7b-xcorr-v53")
-# 若该路径不存在，改成本机实际目录后再跑，不要猜哈希。
-files = []
-for dirpath, _, names in os.walk(root):
-    for name in sorted(names):
-        if not name.endswith(".safetensors"):
-            continue
-        path = os.path.join(dirpath, name)
-        digest = hashlib.sha256()
-        with open(path, "rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(chunk)
-        files.append({"name": os.path.relpath(path, root), "bytes": os.path.getsize(path), "sha256": digest.hexdigest()})
-print(json.dumps({
-    "model_dir": root,
-    "files": files,
-    "recorded_prefix": "eabcdc5c813b1e0b",
-    "concat_command": None,
-    "concat_sha256_prefix": None,
-}, ensure_ascii=False, indent=2))
-PY
-```
+这还不是 M1 通过。M5 的最小效应仍等这批基线再登记。公共回放的 281.655 ms 不能填进这张表。
 
-结果存成 `docs/evidence/m0/weights.json`。
-
-隔离原型和 `LocalPolisher` 的差异审查不关闭 M0，但在改产品 sidecar 之前要做。本环境仍未打开这些路径：
-
-- `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/sources/run_real_mlx_v2.py`
-- `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/run_real_mlx.py`
-- 同目录 `FINDINGS.md` 里写明差异的部分
-
-逐块计时和公共冻结音频端点是产品测量，不是 M0。端点日志的 `revision` 必须是 token id 的 sha256（`pocs/speculative_replay/trace.py` 的 `content_revision`），不能只交 token 数，也不能带原文。逐块文件仍是：
-
-- `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/blocks-3099-442.json`
-- `/Users/alpha/specdict/evidence/mac-draft-20261116-192758/endpoint-trace.json`
+原型差异已经写在 [`evidence/prototype/REVIEW.md`](evidence/prototype/REVIEW.md)。产品 sidecar 仍不开始。
 
 ## 不要做
 

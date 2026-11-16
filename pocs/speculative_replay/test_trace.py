@@ -326,5 +326,67 @@ class CitationTests(unittest.TestCase):
             classify_recorded_request(report["requests"][0])
 
 
+class ArchivedMacEvidenceTests(unittest.TestCase):
+    def test_3099_rerun_block_log_validates_and_is_not_the_5017_row(self):
+        path = REPO / "docs/evidence/mac-2026-11-16/recorded-block-trace.json"
+        document = json.loads(path.read_text())
+        validate_block_trace(document)
+        self.assertIsNone(document["t4_ms"])
+        self.assertFalse(document["representative"])
+        self.assertEqual(len(document["requests"]), 5)
+        self.assertEqual(sum(len(item["blocks"]) for item in document["requests"]), 1919)
+        final = next(
+            item
+            for item in document["requests"]
+            if item["condition"] == "early_history_draft" and item["prompt_tokens"] == 3099
+        )
+        self.assertEqual(final["output_tokens"], 442)
+        self.assertEqual(final["accepted"], 289)
+        self.assertEqual(final["proposed"], 1151)
+        self.assertNotEqual(final["request_completion_ms"], 5017.2)
+        verify = [block for block in final["blocks"] if block["phase"] == "verify"]
+        self.assertGreater(len({block["block_len"] for block in verify}), 1)
+        verify_ms = sum(block["elapsed_ms"] for block in verify)
+        self.assertGreater(verify_ms, 3700)
+        self.assertNotEqual(round(verify_ms, 1), 3691.4)
+
+    def test_public_endpoint_summary_has_no_revision_and_no_t4(self):
+        path = REPO / "docs/evidence/mac-2026-11-16/public-endpoint-replay-summary.json"
+        document = json.loads(path.read_text())
+        self.assertIsNone(document["t4_ms"])
+        self.assertFalse(document["representative"])
+        self.assertTrue(document["constructed_join"])
+        counts = [event["confirmed_tokens"] for event in document["endpoint_events"]]
+        self.assertEqual(len(counts), len(set(counts)))
+        self.assertEqual(sum(event["kind"] == "endpoint" for event in document["endpoint_events"]), 9)
+        with self.assertRaises(ContractError):
+            collect_endpoints(
+                document["endpoint_events"],
+                source="public_frozen_corpus",
+                corpus_id="xasr-public-join",
+            )
+        by_condition = {item["condition"]: item for item in document["conditions"]}
+        self.assertIsNone(by_condition["early_history_draft"]["t4_ms"])
+        self.assertTrue(by_condition["early_history_draft"]["equals_official_reference"])
+        self.assertAlmostEqual(
+            by_condition["early_history_draft"]["replayed_release_to_decoder_completion_ms"],
+            281.655,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            by_condition["endonly_system_warm"]["replayed_release_to_decoder_completion_ms"],
+            937.214,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            by_condition["early_nodraft"]["replayed_release_to_decoder_completion_ms"],
+            3874.732,
+            places=2,
+        )
+
+
+REPO = Path(__file__).resolve().parents[2]
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,8 @@
+{
+  "f1_validate_block_trace": "PASS",
+  "additional_numeric_invariants": "PASS",
+  "requests": 5,
+  "blocks": 1919,
+  "t4_ms": null,
+  "validator_ref": "0x5446/velora cursor/m0-research-audit-2bb5 trace.py blob6c24bdf0cb846480bd9dfa1b2e20676f408e4749"
+}

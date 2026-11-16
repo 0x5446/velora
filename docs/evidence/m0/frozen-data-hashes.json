@@ -1,0 +1,158 @@
+{
+  "observed_at_shanghai": "2026-11-16T23:34:52.151941",
+  "raw_dataset_rows_copied": false,
+  "prompt": {
+    "sha256": "d7e55c158e10bcd7b4ae8d8c373ccc74ed6388cc701330319f01ab89c93f358b"
+  },
+  "current_local_file_hashes": [
+    {
+      "path": "/Users/alpha/specdict/xcorr/v5test/test_id.jsonl",
+      "bytes": 1917933,
+      "sha256": "8a3dbcae102672873e16bb5470f487d2114d74fd2f45576aa4e83ed4f64b6803",
+      "lines": 570,
+      "frozen_expected_or_prefix": "8a3dbcae10267287",
+      "matches_frozen": true
+    },
+    {
+      "path": "/Users/alpha/specdict/xcorr/v5test/test_id.checks.jsonl",
+      "bytes": 2723334,
+      "sha256": "0482dd629785ad22f8cb26a49b1a0007e7f615e72aed6bd33279b3be5a343c17",
+      "lines": 570,
+      "frozen_expected_or_prefix": "0482dd629785ad22",
+      "matches_frozen": true
+    },
+    {
+      "path": "/Users/alpha/workspace/speculative-dictation/results/paper/v5tests/realx2/manifest.jsonl",
+      "bytes": 1242991,
+      "sha256": "dfe1cc84881155c8537060847f343ed7145aaa2567b20ee45af73daa9d6f46cf",
+      "lines": 145,
+      "frozen_expected_or_prefix": "dfe1cc84881155c8537060847f343ed7145aaa2567b20ee45af73daa9d6f46cf",
+      "matches_frozen": true
+    },
+    {
+      "path": "/Users/alpha/specdict/data/realx_v2/manifest.jsonl",
+      "bytes": 1242991,
+      "sha256": "dfe1cc84881155c8537060847f343ed7145aaa2567b20ee45af73daa9d6f46cf",
+      "lines": 145,
+      "frozen_expected_or_prefix": "dfe1cc84881155c8537060847f343ed7145aaa2567b20ee45af73daa9d6f46cf",
+      "matches_frozen": true
+    },
+    {
+      "path": "/Users/alpha/specdict/data/gentest_v5/manifest.jsonl",
+      "bytes": 1338361,
+      "sha256": "67ab18edbf80312e5fe312d85b9e8b4004e80ec4838f7bd5e8ff8fb2de319d8e",
+      "lines": 402,
+      "frozen_expected_or_prefix": "67ab18edbf80312e5fe312d85b9e8b4004e80ec4838f7bd5e8ff8fb2de319d8e",
+      "matches_frozen": true
+    }
+  ],
+  "frozen_hash_records": [
+    {
+      "source": "/Users/alpha/workspace/speculative-dictation/results/paper/v5-freeze.md",
+      "document_sha256": "ab6682e8a9445ae025207cba82800a7d6f59dfe2c6c8c10e60e0db69e01f7478",
+      "hash_citation_lines": [
+        {
+          "line": 8,
+          "citation": "prompt_sha256: d7e55c158e10bcd7b4ae8d8c373ccc74ed6388cc701330319f01ab89c93f358b"
+        },
+        {
+          "line": 16,
+          "citation": "- 提示词 polish_v3.3.txt（定稿，未变）：sha256 d7e55c158e10bcd7b4ae8d8c373ccc74ed6388cc701330319f01ab89c93f358b"
+        },
+        {
+          "line": 17,
+          "citation": "- 训练数据 v5.3（GPU 机 ~/specdict/xcorr/v53/，本机 results/data_v5/v53/）：train 7167 条 sha256 eea7ffc3…5a80；val 450 条 7774c3b3…2faa；manifest 11af79ed…0fc1"
+        },
+        {
+          "line": 19,
+          "citation": "- test_id v5（修过目标的同分布测试集，正文附录用）：test_id.jsonl sha256 前 16 位 8a3dbcae10267287；test_id.checks.jsonl 0482dd629785ad22"
+        },
+        {
+          "line": 20,
+          "citation": "- 权重（LoRA 合并后，safetensors 拼接 sha256 前 16 位）：1.7B eabcdc5c813b1e0b；0.6B 99accbdfffffd514"
+        }
+      ]
+    },
+    {
+      "source": "/Users/alpha/workspace/speculative-dictation/results/paper/realx-freeze.md",
+      "document_sha256": "f6d9a767cae434cba976c7f657efa3bf2312ffa7a9b0f44c7c6023946258e875",
+      "hash_citation_lines": [
+        {
+          "line": 122,
+          "citation": "## 8. 哈希（sha256，冻结版本以此为准）"
+        },
+        {
+          "line": 126,
+          "citation": "| `realx_v2/manifest.jsonl` | dfe1cc84881155c8537060847f343ed7145aaa2567b20ee45af73daa9d6f46cf |"
+        },
+        {
+          "line": 127,
+          "citation": "| `realx_v2/asr/*.json`（带 events，按文件名排序后串接） | b8b71e5e775c71ec6e89111cdd854656702236a75faa2e1be907fa84cf4c961a |"
+        },
+        {
+          "line": 128,
+          "citation": "| `realx_v2_asr.host/*.json`（不带 events，同上） | b526c415348dd0c5f4b3c1bb10e5aa80fb5ba6e9a3e9b81a2609e90d928feb4c |"
+        },
+        {
+          "line": 129,
+          "citation": "| `realx_v2/pcm/*.pcm`（同上） | 36a5769b2f3e52b3dfc96b36a4450a608d5c82c61c938e5ea3f6b04344a3e103 |"
+        }
+      ]
+    },
+    {
+      "source": "/Users/alpha/workspace/speculative-dictation/results/paper/gentest-freeze.md",
+      "document_sha256": "0bae6aaeed9f565f6566eae36988ff21cd0eb5f2c29ae7bd04c4949a676c80c8",
+      "hash_citation_lines": [
+        {
+          "line": 67,
+          "citation": "## 6. 哈希（sha256）"
+        },
+        {
+          "line": 71,
+          "citation": "| `gentest_final/manifest.jsonl` | 11767ee73993a86a31a95327cf890b5746ac02d1190a99ee12d92451bacabc9b |"
+        },
+        {
+          "line": 72,
+          "citation": "| `realx/manifest.jsonl` | a84e35560a37f0b8aec85436b8ce2c22b362c35e69a6e790a77487283f076a77 |"
+        },
+        {
+          "line": 73,
+          "citation": "| `gentest_final_asr/*.json`（按文件名排序后串接） | 9aa2569477c94217843334546fa15dff9363183845f0c250357bdc8cb8e6790a |"
+        },
+        {
+          "line": 74,
+          "citation": "| `realx_asr/*.json`（同上） | ca83fd0445c5cfc3e497aca092674fa8f3dee14dcab88f6df379fdfde768ace0 |"
+        },
+        {
+          "line": 75,
+          "citation": "| `gentest_final/*.pcm`（同上） | 359dd2ec585d75d7dd2097c6c83d817e86651477ff2642479da854066d9f0b52 |"
+        },
+        {
+          "line": 76,
+          "citation": "| `realx/*.pcm`（同上） | fa847f8dd2976549594b28c822454e621aab3b7fce9510b03815dd994ba66744 |"
+        },
+        {
+          "line": 115,
+          "citation": "## v5.3 哈希（sha256）"
+        },
+        {
+          "line": 118,
+          "citation": "| `gentest_v5/manifest.jsonl` | 67ab18edbf80312e5fe312d85b9e8b4004e80ec4838f7bd5e8ff8fb2de319d8e |"
+        },
+        {
+          "line": 119,
+          "citation": "| `gentest_v5_asr/*.json`（按文件名排序后串接） | a7f64fa3ea9331427a51fd2296e702897a281ac20d597150dcac46dc328eb95d |"
+        },
+        {
+          "line": 120,
+          "citation": "| `ev_gentest_v5/*.json`（同上） | 8fc488afbcc0d16c6cfe64fa4573402a710d78cedaf4dc286d35424fa663b46b |"
+        },
+        {
+          "line": 121,
+          "citation": "| `gentest_v5/*.pcm`（同上，软链取目标内容） | a1fcabc4aeb2b2dafc707b6195059bc4f2d60ab7eceb812e805bb4aa081ec172 |"
+        }
+      ]
+    }
+  ],
+  "note": "SHA256 computed over local file bytes without exporting or displaying dataset contents; frozen citations preserve original abbreviated hashes where documents only provide prefixes."
+}

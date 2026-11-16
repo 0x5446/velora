@@ -135,6 +135,11 @@ class TokenPolisher:
             preds = self._forward([y] + prop, stats, "verify")
             accepted = 0
             while accepted < len(prop) and prop[accepted] == preds[accepted]:
+                # A matching EOS ends the draft span and is not emitted.
+                # The research loop can extend that token; the reviewed
+                # prototype stops before it.
+                if prop[accepted] in self.eos:
+                    break
                 accepted += 1
             stats["proposed"] += len(prop)
             stats["accepted"] += accepted

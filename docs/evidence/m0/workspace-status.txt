@@ -1,0 +1,25 @@
+Captured 2026-11-16T23:33:31.468262 Asia/Shanghai
+
+$ git rev-parse HEAD
+73e83ec44363a1968c61da4865fb594bacbeda82
+exit_code=0
+
+$ git status --short
+?? docs/SPECULATIVE_POLISH_UPGRADE.md
+exit_code=0
+
+$ git diff --stat
+exit_code=0
+
+$ git diff --cached --stat
+exit_code=0
+
+$ git rev-parse origin/main
+accab7259f64b0b89546eb0a2b7b2a13dfae9f26
+exit_code=0
+
+$ git log --oneline origin/main..HEAD
+73e83ec docs: align READMEs and tuning report with the polish quality round
+0a64eec mac: bias Apple Speech recognition with contextual hotword phrases
+e1f1e12 mac: polish quality round — filler cleanup, paragraphs, six-suite gate, resident keep_alive fix
+exit_code=0
