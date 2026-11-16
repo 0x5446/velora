@@ -247,6 +247,12 @@ sha256sum Models/sensevoice/model.int8.onnx Models/sensevoice/tokens.txt
 
 文件不存在就写缺失。不要为了审计重新 `curl` 模型。
 
-## 9. 交接
+## 9. 2026-11-16 补充（不改变上面的未通过判定）
+
+同日晚些时候收到两份 Mac 摘要，归档在 [`evidence/mac-2026-11-16/`](evidence/mac-2026-11-16/report.md)。本环境仍然没有那台机器的文件系统。摘要把质量标成研究 rubric 上的绝对通过率，把草稿标成合成请求完成时间，T4 为 null。M0 的资产清单和用户工作区 `git status` 仍缺，所以第 1 节的未通过判定保持不变。
+
+同一次阅读补上了先前没覆盖的 `pipeline/local_polish.py`。`LocalPolisher` 用同一模型的上一轮输出做草稿，并按最长公共前缀截断 KV。这不是 mlx-lm 的 `draft_model`。F0 设施锁定的是这段契约，见 [`../pocs/speculative_replay/README.md`](../pocs/speculative_replay/README.md)。
+
+## 10. 交接
 
 下一步、不能做的事和当前 HEAD 见 [`HANDOFF.md`](HANDOFF.md)。开发日志见 [`DEVLOG.md`](DEVLOG.md)。

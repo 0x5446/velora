@@ -141,7 +141,7 @@ scripts/               SenseVoice sidecar、图标生成器、评测脚本
 pocs/                  早期概念验证
 ```
 
-工程协议见 [`docs/ENGINEERING_PROTOCOL.md`](docs/ENGINEERING_PROTOCOL.md)，M0 审计见 [`docs/M0_RESEARCH_AUDIT.md`](docs/M0_RESEARCH_AUDIT.md)。M0 未通过，不改变产品行为。
+工程协议见 [`docs/ENGINEERING_PROTOCOL.md`](docs/ENGINEERING_PROTOCOL.md)，M0 审计见 [`docs/M0_RESEARCH_AUDIT.md`](docs/M0_RESEARCH_AUDIT.md)。M0 未通过，产品行为未改。CPU 验收设施见 [`pocs/speculative_replay/`](pocs/speculative_replay/README.md)。
 
 UI 遵循一套小而完整的暖色"科技复古"设计系统（米色纸面、墨色文字、陶土橙点缀、衬线标题），定义在 [`Velora/Sources/Velora/DesignSystem/`](Velora/Sources/Velora/DesignSystem/)——一处 token 同时驱动 Mac、iOS 和键盘扩展。
 

@@ -141,7 +141,7 @@ scripts/               SenseVoice sidecar, icon generator, eval harnesses
 pocs/                  early proof-of-concept spikes
 ```
 
-The engineering protocol is [`docs/ENGINEERING_PROTOCOL.md`](docs/ENGINEERING_PROTOCOL.md). The M0 audit is [`docs/M0_RESEARCH_AUDIT.md`](docs/M0_RESEARCH_AUDIT.md). M0 is not passed and does not change product behavior.
+The engineering protocol is [`docs/ENGINEERING_PROTOCOL.md`](docs/ENGINEERING_PROTOCOL.md). The M0 audit is [`docs/M0_RESEARCH_AUDIT.md`](docs/M0_RESEARCH_AUDIT.md). M0 is not passed. The shipping app is unchanged. The CPU acceptance harness is [`pocs/speculative_replay/`](pocs/speculative_replay/README.md).
 
 UI follows a small warm "tech-retro" design system (cream paper, ink text, clay accent, serif headings) defined in [`Velora/Sources/Velora/DesignSystem/`](Velora/Sources/Velora/DesignSystem/) — one token file drives Mac, iOS, and the keyboard extension.
 
