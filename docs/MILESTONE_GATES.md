@@ -28,12 +28,14 @@
 | 项 | 通过标准 | 2026-11-16 状态 |
 |---|---|---|
 | 源码与论文阅读 | 审计写明两边的 HEAD、机制差异、不能外推的数字 | 已完成。Velora `73e83ec`；研究仓库 `143a5f52` |
-| 远程与本机差异 | 用户工作区 `git status` 与 `origin/main...HEAD` 已记录；未跟踪文件有清单 | **未通过。** GitHub `main` 已含三个曾被认为只在本地的提交。`/Users/alpha/workspace/velora` 未挂载。设计稿只来自附件 |
-| 研究资产 | 第 8 节只读清单逐项有“存在 + 哈希”或“缺失” | **blocked。** 权重与 v5 音频不在 git 中，本环境不能访问 |
+| 远程与本机差异 | 用户工作区 `git status` 与 `origin/main...HEAD` 已记录；未跟踪文件有清单 | **证据未交到本工作区。** GitHub `main` 已含三个曾被认为只在本地的提交。设计稿副本已在本仓库。用户机器上的 `git status` 还没有以 `docs/evidence/m0/workspace-status.txt` 进入本仓库 |
+| 研究资产 | 第 8 节只读清单逐项有“存在 + 哈希”或“缺失” | **证据未交到本工作区。** 权重与 v5 音频不在 git 中。本环境没有收到逐文件 sha256。用户机器上是否已经算过，不能代替这份缺失 |
 | 产品基线 | 不要求在 M0 测出延迟。要求写明当前没有可引用的 HEAD 实测 | 已写明。不是延迟通过 |
 | 无产品改动 | M0 不改产品行为 | 仍然成立。F0 只加 CPU 设施，没有改 `Apps/` 或 `Velora/Sources/` |
 
-**M0 总判定：未通过。** 2026-11-16 的 Mac 摘要已归档到 `docs/evidence/mac-2026-11-16/`，但它不是第 8 节的资产哈希，也没有用户工作区的 `git status`。只读清单写入 `docs/evidence/m0/report.md` 且没有未解释的缺失之前，保持未通过。M0 未通过不阻止 F0：F0 不改产品行为。它阻止 M1 及以后的产品改动。
+**M0 总判定：未通过。** 未通过的原因只有两条，都是证据还没进本仓库：用户工作区 `git status`，以及第 8.2 节的权重与冻结语料哈希。Mac 摘要、F0、F1 和尚未测量的产品 T4 都不在这两条里面。T4 属于 M1 登记规则之后的 M5，缺 T4 不能用来继续把 M0 开着。
+
+只读清单写入 `docs/evidence/m0/report.md`，并且上面两条各有“存在 + 哈希”或“缺失”之前，保持未通过。M0 未通过不阻止 F0/F1。它阻止 M1 及以后的产品改动。
 
 ## F0 · 调度与精确草稿的 CPU 验收设施
 
@@ -59,20 +61,21 @@ F0 不测量真实 ASR 端点，也不测量松键到上屏。
 
 范围：仍是 `pocs/speculative_replay/`。采集器只收数字元数据，拒绝听写原文。CPU 回放按上下文长度、块长和接受档留下块记录，毫秒保持 null。已归档的 5017.2 ms 请求作为引用行拆开，不由 fixture 重新生成。
 
-通过规则在本关测试之前登记，2026-11-16 的运行满足这些规则，证据 [`docs/evidence/f1/report.md`](evidence/f1/report.md)：
+较早的 32 项运行漏了“token 数相同但内容不同”。这条补进契约之后才重跑。证据 [`docs/evidence/f1/report.md`](evidence/f1/report.md) 记录的是重跑：
 
 ```bash
 python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'
 ```
 
-在本环境退出码 0，32 项，包含 `test_trace.py`。具体锁住的断言：
+在本环境退出码 0，38 项，包含 `test_trace.py`。具体锁住的断言：
 
-- 采集器拒绝 `confirmed_text`、路径和其他字符串。合成 trace 不能标成 representative。`t4_ms` 为 null。
-- CPU 回放的报告不含 `speedup`，块上没有 `elapsed_ms`。分组后的 `elapsed_ms` 仍是 null。
+- 采集器拒绝 `confirmed_text`、路径和其他字符串。端点和结束事件必须带 token id 的 sha256 `revision`。`confirmed_tokens` 相同而 `revision` 不同时必须重新生成，并提交新的输出 token。合成 trace 不能标成 representative。`t4_ms` 为 null。
+- CPU 回放的 `model` 是 `cpu_mock`，`mlx_token_identity` 为 null。把后者写成 true 即失败。报告不含 `speedup`，块上没有 `elapsed_ms`。分组后的 `elapsed_ms` 仍是 null。
+- 2026-11-16 较早的 32 项运行把相同 token 数当成内容没变。该判定作废。当前证据是补上 revision 之后的 38 项。
 - 引用行 3099/442 保留 prompt 3099、窗口 16、接受 289/1151、verify 3691.4 ms、请求完成 5017.2 ms。组件中位数之和不等于总时间。`block_lengths_observed` 和 `per_block_milliseconds` 为 null。`may_generalize` 为 false。
 - 引用行 9853/1024 的 `constructed_repeat` 为 true，草稿长度 18，接受数 920 可以大于草稿长度。标成 representative 即失败。
 
-失败：把引用毫秒或 CPU 分组写成 T4；用 1.52 倍或 98.3% 接受率代替上述拆分；为了让本关通过而放宽 M1–M6。
+失败：把引用毫秒或 CPU 分组写成 T4；用 1.52 倍或 98.3% 接受率代替上述拆分；用 token 数判断内容没变还标通过；把 `cpu_mock` 写成 MLX 逐 token 一致；为了让本关通过而放宽 M1–M6。
 
 F1 没有逐块实测 3691.4 ms。归档摘要只有合计。逐块 `context_tokens`、`block_len`、`accepted` 和 `elapsed_ms` 仍要等目标机器上的数字日志。
 

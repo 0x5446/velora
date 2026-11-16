@@ -17,6 +17,27 @@ Mac 微基准支持的只有：在合成端点上，历史草稿可以和贪心�
 
 `Apps/` 和 `Velora/Sources/` 在 F0 和 F1 都不动。现行路径仍是松键后 SenseVoice 整段识别，再调 Ollama `qwen3:8b`。Python 设施只约束下一阶段要接入的调度、核对和计时拆分。
 
+## 最短实施路径
+
+这是依赖接缝和部署形态的决定。M4 仍未通过，默认路径不切换。M0 的证据还没交到这个工作区，所以这里不改产品代码。
+
+研究侧 `LocalPolisher.polish(text, draft)` 的缓存身份是 `prompt_ids(text)`：系统提示加 `<TRANSCRIPT>` 里的全文，经 chat template 变成 token id。草稿是上一轮输出文本再 `encode`。身份不是字符数，也不是 token 数。公开循环的 `out.extend` 可以越过 `max_tokens`；产品侧用本仓库已经截短的契约。模型必须是能截断 KV 的纯注意力 Qwen3。Qwen3-1.7B v5.3 符合这一点。不加载 4B，不用 mlx-lm 的 `draft_model`。
+
+产品侧现有接缝：
+
+- 识别：`SenseVoiceASREngine` 是长驻 Python sidecar，一次 `transcribe` 返回整段文本，没有端点回调。`resolvedDefault` 按 `VELORA_SENSEVOICE_ROOT`、cwd、`~/workspace/velora` 找 venv 和 `scripts/sensevoice_sidecar.py`。
+- 润色：`OllamaTextIntelligenceEngine` 一次 HTTP，默认 `qwen3:8b`。`VeloraMac/main.swift` 在构造管线时注入引擎。
+- 上屏：松键后粘贴一次。翻译仍走确认卡。
+
+选定的部署形态，等 M1–M4 通过后再写进 `Apps/` 和 `Velora/Sources/`：
+
+1. 识别引擎做成 `SenseVoiceASREngine` 的兄弟，默认不选中。它沿用同一个长驻 sidecar 形态，但事件是端点、结束、焦点、取消和故障。不用 SenseVoice 对累计音频反复整段识别来冒充端点。
+2. 润色引擎也是一个长驻 sidecar，只加载 Qwen3-1.7B v5.3。请求在本机套接字上带当轮全文；写进证据和日志的身份是 `content_revision`，即 token id 的 sha256，不是原文。响应带回它回答的 revision。revision 对不上当前轮就丢弃。草稿是上一轮这个进程已经生成完的输出。
+3. 开关默认关闭，关闭后仍走现在的 SenseVoice + Ollama `qwen3:8b`。8B 和 1.7B 不能同时成为默认依赖。运行时不下载权重。权重路径用 M0 交来的 sha256 核对。
+4. 不把 MLX 先链进 App 进程，不新增网络服务，不做流式逐字粘贴。
+
+CPU 回放用的是假 argmax。它通过只说明调度和本仓库移植的循环。它不证明 MLX 的逐 token 结果。报告里的 `mlx_token_identity` 固定为 null。
+
 ## 还缺的源文件
 
 隔离原型不在这台机器上。若要审查它和 `LocalPolisher` 的差异，最小附件是：

@@ -16,6 +16,7 @@ from trace import (
     ContractError,
     classify_recorded_request,
     collect_endpoints,
+    content_revision,
     group_blocks,
     replay_endpoint_trace,
     validate_block_trace,
@@ -30,10 +31,24 @@ class CollectorTests(unittest.TestCase):
     def test_numeric_rows_match_the_checked_in_skeleton(self):
         trace = collect_endpoints(
             [
-                {"kind": "endpoint", "confirmed_tokens": 12, "new_tokens": 12},
+                {
+                    "kind": "endpoint",
+                    "confirmed_tokens": 12,
+                    "new_tokens": 12,
+                    "revision": content_revision(list(range(12))),
+                },
                 {"kind": "focus_change"},
-                {"kind": "endpoint", "confirmed_tokens": 20, "new_tokens": 8},
-                {"kind": "end", "confirmed_tokens": 20},
+                {
+                    "kind": "endpoint",
+                    "confirmed_tokens": 20,
+                    "new_tokens": 8,
+                    "revision": content_revision(list(range(20))),
+                },
+                {
+                    "kind": "end",
+                    "confirmed_tokens": 20,
+                    "revision": content_revision(list(range(20))),
+                },
             ],
             source="synthetic",
             corpus_id="skeleton-token-counts",
@@ -69,6 +84,28 @@ class CollectorTests(unittest.TestCase):
                 representative=True,
             )
 
+    def test_missing_or_prose_revision_is_refused(self):
+        with self.assertRaises(ContractError):
+            collect_endpoints(
+                [{"confirmed_tokens": 4}],
+                source="synthetic",
+                corpus_id="skeleton-token-counts",
+            )
+        with self.assertRaises(ContractError):
+            collect_endpoints(
+                [{"confirmed_tokens": 4, "revision": "same length different words"}],
+                source="synthetic",
+                corpus_id="skeleton-token-counts",
+            )
+
+    def test_revision_tracks_ids_not_the_token_count(self):
+        left = [1, 2, 3, 4]
+        right = [4, 3, 2, 1]
+        self.assertEqual(len(left), len(right))
+        self.assertNotEqual(content_revision(left), content_revision(right))
+        with self.assertRaises(ContractError):
+            content_revision("1\n2\n3\n4")
+
     def test_path_shaped_corpus_id_is_refused(self):
         with self.assertRaises(ContractError):
             collect_endpoints(
@@ -84,6 +121,8 @@ class ReplayTests(unittest.TestCase):
         report = replay_endpoint_trace(trace, k=4, kmax=8, max_tokens=6)
         validate_block_trace(report)
         self.assertEqual(report["source"], "cpu_replay")
+        self.assertEqual(report["model"], "cpu_mock")
+        self.assertIsNone(report["mlx_token_identity"])
         self.assertIsNone(report["t4_ms"])
         self.assertIsNone(report["milliseconds"])
         self.assertNotIn("speedup", report)
@@ -140,6 +179,51 @@ class ReplayTests(unittest.TestCase):
         lengths = [block["block_len"] for block in stats["blocks"] if block["phase"] == "verify"]
         self.assertEqual(lengths[0], 4)
         self.assertGreater(max(lengths), 4)
+
+    def test_same_token_count_and_different_revision_commits_the_new_output(self):
+        left = content_revision([1, 2, 3, 4])
+        right = content_revision([9, 8, 7, 6])
+        trace = collect_endpoints(
+            [
+                {"kind": "endpoint", "confirmed_tokens": 4, "revision": left},
+                {"kind": "end", "confirmed_tokens": 4, "revision": right},
+            ],
+            source="synthetic",
+            corpus_id="same-length-revision",
+        )
+        report = replay_endpoint_trace(trace, max_tokens=4)
+        self.assertEqual(report["model"], "cpu_mock")
+        self.assertIsNone(report["mlx_token_identity"])
+        self.assertTrue(report["end_started_another_generation"])
+        self.assertEqual(report["committed_revision"], right)
+        self.assertEqual(len(report["requests"]), 2)
+        self.assertNotEqual(report["requests"][0]["output"], report["requests"][1]["output"])
+        self.assertEqual(report["committed_output"], report["requests"][1]["output"])
+        self.assertNotIn("text", report)
+        self.assertNotIn("confirmed_text", report)
+
+    def test_same_revision_does_not_start_another_generation(self):
+        revision = content_revision([1, 2, 3, 4])
+        trace = collect_endpoints(
+            [
+                {"kind": "endpoint", "confirmed_tokens": 4, "revision": revision},
+                {"kind": "end", "confirmed_tokens": 4, "revision": revision},
+            ],
+            source="synthetic",
+            corpus_id="same-revision",
+        )
+        report = replay_endpoint_trace(trace, max_tokens=3)
+        self.assertFalse(report["end_started_another_generation"])
+        self.assertEqual(len(report["requests"]), 1)
+        self.assertEqual(report["committed_revision"], revision)
+        self.assertEqual(report["committed_output"], report["requests"][0]["output"])
+
+    def test_cpu_replay_cannot_claim_mlx_token_identity(self):
+        trace = json.loads((FIXTURES / "endpoint_trace_skeleton.json").read_text())
+        report = replay_endpoint_trace(trace, max_tokens=2)
+        report["mlx_token_identity"] = True
+        with self.assertRaises(ContractError):
+            validate_block_trace(report)
 
     def test_cpu_replay_rejects_elapsed_milliseconds(self):
         trace = json.loads((FIXTURES / "endpoint_trace_skeleton.json").read_text())

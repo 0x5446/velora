@@ -8,6 +8,9 @@ keep ``t4_ms`` null.
 
 from __future__ import annotations
 
+import hashlib
+import re
+
 from polisher import HashLM, TokenPolisher
 
 
@@ -39,13 +42,40 @@ _BANNED_FIELDS = frozenset(
 
 _ENDPOINT_KINDS = frozenset({"endpoint", "end", "focus_change", "cancel_session", "asr_fault"})
 _TOKEN_KINDS = frozenset({"endpoint", "end"})
+_REVISION = re.compile(r"^[0-9a-f]{64}$")
+
+
+def content_revision(token_ids):
+    """sha256 of decimal token ids joined by newlines.
+
+    The digest is the scheduler identity. It is not reversible to text, and it
+    is not a hash of the token count. Callers that still have a transcript
+    tokenize it locally and pass only the ids; this function refuses a string.
+    """
+    if isinstance(token_ids, (str, bytes)) or isinstance(token_ids, bool):
+        raise ContractError("revision source must be token ids, not text")
+    try:
+        ids = list(token_ids)
+    except TypeError as exc:
+        raise ContractError("revision source must be token ids") from exc
+    canonical = []
+    for item in ids:
+        if isinstance(item, bool) or not isinstance(item, int):
+            raise ContractError("revision source must be token ids")
+        canonical.append(item)
+    if not canonical:
+        raise ContractError("revision source must be non-empty")
+    payload = b"\n".join(str(item).encode("ascii") for item in canonical)
+    return hashlib.sha256(payload).hexdigest()
 
 
 def collect_endpoints(rows, *, source, corpus_id, representative=False):
     """Build an endpoint trace from numeric metadata.
 
     ``source`` is ``synthetic`` or ``public_frozen_corpus``. A row that carries
-    a transcript, a path, or any string is refused. ``t4_ms`` is always null.
+    a transcript, a path, or any string other than a 64-hex ``revision`` is
+    refused. Equal ``confirmed_tokens`` is not an identity. ``t4_ms`` is always
+    null.
     """
     if source not in {"synthetic", "public_frozen_corpus"}:
         raise ContractError("collector accepts only synthetic or public_frozen_corpus metadata")
@@ -64,7 +94,7 @@ def collect_endpoints(rows, *, source, corpus_id, representative=False):
         if kind not in _ENDPOINT_KINDS:
             raise ContractError("unknown endpoint kind")
         for key, value in row.items():
-            if key == "kind":
+            if key in {"kind", "revision"}:
                 continue
             if isinstance(value, str):
                 raise ContractError("string field %s is not endpoint metadata" % key)
@@ -80,6 +110,7 @@ def collect_endpoints(rows, *, source, corpus_id, representative=False):
                 event["new_tokens"] = _nonneg_int(row["new_tokens"], "new_tokens")
             else:
                 event["new_tokens"] = None
+            event["revision"] = _check_revision(row.get("revision"), confirmed)
         if "trailing_silence_ms" in row and row["trailing_silence_ms"] is not None:
             silence = row["trailing_silence_ms"]
             if isinstance(silence, bool) or not isinstance(silence, (int, float)) or silence < 0:
@@ -110,15 +141,19 @@ def validate_endpoint_trace(trace):
         raise ContractError("a synthetic trace cannot be marked representative")
     if "speedup" in trace:
         raise ContractError("an endpoint trace has no speedup")
+    for event in trace.get("events", []):
+        if event.get("kind") in _TOKEN_KINDS:
+            _check_revision(event.get("revision"), event.get("confirmed_tokens"))
     return trace
 
 
 def replay_endpoint_trace(trace, *, vocab=48, seed=0, k=4, kmax=16, max_tokens=8):
-    """Replay token lengths through the fake argmax model.
+    """Replay endpoint revisions through the fake argmax model.
 
-    The report counts prefill, verify, and generate tokens and records each
-    block's context length, block length, and accepted count. It does not
-    invent milliseconds, a speedup, or a T4.
+    Identity is ``revision``, the digest of the token ids. The same
+    ``confirmed_tokens`` with a different revision starts a new generation.
+    The prompt ids are derived from that digest so the mock output can change.
+    This mock does not load MLX and does not establish token identity with it.
     """
     validate_endpoint_trace(trace)
     if trace.get("source") not in {"synthetic", "public_frozen_corpus"}:
@@ -127,8 +162,10 @@ def replay_endpoint_trace(trace, *, vocab=48, seed=0, k=4, kmax=16, max_tokens=8
     polisher = TokenPolisher(model, eos=set(), k=k, kmax=kmax)
     requests = []
     draft = []
-    last_confirmed = None
+    last_identity = None
     end_started_generation = False
+    committed_revision = None
+    committed_output = None
     for event in trace["events"]:
         kind = event["kind"]
         if kind in {"focus_change", "cancel_session", "asr_fault"}:
@@ -136,18 +173,24 @@ def replay_endpoint_trace(trace, *, vocab=48, seed=0, k=4, kmax=16, max_tokens=8
         if kind not in _TOKEN_KINDS:
             raise ContractError("unknown endpoint kind")
         confirmed = event["confirmed_tokens"]
-        if kind == "end" and last_confirmed is not None and confirmed == last_confirmed:
+        revision = event["revision"]
+        identity = (confirmed, revision)
+        if kind == "end" and last_identity == identity:
+            committed_revision = revision
+            committed_output = list(draft)
             continue
         if kind == "end":
             end_started_generation = True
-        prompt = [((index * 17) + 3) % vocab for index in range(confirmed)]
+            committed_revision = revision
+        prompt = _prompt_ids(revision, confirmed, vocab)
         draft_tokens = len(draft)
-        _out, stats = polisher.polish(prompt, draft=draft, max_tokens=max_tokens)
+        output, stats = polisher.polish(prompt, draft=draft, max_tokens=max_tokens)
         _reject_elapsed(stats["blocks"])
         proposed = stats["proposed"]
         requests.append(
             {
                 "kind": kind,
+                "revision": revision,
                 "prompt_tokens": confirmed,
                 "draft_tokens": draft_tokens,
                 "window": k,
@@ -158,19 +201,27 @@ def replay_endpoint_trace(trace, *, vocab=48, seed=0, k=4, kmax=16, max_tokens=8
                 "prefill_tokens": stats["prefill_tokens"],
                 "verify_tokens": stats["verify_tokens"],
                 "generate_tokens": stats["generate_tokens"],
+                "output": list(output),
                 "blocks": stats["blocks"],
             }
         )
-        draft = list(_out)
-        last_confirmed = confirmed
-    return {
+        draft = list(output)
+        last_identity = identity
+        if kind == "end":
+            committed_output = list(output)
+    report = {
         "schema": SCHEMA_BLOCK,
         "source": "cpu_replay",
+        "model": "cpu_mock",
+        "mlx_token_identity": None,
         "t4_ms": None,
         "milliseconds": None,
         "requests": requests,
         "end_started_another_generation": end_started_generation,
+        "committed_revision": committed_revision,
+        "committed_output": committed_output,
     }
+    return report
 
 
 def group_blocks(trace):
@@ -219,6 +270,11 @@ def validate_block_trace(trace):
     source = trace.get("source")
     if source not in {"cpu_replay", "recorded_block_log"}:
         raise ContractError("block trace source")
+    if source == "cpu_replay":
+        if trace.get("model") != "cpu_mock":
+            raise ContractError("cpu replay is a mock")
+        if trace.get("mlx_token_identity") is not None:
+            raise ContractError("cpu mock is not MLX token identity")
     if trace.get("representative") and trace.get("constructed_repeat"):
         raise ContractError("a constructed repeat cannot be representative")
     requests = trace.get("requests")
@@ -304,6 +360,33 @@ def classify_recorded_request(row):
         "per_block_milliseconds": None,
         "citation": row.get("citation"),
     }
+
+
+def _check_revision(value, confirmed):
+    if not isinstance(value, str) or _REVISION.fullmatch(value) is None:
+        raise ContractError("revision must be a sha256 hex digest of the token ids")
+    if confirmed is None:
+        raise ContractError("confirmed_tokens required")
+    return value
+
+
+def _prompt_ids(revision, count, vocab):
+    """Expand a revision into ``count`` mock token ids.
+
+    The ids depend on the digest, so two revisions of equal length do not
+    collapse to the same prompt. They are not MLX tokenizer ids.
+    """
+    block = bytes.fromhex(revision)
+    out = []
+    counter = 0
+    while len(out) < count:
+        block = hashlib.sha256(block + counter.to_bytes(4, "big")).digest()
+        counter += 1
+        for byte in block:
+            if len(out) >= count:
+                break
+            out.append(byte % vocab)
+    return out
 
 
 def _acceptance_band(accepted, block_len):

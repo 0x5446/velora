@@ -27,3 +27,12 @@
 - F1 通过规则写在 [`MILESTONE_GATES.md`](MILESTONE_GATES.md)。运行 `python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'`，32 项，退出码 0。证据 [`evidence/f1/report.md`](evidence/f1/report.md)。
 - 3099/442 的引用拆分保留 verify 3691.4 ms 和接受 289/1151，并写明逐块长度和逐块毫秒仍是 null。9853/1024 保持 constructed repeat，不能外推。CPU 回放没有生成这些毫秒，也没有 T4。
 - 未做：目标机器上的逐块日志和真实 ASR 端点日志。路径见 [`HANDOFF.md`](HANDOFF.md)。本环境没有访问 `/Users/alpha`。
+
+## 2026-11-16 · 修正 F1 的内容身份，并写明最短接缝
+
+- 上一则把 F1 标成通过时，回放用 `confirmed_tokens` 判断结束事件是否重复。token 数相同、内容不同的结束事件不会重新生成。该判定作废。
+- 端点和结束事件现在必须带 `content_revision`：token id 按十进制用换行拼接后的 sha256。采集器仍拒绝原文。同长度不同 revision 会重新生成，并提交新的输出 token。相同 revision 不另开一轮。
+- 回放报告的 `model` 为 `cpu_mock`，`mlx_token_identity` 为 null。把后者写成 true，测试失败。文本调度那条路径也加了同长度不同字符串必须提交新输出的测试。这两边都是 mock 对 mock，不是 MLX 正确性。
+- 重跑 `python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'`，38 项，退出码 0。证据更新在 [`evidence/f1/`](evidence/f1/report.md)。
+- 架构写明最短路径：端点识别和 1.7B 润色都是默认关闭的长驻 sidecar，日志只留 revision，草稿来自上一轮输出。没有改 `Apps/` 或 `Velora/Sources/`。M4 仍未通过。
+- M0 仍未通过。缺的是工作区 status 和权重哈希文件，不是产品 T4。交接命令在 [`HANDOFF.md`](HANDOFF.md)。

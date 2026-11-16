@@ -148,6 +148,8 @@ class SessionTests(unittest.TestCase):
         session = Session(polish)
         report = session.replay(fixture["events"])
         self.assertEqual(report["commit_count"], 1)
+        self.assertEqual(report["model"], "injected_cpu_mock")
+        self.assertIsNone(report["mlx_token_identity"])
         self.assertIsNone(report["t4_ms"])
         self.assertIsNone(report["milliseconds"])
         self.assertEqual(report["focus_changes"], 1)
@@ -241,6 +243,24 @@ class SessionTests(unittest.TestCase):
         session.handle({"kind": "end", "confirmed_text": "same"})
         self.assertEqual(calls, ["same"])
         self.assertEqual(len(session.commits), 1)
+
+    def test_same_length_different_text_commits_the_new_output(self):
+        calls = []
+
+        def polish(text, draft, cancel):
+            calls.append(text)
+            stats = _stats()
+            stats["out_tokens"] = 1
+            return ([ord(text[0])], stats)
+
+        session = Session(polish)
+        session.handle({"kind": "endpoint", "confirmed_text": "aaaa"})
+        session.handle({"kind": "end", "confirmed_text": "bbbb"})
+        self.assertEqual(calls, ["aaaa", "bbbb"])
+        self.assertEqual(len(session.commits), 1)
+        self.assertEqual(session.commits[0]["text"], "bbbb")
+        self.assertEqual(session.commits[0]["out"], [ord("b")])
+        self.assertIsNone(session.report()["mlx_token_identity"])
 
 
 def _stats():

@@ -11,6 +11,7 @@
       "kind": "endpoint",
       "confirmed_tokens": 12,
       "new_tokens": 12,
+      "revision": "76a74eb8cd49435a639933842e9ebd25f34abb1bd672d63de02a52ecb9ec5fac",
       "trailing_silence_ms": null
     },
     {
@@ -23,6 +24,7 @@
       "kind": "endpoint",
       "confirmed_tokens": 20,
       "new_tokens": 8,
+      "revision": "b55dac075113baa03345ca17132d914a8e801dd246d5e6b747d4f5c358dc994e",
       "trailing_silence_ms": null
     },
     {
@@ -30,6 +32,7 @@
       "kind": "end",
       "confirmed_tokens": 20,
       "new_tokens": null,
+      "revision": "b55dac075113baa03345ca17132d914a8e801dd246d5e6b747d4f5c358dc994e",
       "trailing_silence_ms": null
     }
   ]

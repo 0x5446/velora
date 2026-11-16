@@ -1,6 +1,10 @@
 """Replay confirmed-transcript events. One final commit, or none.
 
 Events are cumulative confirmed text, which is what LocalPolisher consumes.
+Identity is the text itself. Two strings of equal length and different
+characters are different events. This harness injects a caller-supplied
+model; a passing test is not MLX token identity.
+
 This is not SenseVoice whole-file re-recognition, and it does not insert text
 on intermediate endpoints. A result whose job id is no longer current is dropped.
 """
@@ -97,6 +101,8 @@ class Session:
             )
         return {
             "schema": "velora.speculative_replay.report.v1",
+            "model": "injected_cpu_mock",
+            "mlx_token_identity": None,
             "t4_ms": None,
             "milliseconds": None,
             "commit_count": len(self.commits),

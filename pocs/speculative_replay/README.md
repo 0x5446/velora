@@ -10,7 +10,7 @@ python3 -m unittest discover -s pocs/speculative_replay -p 'test_*.py'
 
 `fixtures/synthetic_endpoints.json` 是合成的相邻确认文本，只给调度测试用。`t4_ms` 必须是 null。
 
-真实或公开语料的端点日志用 `fixtures/endpoint_trace_skeleton.json`（`velora.endpoint_trace.v1`）。采集器在 `trace.py`：只收 `kind`、token 数和尾部静音，拒绝听写原文、路径和其他字符串。CPU 回放按上下文长度、块长和接受档分组，不写毫秒，也不写加速比。
+真实或公开语料的端点日志用 `fixtures/endpoint_trace_skeleton.json`（`velora.endpoint_trace.v1`）。采集器在 `trace.py`：端点和结束事件要带 `revision`，也就是 token id 的 sha256。token 数相同不算同一内容。采集器拒绝听写原文、路径和其他字符串。CPU 回放的 `model` 是 `cpu_mock`，`mlx_token_identity` 为 null；它按上下文长度、块长和接受档分组，不写毫秒，也不写加速比。这个通过不是 MLX 逐 token 一致。
 
 `fixtures/recorded_request_citations.json` 引用已经归档的 Mac 请求完成中位数，包括 3099/442 的 verify 3691.4 ms 和请求完成 5017.2 ms。这些数字不是本目录生成的，分类结果里的 `t4_ms` 仍是 null，逐块长度也是 null。9853/1024 标成 constructed repeat，不能当作自然听写。
 
