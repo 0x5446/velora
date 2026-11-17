@@ -1,0 +1,13 @@
+{
+  "schema": "velora.speculative_replay.v1",
+  "source": "synthetic",
+  "representative": false,
+  "t4_ms": null,
+  "note": "Adjacent confirmed transcripts for the scheduler. Not an ASR log and not a release-to-last-character measurement.",
+  "events": [
+    {"kind": "endpoint", "confirmed_text": "周一开会"},
+    {"kind": "focus_change", "target": "other-app"},
+    {"kind": "endpoint", "confirmed_text": "周一开会，不对，周二下午"},
+    {"kind": "end", "confirmed_text": "周一开会，不对，周二下午"}
+  ]
+}

@@ -1,0 +1,633 @@
+{
+  "schema": "velora.m1_baseline.summary.v1",
+  "model": "qwen3:8b",
+  "n_planned": 31,
+  "n_attempted": 31,
+  "n_valid_llm": 19,
+  "n_failed_or_fallback": 12,
+  "first_product_observation": {
+    "audio_id": "zh_short",
+    "compose_engine": "rules",
+    "valid_llm_baseline": false,
+    "pre_run_ollama_models_empty": true,
+    "load_observation": "no_reload_warning",
+    "ollama_reload_ms": null,
+    "deadline_fallback_ms": 4000,
+    "critical_stage_sum_ms": 4833
+  },
+  "valid_llm_conditional_all": {
+    "n": 19,
+    "asr_ms": {
+      "n": 19,
+      "p50": 642.0,
+      "p90": 916.8,
+      "min": 540,
+      "max": 933
+    },
+    "compose_ms": {
+      "n": 19,
+      "p50": 1260.0,
+      "p90": 3518.6,
+      "min": 632,
+      "max": 3551
+    },
+    "critical_stage_sum_ms": {
+      "n": 19,
+      "p50": 2087.0,
+      "p90": 4430.8,
+      "min": 1172,
+      "max": 4473
+    },
+    "collector_outer_wall_ms": {
+      "n": 19,
+      "p50": 3759.1607500071405,
+      "p90": 6064.00696640485,
+      "min": 2709.2987500072923,
+      "max": 6125.49604200467
+    }
+  },
+  "valid_llm_conditional_subsequent": {
+    "n": 19,
+    "asr_ms": {
+      "n": 19,
+      "p50": 642.0,
+      "p90": 916.8,
+      "min": 540,
+      "max": 933
+    },
+    "compose_ms": {
+      "n": 19,
+      "p50": 1260.0,
+      "p90": 3518.6,
+      "min": 632,
+      "max": 3551
+    },
+    "critical_stage_sum_ms": {
+      "n": 19,
+      "p50": 2087.0,
+      "p90": 4430.8,
+      "min": 1172,
+      "max": 4473
+    },
+    "collector_outer_wall_ms": {
+      "n": 19,
+      "p50": 3759.1607500071405,
+      "p90": 6064.00696640485,
+      "min": 2709.2987500072923,
+      "max": 6125.49604200467
+    }
+  },
+  "all_attempts_including_failures": {
+    "n": 31,
+    "asr_ms": {
+      "n": 31,
+      "p50": 644.0,
+      "p90": 1107.0,
+      "min": 540,
+      "max": 1159
+    },
+    "compose_ms": {
+      "n": 31,
+      "p50": 1502.0,
+      "p90": 4219.0,
+      "min": 632,
+      "max": 4264
+    },
+    "critical_stage_sum_ms": {
+      "n": 31,
+      "p50": 2144.0,
+      "p90": 5326.0,
+      "min": 1172,
+      "max": 5401
+    },
+    "collector_outer_wall_ms": {
+      "n": 31,
+      "p50": 3797.4160419980763,
+      "p90": 6938.979083002778,
+      "min": 2709.2987500072923,
+      "max": 7972.448332991917
+    }
+  },
+  "per_audio": {
+    "zh_short": {
+      "n_attempted": 6,
+      "n_valid_llm": 5,
+      "audio_duration_s": 12.008625,
+      "engine_counts": {
+        "rules": 1,
+        "ollama:qwen3:8b": 5
+      },
+      "load_observation_counts": {
+        "no_reload_warning": 6
+      },
+      "valid_llm_conditional": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 609.0,
+          "p90": 753.8,
+          "min": 598,
+          "max": 827
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 1201.0,
+          "p90": 1252.8,
+          "min": 1179,
+          "max": 1260
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 1799.0,
+          "p90": 2006.6,
+          "min": 1788,
+          "max": 2087
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 3418.4444999991683,
+          "p90": 3701.988991998951,
+          "min": 3340.0373329932336,
+          "max": 3797.4160419980763
+        }
+      },
+      "all_attempts_including_failures": {
+        "n": 6,
+        "asr_ms": {
+          "n": 6,
+          "p50": 626.5,
+          "p90": 794.0,
+          "min": 598,
+          "max": 827
+        },
+        "compose_ms": {
+          "n": 6,
+          "p50": 1221.5,
+          "p90": 2666.0,
+          "min": 1179,
+          "max": 4072
+        },
+        "critical_stage_sum_ms": {
+          "n": 6,
+          "p50": 1842.5,
+          "p90": 3460.0,
+          "min": 1788,
+          "max": 4833
+        },
+        "collector_outer_wall_ms": {
+          "n": 6,
+          "p50": 3488.6464584997157,
+          "p90": 5884.9321874949965,
+          "min": 3340.0373329932336,
+          "max": 7972.448332991917
+        }
+      }
+    },
+    "zh_long": {
+      "n_attempted": 5,
+      "n_valid_llm": 0,
+      "audio_duration_s": 54.0774375,
+      "engine_counts": {
+        "rules": 5
+      },
+      "load_observation_counts": {
+        "no_reload_warning": 5
+      },
+      "valid_llm_conditional": {
+        "n": 0,
+        "asr_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        },
+        "compose_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        },
+        "critical_stage_sum_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        },
+        "collector_outer_wall_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        }
+      },
+      "all_attempts_including_failures": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 1114.0,
+          "p90": 1144.2,
+          "min": 1105,
+          "max": 1159
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 4233.0,
+          "p90": 4255.2,
+          "min": 4145,
+          "max": 4264
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 5338.0,
+          "p90": 5395.0,
+          "min": 5259,
+          "max": 5401
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 6938.979083002778,
+          "p90": 7006.409258398344,
+          "min": 6820.523540998693,
+          "max": 7032.478207998793
+        }
+      }
+    },
+    "mix_long": {
+      "n_attempted": 5,
+      "n_valid_llm": 4,
+      "audio_duration_s": 40.0945,
+      "engine_counts": {
+        "ollama:qwen3:8b": 4,
+        "rules": 1
+      },
+      "load_observation_counts": {
+        "no_reload_warning": 5
+      },
+      "valid_llm_conditional": {
+        "n": 4,
+        "asr_ms": {
+          "n": 4,
+          "p50": 922.5,
+          "p90": 932.7,
+          "min": 899,
+          "max": 933
+        },
+        "compose_ms": {
+          "n": 4,
+          "p50": 3527.0,
+          "p90": 3548.0,
+          "min": 3421,
+          "max": 3551
+        },
+        "critical_stage_sum_ms": {
+          "n": 4,
+          "p50": 4438.0,
+          "p90": 4466.1,
+          "min": 4354,
+          "max": 4473
+        },
+        "collector_outer_wall_ms": {
+          "n": 4,
+          "p50": 6075.7210415031295,
+          "p90": 6116.420579403348,
+          "min": 6024.299333003,
+          "max": 6125.49604200467
+        }
+      },
+      "all_attempts_including_failures": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 913.0,
+          "p90": 932.6,
+          "min": 899,
+          "max": 933
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 3541.0,
+          "p90": 3910.4,
+          "min": 3421,
+          "max": 4150
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 4450.0,
+          "p90": 4825.2,
+          "min": 4354,
+          "max": 5060
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 6095.244500000263,
+          "p90": 6411.203667000518,
+          "min": 6024.299333003,
+          "max": 6601.67541699775
+        }
+      }
+    },
+    "xasr_0": {
+      "n_attempted": 5,
+      "n_valid_llm": 0,
+      "audio_duration_s": 10.053125,
+      "engine_counts": {
+        "ollama:qwen3:8b": 5
+      },
+      "load_observation_counts": {
+        "no_reload_warning": 5
+      },
+      "valid_llm_conditional": {
+        "n": 0,
+        "asr_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        },
+        "compose_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        },
+        "critical_stage_sum_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        },
+        "collector_outer_wall_ms": {
+          "n": 0,
+          "p50": null,
+          "p90": null,
+          "min": null,
+          "max": null
+        }
+      },
+      "all_attempts_including_failures": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 592.0,
+          "p90": 608.6,
+          "min": 586,
+          "max": 613
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 709.0,
+          "p90": 769.0,
+          "min": 680,
+          "max": 805
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 1301.0,
+          "p90": 1371.2,
+          "min": 1276,
+          "max": 1418
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 2936.632583005121,
+          "p90": 3074.646808000398,
+          "min": 2821.4324159926036,
+          "max": 3108.0119580001337
+        }
+      }
+    },
+    "xasr_1": {
+      "n_attempted": 5,
+      "n_valid_llm": 5,
+      "audio_duration_s": 5.1,
+      "engine_counts": {
+        "ollama:qwen3:8b": 5
+      },
+      "load_observation_counts": {
+        "no_reload_warning": 5
+      },
+      "valid_llm_conditional": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 566.0,
+          "p90": 640.2,
+          "min": 540,
+          "max": 661
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 704.0,
+          "p90": 731.4,
+          "min": 632,
+          "max": 735
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 1282.0,
+          "p90": 1353.0,
+          "min": 1172,
+          "max": 1365
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 2828.0923330021324,
+          "p90": 2967.4319502082653,
+          "min": 2709.2987500072923,
+          "max": 2992.7859170129523
+        }
+      },
+      "all_attempts_including_failures": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 566.0,
+          "p90": 640.2,
+          "min": 540,
+          "max": 661
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 704.0,
+          "p90": 731.4,
+          "min": 632,
+          "max": 735
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 1282.0,
+          "p90": 1353.0,
+          "min": 1172,
+          "max": 1365
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 2828.0923330021324,
+          "p90": 2967.4319502082653,
+          "min": 2709.2987500072923,
+          "max": 2992.7859170129523
+        }
+      }
+    },
+    "mix_short": {
+      "n_attempted": 5,
+      "n_valid_llm": 5,
+      "audio_duration_s": 15.327625,
+      "engine_counts": {
+        "ollama:qwen3:8b": 5
+      },
+      "load_observation_counts": {
+        "no_reload_warning": 5
+      },
+      "valid_llm_conditional": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 642.0,
+          "p90": 680.8,
+          "min": 627,
+          "max": 702
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 1647.0,
+          "p90": 1793.6,
+          "min": 1502,
+          "max": 1854
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 2296.0,
+          "p90": 2465.6,
+          "min": 2144,
+          "max": 2556
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 3927.0958330016583,
+          "p90": 4155.581941598211,
+          "min": 3759.1607500071405,
+          "max": 4230.095541992341
+        }
+      },
+      "all_attempts_including_failures": {
+        "n": 5,
+        "asr_ms": {
+          "n": 5,
+          "p50": 642.0,
+          "p90": 680.8,
+          "min": 627,
+          "max": 702
+        },
+        "compose_ms": {
+          "n": 5,
+          "p50": 1647.0,
+          "p90": 1793.6,
+          "min": 1502,
+          "max": 1854
+        },
+        "critical_stage_sum_ms": {
+          "n": 5,
+          "p50": 2296.0,
+          "p90": 2465.6,
+          "min": 2144,
+          "max": 2556
+        },
+        "collector_outer_wall_ms": {
+          "n": 5,
+          "p50": 3927.0958330016583,
+          "p90": 4155.581941598211,
+          "min": 3759.1607500071405,
+          "max": 4230.095541992341
+        }
+      }
+    }
+  },
+  "subsequent_valid_cluster_bootstrap_ci": {
+    "asr_ms": {
+      "p50_cluster_bootstrap95": [
+        598.0,
+        913.0
+      ],
+      "p90_cluster_bootstrap95": [
+        649.0,
+        933.0
+      ]
+    },
+    "compose_ms": {
+      "p50_cluster_bootstrap95": [
+        726.0,
+        3513.0
+      ],
+      "p90_cluster_bootstrap95": [
+        1242.0,
+        3551.0
+      ]
+    },
+    "critical_stage_sum_ms": {
+      "p50_cluster_bootstrap95": [
+        1335.0,
+        4426.0
+      ],
+      "p90_cluster_bootstrap95": [
+        1886.0,
+        4473.0
+      ]
+    }
+  },
+  "bootstrap_protocol": {
+    "seed": 20261117,
+    "draws": 5000,
+    "cluster": "public audio identity",
+    "unique_audio_clusters_with_valid_samples": 4,
+    "resample": "audio clusters, then within-clip attempts; excludes initial and failed requests; conditional on successful LLM responses",
+    "limitations": "Convenience set with two public clips and four TTS scripts, not natural representative samples; failed/fallback exclusions can bias conditional tail down. No paired candidate comparison yet."
+  },
+  "engine_counts": {
+    "rules": 7,
+    "ollama:qwen3:8b": 24
+  },
+  "load_observation_counts": {
+    "no_reload_warning": 31
+  },
+  "sampled_peak_per_process_rss": {
+    "collector_descendant_process_rss_kib": 1136624,
+    "ollama_daemon_rss_kib": 28768,
+    "model_runner_peak_rss_kib": null,
+    "limitation": "Sampler matched daemon basename ollama, not separate llama-server runner; do not call daemon RSS model memory. Owned ASR/CLI sample peaks remain valid."
+  },
+  "physical_t4_ms": null,
+  "paste_ms": null,
+  "rule_floor_internal_ms": null,
+  "guard_ms": null,
+  "exclusive_llm_wait_ms": null,
+  "product_prefill_ms": null,
+  "product_decode_ms": null,
+  "energy_watts": null,
+  "powermetrics_sampled": false,
+  "separate_smoke_not_merged_into_product_statistics": true,
+  "gate_status": "M1 NOT passed: 12 of31 attempts rejected by strict LLM acceptance. 19 successful samples are conditional evidence only; missing metrics remain blocked.",
+  "m5_minimum_effect": "TBD; not copied from 20%/30% design goals. Cloud must preregister using baseline uncertainty and budget gap before candidate measurement.",
+  "model_runner_postsequence_snapshot": [
+    {
+      "pid": 42205,
+      "ppid": 1686,
+      "rss_kib": 5196160,
+      "program": "llama-server"
+    }
+  ],
+  "ollama_reported_resident_size_vram_bytes": 5076072529,
+  "failure_reason_counts": {
+    "deadline_fallback": 7,
+    "rule_floor_used": 5
+  },
+  "output_hashes": null,
+  "output_hashes_limitation": "Formal helper did not preserve per-output hashes; record blocked rather than recompute via repeated inference."
+}

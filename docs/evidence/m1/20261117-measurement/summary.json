@@ -1,0 +1,70 @@
+{
+  "validated_at_asia_shanghai": "2026-11-17T15:46:30.084032+08:00",
+  "commit": "8eb669d2bde510892fd6247d2a9892667d13739e",
+  "swift_version": "6.3",
+  "python_measurement_tests": 17,
+  "python_test_exit": 0,
+  "swift_package_tests": 128,
+  "swift_test_exit": 0,
+  "swift_cli_build_exit": 0,
+  "menu_bar_build_exit": 0,
+  "gui_launched": false,
+  "dynamic_requests": 2,
+  "original_31_not_repeated_or_pooled": true,
+  "measurements": [
+    {
+      "audio_id": "zh_short",
+      "failure_class": "deadline_fallback",
+      "measurement_schema": "velora.pipeline_measurement.v1",
+      "critical_stage_sum_ms": 5128,
+      "physical_key_and_insert_observed": false,
+      "hud_wall_ms": null,
+      "insert_ms": null,
+      "rule_floor_ms": 1,
+      "rule_floor_scope": "rule_engine_only",
+      "llm_wait_ms": 4273,
+      "llm_wait_scope": "deadline_or_error_envelope",
+      "guard_ms": null,
+      "prompt_eval_count": null,
+      "load_duration_ns": null,
+      "eval_count": null,
+      "eval_duration_ns": null,
+      "measurement_exclude_from_critical_sum": true
+    },
+    {
+      "audio_id": "xasr_1",
+      "failure_class": "llm",
+      "measurement_schema": "velora.pipeline_measurement.v1",
+      "critical_stage_sum_ms": 3129,
+      "physical_key_and_insert_observed": false,
+      "hud_wall_ms": null,
+      "insert_ms": null,
+      "rule_floor_ms": 1,
+      "rule_floor_scope": "rule_engine_only",
+      "llm_wait_ms": 2308,
+      "llm_wait_scope": "generate_only",
+      "guard_ms": 0,
+      "prompt_eval_count": 1626,
+      "load_duration_ns": 5077042,
+      "eval_count": 19,
+      "eval_duration_ns": 465464000,
+      "measurement_exclude_from_critical_sum": true
+    }
+  ],
+  "schema_checks_passed": true,
+  "critical_sum_not_double_counted": true,
+  "source_behavior_invariants_all_equal": true,
+  "remaining_null": [
+    "physical T4",
+    "HUD wall",
+    "insert time",
+    "power",
+    "actual prefill duration (prompt token count is not duration)",
+    "intra-stage runner RSS peak"
+  ],
+  "coverage_limits": [
+    "Menu-bar/HUD logger compiled, not launched; app log I/O and physical key/insert path not dynamically exercised",
+    "real input successful response and deadline envelope covered; translation/fallback response measurements not dynamically exercised",
+    "No paired uninstrumented-vs-instrumented stochastic generation or overhead benchmark; source invariant checks and128 regressions are supporting evidence, not bitwise proof"
+  ]
+}

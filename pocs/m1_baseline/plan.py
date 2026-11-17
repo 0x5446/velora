@@ -1,0 +1,432 @@
+"""Plan the M1 baseline collection without running Swift or Ollama.
+
+The shipping default remains ``qwen3:8b``. This measurement sets the existing
+``VELORA_OLLAMA_MODEL`` variable for one process. It does not read the
+microphone, copy to the pasteboard, or keep transcript text.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+SOURCE_DEFAULT_MODEL = "qwen3:8b"
+BASELINE_MODEL = "qwen3:8b"
+MODEL_ENV = "VELORA_OLLAMA_MODEL"
+SCHEMA = "velora.m1_baseline.v1"
+
+_ENV_SOURCE = 'environment["VELORA_OLLAMA_MODEL"] ?? "qwen3:8b"'
+_RELOAD = re.compile(r"^ollama_model_reload:(\d+)ms$")
+_PRESSURE = re.compile(r"^ollama_ctx_pressure:(\d+)$")
+_DEADLINE = re.compile(r"^compose_deadline_fallback:(\d+)ms$")
+_DIGEST = re.compile(r"sha256:([0-9a-fA-F]{64})")
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def assert_model_env_matches_source(root: Path | None = None) -> None:
+    """Fail if the collector names an environment variable the app does not read."""
+    path = (root or repo_root()) / "Velora/Sources/Velora/LocalModelEngines.swift"
+    text = path.read_text(encoding="utf-8")
+    if _ENV_SOURCE not in text:
+        raise RuntimeError("VELORA_OLLAMA_MODEL default was not found in LocalModelEngines.swift")
+
+
+def swift_invocation(root: Path, audio: Path) -> list[str]:
+    command = [
+        "swift",
+        "run",
+        "--package-path",
+        str(root / "Velora"),
+        "VeloraMac",
+        "--mode",
+        "input",
+        "--sensevoice",
+        "--audio",
+        str(audio),
+        "--source",
+        "zh",
+        "--json",
+    ]
+    if "--copy" in command:
+        raise RuntimeError("baseline collection must not copy to the pasteboard")
+    return command
+
+
+def process_env(model: str, inherited: dict[str, str]) -> dict[str, str]:
+    if model != BASELINE_MODEL:
+        raise ValueError("M1 baseline is qwen3:8b; qwen3:14b is not a measured baseline")
+    env = dict(inherited)
+    env[MODEL_ENV] = model
+    env.pop("VELORA_ALLOW_REMOTE_LLM", None)
+    return env
+
+
+def parse_ollama_show(text: str) -> dict[str, str | None]:
+    """Keep digest, parameter size, and quantization. Drop the Modelfile body."""
+    digest = None
+    parameters = None
+    quantization = None
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines):
+        match = _DIGEST.search(lines[index])
+        if match:
+            digest = match.group(1).lower()
+        label, value = _split_field(lines, index)
+        if label == "parameters" and value:
+            parameters = value
+        elif label == "quantization" and value:
+            quantization = value
+        index += 1
+    return {"digest": digest, "parameters": parameters, "quantization": quantization}
+
+
+def missing_model_report(model: str) -> dict:
+    return {
+        "schema": SCHEMA,
+        "baseline_model": model,
+        "source_default_model": SOURCE_DEFAULT_MODEL,
+        "config_mechanism": MODEL_ENV,
+        "persistent_preferences_changed": False,
+        "copied_to_pasteboard": False,
+        "microphone_used": False,
+        "model_present": False,
+        "n": 0,
+        "runs": [],
+        "limitations": [
+            "ollama show failed, so no clip was timed",
+            "n=0 is a failed collection, not a latency result",
+        ],
+    }
+
+
+def redact_run(payload: dict, *, audio_sha256: str, audio_bytes: int, pass_index: int, exit_code: int) -> dict:
+    """Drop transcript fields. Keep engine, stage times, and the reload warning."""
+    stages = []
+    for stage in (payload.get("trace") or {}).get("stages") or []:
+        stages.append(
+            {
+                "name": stage.get("name"),
+                "durationMS": stage.get("durationMS"),
+                "phase": stage.get("phase"),
+                "critical": stage.get("critical"),
+            }
+        )
+    release = sum(item["durationMS"] or 0 for item in stages if item["critical"])
+    asr = payload.get("asr") or {}
+    compose = payload.get("compose") or {}
+    insertion = payload.get("insertion") or {}
+    reload_ms = None
+    ctx_pressure = None
+    deadline_fallback_ms = None
+    llm_error = False
+    rule_floor = False
+    redacted_warnings = 0
+    for warning in compose.get("warnings") or []:
+        if not isinstance(warning, str):
+            redacted_warnings += 1
+            continue
+        reload = _RELOAD.fullmatch(warning)
+        pressure = _PRESSURE.fullmatch(warning)
+        deadline = _DEADLINE.fullmatch(warning)
+        if reload:
+            reload_ms = int(reload.group(1))
+        elif pressure:
+            ctx_pressure = int(pressure.group(1))
+        elif deadline:
+            deadline_fallback_ms = int(deadline.group(1))
+        elif warning == "compose_polished_rule_fallback":
+            rule_floor = True
+            continue
+        elif warning.startswith("compose_llm_error"):
+            llm_error = True
+            redacted_warnings += 1
+        else:
+            redacted_warnings += 1
+    if reload_ms is not None and reload_ms > 500:
+        temperature = "reload_warning"
+    else:
+        temperature = "no_reload_warning"
+    return {
+        "audio_sha256": audio_sha256,
+        "bytes": audio_bytes,
+        "pass_index": pass_index,
+        "exit": exit_code,
+        "asr_engine": asr.get("engine"),
+        "asr_model": asr.get("modelVersion"),
+        "asr_chars": len(asr.get("text") or ""),
+        "compose_engine": compose.get("engine"),
+        "final_chars": len(payload.get("finalText") or ""),
+        "reviewRequired": payload.get("reviewRequired"),
+        "insertion_inserted": insertion.get("inserted"),
+        "insertion_strategy": _strategy_name(insertion.get("strategy")),
+        "release_to_insert_ms": release,
+        "stages": stages,
+        "ollama_reload_ms": reload_ms,
+        "ollama_ctx_pressure_tokens": ctx_pressure,
+        "deadline_fallback_ms": deadline_fallback_ms,
+        "redacted_warning_count": redacted_warnings,
+        "llm_error": llm_error,
+        "rule_floor_used": rule_floor,
+        "load_observation": temperature,
+        **measurement_fields(payload),
+    }
+
+
+_MEASUREMENT_SCOPES = {
+    "generate_only",
+    "deadline_or_error_envelope",
+    "rule_engine_only",
+    "compose_stage",
+}
+_OBSERVATION_SOURCES = {"debug_file", "real_key_release", "cli"}
+
+
+def _nonnegative_int(value: object) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    if value < 0:
+        return None
+    return value
+
+
+def _scope(value: object) -> str | None:
+    if isinstance(value, str) and value in _MEASUREMENT_SCOPES:
+        return value
+    return None
+
+
+def _engine_token(value: object) -> str | None:
+    if not isinstance(value, str) or not value or len(value) > 80:
+        return None
+    if any(mark in value for mark in ("/", "\\", "\n", " ")):
+        return None
+    return value
+
+
+def measurement_fields(payload: dict) -> dict:
+    """Copy numeric trace measurements. Do not add them to release_to_insert_ms."""
+    raw = (payload.get("trace") or {}).get("measurement")
+    if not isinstance(raw, dict) or raw.get("schema") != "velora.pipeline_measurement.v1":
+        raw = {}
+    source = raw.get("observationSource")
+    source = source if source in _OBSERVATION_SOURCES else None
+    hud = _nonnegative_int(raw.get("hudWallMS"))
+    insert = _nonnegative_int(raw.get("insertMS"))
+    gui = source in {"debug_file", "real_key_release"} and hud is not None and insert is not None
+    physical = (
+        source == "real_key_release"
+        and gui
+        and raw.get("physicalKeyAndInsertObserved") is True
+    )
+    return {
+        "measurement_schema": "velora.pipeline_measurement.v1" if raw else None,
+        "critical_stage_sum_ms": _nonnegative_int(raw.get("criticalStageSumMS")),
+        "observation_source": source,
+        "physical_key_and_insert_observed": physical,
+        "hud_wall_ms": hud if gui else None,
+        "insert_ms": insert if gui else None,
+        "physical_t4_ms": hud if physical else None,
+        "rule_floor_ms": _nonnegative_int(raw.get("ruleFloorMS")),
+        "rule_floor_scope": _scope(raw.get("ruleFloorScope")),
+        "llm_wait_ms": _nonnegative_int(raw.get("llmWaitMS")),
+        "llm_wait_scope": _scope(raw.get("llmWaitScope")),
+        "guard_ms": _nonnegative_int(raw.get("guardMS")),
+        "translation_fallback_ms": _nonnegative_int(raw.get("translationFallbackMS")),
+        "prompt_eval_count": _nonnegative_int(raw.get("promptEvalCount")),
+        "load_duration_ns": _nonnegative_int(raw.get("loadDurationNS")),
+        "eval_count": _nonnegative_int(raw.get("evalCount")),
+        "eval_duration_ns": _nonnegative_int(raw.get("evalDurationNS")),
+        "fallback_llm_wait_ms": _nonnegative_int(raw.get("fallbackLLMWaitMS")),
+        "fallback_llm_wait_scope": _scope(raw.get("fallbackLLMWaitScope")),
+        "fallback_guard_ms": _nonnegative_int(raw.get("fallbackGuardMS")),
+        "fallback_prompt_eval_count": _nonnegative_int(raw.get("fallbackPromptEvalCount")),
+        "fallback_load_duration_ns": _nonnegative_int(raw.get("fallbackLoadDurationNS")),
+        "fallback_eval_count": _nonnegative_int(raw.get("fallbackEvalCount")),
+        "fallback_eval_duration_ns": _nonnegative_int(raw.get("fallbackEvalDurationNS")),
+        "measurement_engine": _engine_token(raw.get("engine")),
+        "measurement_exclude_from_critical_sum": True,
+    }
+
+
+def failure_class(row: dict) -> str:
+    """Separate a shipped rule floor from an accepted LLM sample. Does not hide either."""
+    if row.get("deadline_fallback_ms") is not None:
+        return "deadline_fallback"
+    if row.get("rule_floor_used"):
+        return "rule_floor"
+    if row.get("llm_error") or row.get("compose_engine") == "rules":
+        return "rules"
+    if accepts_llm_baseline(row, BASELINE_MODEL):
+        return "llm"
+    return "other"
+
+
+def accepts_llm_baseline(row: dict, model: str) -> bool:
+    """A rule floor or an LLM error is a failed collection, not a baseline sample."""
+    if model != BASELINE_MODEL or row.get("exit") != 0:
+        return False
+    if row.get("compose_engine") != f"ollama:{model}":
+        return False
+    if row.get("llm_error") or row.get("rule_floor_used"):
+        return False
+    if row.get("deadline_fallback_ms") is not None:
+        return False
+    return True
+
+
+def report_limitations() -> list[str]:
+    return [
+        "process environment only; UserDefaults and the source default stay qwen3:8b",
+        "no microphone and no pasteboard copy; insertion strategy in the CLI is none",
+        "release_to_insert_ms sums critical pipeline stages and is not an OS insert; hud_wall_ms on debug_file is a file replay, and physical_t4_ms stays null without real_key_release",
+        "pass_index follows script order and is not a warm proof; repeats_per_audio is the process setting, and a later supplement is not pooled with the 31",
+        "no_reload_warning is not proof the weights were already resident",
+        "qwen3:14b produced no accepted LLM sample (n=0) and is not this baseline",
+        "the restored qwen3:8b tag is not a claim of the July 2026 digest or quantization",
+        "compose.engine=rules or compose_llm_error is not an LLM success",
+        "historical qwen3:8b quality scores are not this HEAD's pass",
+        "transcript text is not stored",
+        "powermetrics was not sampled",
+        "ollama daemon RSS is not model memory; llama-server RSS is recorded separately",
+    ]
+
+
+DIGEST_SOURCE_SHOW = "/api/show"
+DIGEST_SOURCE_TAGS = "/api/tags (show details validated)"
+
+
+def normalize_digest(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    raw = value.strip().lower()
+    if raw.startswith("sha256:"):
+        raw = raw[7:]
+    if len(raw) == 64 and all(char in "0123456789abcdef" for char in raw):
+        return raw
+    return None
+
+
+def registry_digest_from_tags(payload: dict, model: str) -> str | None:
+    """Read the registry digest from /api/tags. A local manifest hash is not this field."""
+    models = payload.get("models")
+    if not isinstance(models, list):
+        return None
+    found = None
+    for entry in models:
+        if not isinstance(entry, dict) or entry.get("name") != model:
+            continue
+        digest = normalize_digest(entry.get("digest"))
+        if digest is None:
+            continue
+        if found is not None and found != digest:
+            return None
+        found = digest
+    return found
+
+
+def identity_from_show_and_tags(
+    show_payload: dict,
+    tags_payload: dict | None,
+    model: str,
+    *,
+    wrapper_manifest_sha256: str | None = None,
+) -> dict[str, str | None]:
+    """Ollama 0.40.16 /api/show omits digest. Use /api/tags only after show details validate.
+
+    wrapper_manifest_sha256 is the on-disk manifest file hash. It is recorded
+    separately and is never copied into digest.
+    """
+    parsed = parse_api_show(show_payload if isinstance(show_payload, dict) else {})
+    parsed["wrapper_manifest_sha256"] = normalize_digest(wrapper_manifest_sha256)
+    parsed["digest_source"] = None
+    if not isinstance(show_payload, dict) or "error" in show_payload:
+        parsed["digest"] = None
+        return parsed
+    if parsed["digest"]:
+        parsed["digest_source"] = DIGEST_SOURCE_SHOW
+        return parsed
+    if not parsed["parameters"] or not parsed["quantization"] or not isinstance(tags_payload, dict):
+        return parsed
+    digest = registry_digest_from_tags(tags_payload, model)
+    if digest is None:
+        return parsed
+    parsed["digest"] = digest
+    parsed["digest_source"] = DIGEST_SOURCE_TAGS
+    return parsed
+
+
+def parse_api_show(payload: dict) -> dict[str, str | None]:
+    """Keep the local /api/show identity fields and drop the Modelfile prompt."""
+    details = payload.get("details") if isinstance(payload.get("details"), dict) else {}
+    raw = payload.get("digest") or ""
+    digest = None
+    if isinstance(raw, str):
+        match = _DIGEST.search(raw if raw.startswith("sha256:") else f"sha256:{raw}")
+        if match:
+            digest = match.group(1).lower()
+    parameters = details.get("parameter_size")
+    quantization = details.get("quantization_level")
+    return {
+        "digest": digest,
+        "parameters": parameters if isinstance(parameters, str) else None,
+        "quantization": quantization if isinstance(quantization, str) else None,
+    }
+
+
+def keep_time_lines(stderr: str) -> str:
+    """Keep /usr/bin/time -l accounting. Drop any other stderr, which may quote text."""
+    kept = []
+    for line in stderr.splitlines():
+        if "real" in line and "user" in line and "sys" in line:
+            kept.append(line)
+        elif re.match(r"\s+\d+\s+\S", line):
+            kept.append(line)
+    return "\n".join(kept) + ("\n" if kept else "")
+
+
+def parse_rss(ps_output: str) -> dict[str, int | None]:
+    ollama = None
+    sidecar = None
+    llama = None
+    for line in ps_output.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) != 2 or not parts[0].isdigit():
+            continue
+        rss = int(parts[0])
+        command = parts[1].lower()
+        if ollama is None and re.search(r"(^|/)ollama(\s|$)", command):
+            ollama = rss
+        if sidecar is None and "sensevoice_sidecar.py" in command:
+            sidecar = rss
+        if llama is None and re.search(r"(^|/)llama-server(\s|$)", command):
+            llama = rss
+    return {"ollama_rss_kb": ollama, "sensevoice_rss_kb": sidecar, "llama_server_rss_kb": llama}
+
+
+def _split_field(lines: list[str], index: int) -> tuple[str, str | None]:
+    raw = lines[index].strip()
+    if not raw or raw.lower().startswith("sha256:"):
+        return "", None
+    parts = raw.split(None, 1)
+    label = parts[0].lower().rstrip(":")
+    if label not in {"parameters", "quantization"}:
+        return "", None
+    if len(parts) > 1 and parts[1].strip():
+        return label, parts[1].strip()
+    if index + 1 < len(lines):
+        nxt = lines[index + 1].strip()
+        if nxt and nxt.lower().rstrip(":") not in {"parameters", "quantization", "digest", "model", "name", "size"}:
+            return label, nxt
+    return label, None
+
+
+def _strategy_name(value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return value.get("rawValue") or value.get("name")
+    return None

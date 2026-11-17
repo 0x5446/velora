@@ -1,0 +1,23 @@
+{
+  "model_directory": "/Users/alpha/specdict/evidence/mac-eval-20261116-180318/models/qwen3-1_7b-xcorr-v53",
+  "recorded_verification_source": "/Users/alpha/specdict/evidence/mac-eval-20261116-180318/logs/weights-1_7b.json",
+  "hash_reused_not_recomputed_this_round": true,
+  "explanation": "Original verification contains exactly one safetensors file; concatenating that single file has exactly its individual SHA256. Current file name and byte size rechecked. No claim of a fresh full-weight hash during concurrent GPU replay.",
+  "files": [
+    {
+      "relative_path": "model.safetensors",
+      "bytes": 3441185608,
+      "sha256": "eabcdc5c813b1e0b9b23aadb14c7dbc32e476f88a4fd92fc0c1bb5e85e76402f"
+    }
+  ],
+  "concatenation_order": [
+    "model.safetensors"
+  ],
+  "concatenation_command": "cd MODEL_DIRECTORY && cat model.safetensors | shasum -a 256",
+  "reproducible_command": "cd MODEL_DIRECTORY && shasum -a 256 model.safetensors",
+  "concatenation_exact_definition": "SHA256 of bytes from model.safetensors; the only safetensors file. For one file: cat model.safetensors | shasum -a 256",
+  "safetensors_concat_sha256": "eabcdc5c813b1e0b9b23aadb14c7dbc32e476f88a4fd92fc0c1bb5e85e76402f",
+  "frozen_expected_sha256": "eabcdc5c813b1e0b9b23aadb14c7dbc32e476f88a4fd92fc0c1bb5e85e76402f",
+  "matches_frozen_expected": true,
+  "observed_at_shanghai": "2026-11-16T23:33:31.578167"
+}

@@ -136,10 +136,12 @@ Apps/VeloraMac/        macOS 菜单栏应用（HUD、确认卡片、设置、Fn 
 Apps/VeloraiOS/        iOS 原型
 Apps/VeloraKeyboard/   iOS 自定义键盘扩展（桥接上屏）
 Velora/                Swift 包：管线、引擎、设计系统、存储
-docs/                  产品/技术设计、模型策略、调优报告
+docs/                  产品契约、模型策略、调优报告、M0 审计
 scripts/               SenseVoice sidecar、图标生成器、评测脚本
 pocs/                  早期概念验证
 ```
+
+工程协议见 [`docs/ENGINEERING_PROTOCOL.md`](docs/ENGINEERING_PROTOCOL.md)，M0 审计见 [`docs/M0_RESEARCH_AUDIT.md`](docs/M0_RESEARCH_AUDIT.md)。M0 已通过，产品行为未改。CPU 验收设施见 [`pocs/speculative_replay/`](pocs/speculative_replay/README.md)。
 
 UI 遵循一套小而完整的暖色"科技复古"设计系统（米色纸面、墨色文字、陶土橙点缀、衬线标题），定义在 [`Velora/Sources/Velora/DesignSystem/`](Velora/Sources/Velora/DesignSystem/)——一处 token 同时驱动 Mac、iOS 和键盘扩展。
 

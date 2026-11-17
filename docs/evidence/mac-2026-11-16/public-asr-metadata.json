@@ -1,0 +1,79 @@
+{
+  "public_source": "https://github.com/Gilgamesh-J/X-ASR/tree/main",
+  "constructed_join": true,
+  "join_silence_ms": 800,
+  "assets": [
+    {
+      "public_id": "0.wav",
+      "sha256": "7d93384ca14702cc584a7a33fe2fed92e89e708549161cb12ea38c916882103b",
+      "samples": 160850
+    },
+    {
+      "public_id": "1.wav",
+      "sha256": "8bfb42c963e623ebab31b81ff4404867d07d3102507c87ac14577c4c61663b8c",
+      "samples": 81600
+    }
+  ],
+  "model": "X-ASR-480ms-int8",
+  "sherpa_onnx": "2.0.1",
+  "chunk_ms": 50,
+  "rule2_s": 0.3,
+  "tail_padding_s": 1.5,
+  "release_ms": 16303.125,
+  "asr_tail_compute_ms": 36.008750001201406,
+  "asr_compute_ms_before_release": 407.15837499010377,
+  "t4_ms": null,
+  "clock": "Endpoints are audio-sample offsets from offline streaming ASR; replay them at rate1 on perf_counter. End available at R + measured ASR tail compute. No audio/UI device or physical key was used.",
+  "events": [
+    {
+      "kind": "endpoint",
+      "audio_ms": 3550.0,
+      "confirmed_chars": 10
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 4950.0,
+      "confirmed_chars": 16
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 6900.0,
+      "confirmed_chars": 23
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 8350.0,
+      "confirmed_chars": 37
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 9300.0,
+      "confirmed_chars": 46
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 9750.0,
+      "confirmed_chars": 48
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 11200.0,
+      "confirmed_chars": 51
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 15050.0,
+      "confirmed_chars": 61
+    },
+    {
+      "kind": "endpoint",
+      "audio_ms": 15550.0,
+      "confirmed_chars": 69
+    },
+    {
+      "kind": "end",
+      "audio_ms": 16339.133750001201,
+      "confirmed_chars": 82
+    }
+  ]
+}

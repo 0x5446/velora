@@ -1,0 +1,520 @@
+{
+  "kind": "public_asr_endpoint_replay_real_1_7b",
+  "source": "public_frozen_corpus",
+  "constructed_join": true,
+  "representative": false,
+  "assets": [
+    {
+      "public_id": "0.wav",
+      "sha256": "7d93384ca14702cc584a7a33fe2fed92e89e708549161cb12ea38c916882103b",
+      "samples": 160850
+    },
+    {
+      "public_id": "1.wav",
+      "sha256": "8bfb42c963e623ebab31b81ff4404867d07d3102507c87ac14577c4c61663b8c",
+      "samples": 81600
+    }
+  ],
+  "endpoint_events": [
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 3550.0,
+      "confirmed_tokens": 3
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 4950.0,
+      "confirmed_tokens": 4
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 6900.0,
+      "confirmed_tokens": 9
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 8350.0,
+      "confirmed_tokens": 12
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 9300.0,
+      "confirmed_tokens": 13
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 9750.0,
+      "confirmed_tokens": 14
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 11200.0,
+      "confirmed_tokens": 16
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 15050.0,
+      "confirmed_tokens": 22
+    },
+    {
+      "kind": "endpoint",
+      "audio_offset_ms": 15550.0,
+      "confirmed_tokens": 24
+    },
+    {
+      "kind": "end",
+      "audio_offset_ms": 16339.133750001201,
+      "confirmed_tokens": 28
+    }
+  ],
+  "release_offset_ms": 16303.125,
+  "asr_tail_compute_ms": 36.008750001201406,
+  "conditions": [
+    {
+      "condition": "endonly_system_warm",
+      "requests": [
+        {
+          "event_index": 0,
+          "kind": "end",
+          "status": "completed",
+          "prompt_tokens": 2695,
+          "output_tokens": 34,
+          "scheduled_audio_ms": 16339.133750001201,
+          "start_wall_ms": 16341.337042002124,
+          "done_wall_ms": 17240.33866699756,
+          "elapsed_ms": 899.0016249954351,
+          "reused": 2652,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 317.56912499986356,
+            "verify": 0,
+            "generate": 571.9952890067361,
+            "trim": 0
+          }
+        }
+      ],
+      "final_output_tokens": 34,
+      "output_sha256": "9dd070f05e698263dea67fc8023ae1975a7b2e34fc22cf6a510596b3f2ba881f",
+      "replayed_release_to_decoder_completion_ms": 937.2136669975589,
+      "tail_available_to_decoder_completion_ms": 901.2049169963575,
+      "raw_completion_minus_release_ms": 937.2136669975589,
+      "t4_ms": null,
+      "equals_official_reference": true
+    },
+    {
+      "condition": "early_nodraft",
+      "requests": [
+        {
+          "event_index": 0,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2670,
+          "output_tokens": 4,
+          "scheduled_audio_ms": 3550.0,
+          "start_wall_ms": 3558.1864999985555,
+          "done_wall_ms": 3698.3847910014447,
+          "elapsed_ms": 140.19829100288916,
+          "reused": 2652,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 66.02883300365647,
+            "verify": 0,
+            "generate": 66.98566800332628,
+            "trim": 0
+          }
+        },
+        {
+          "event_index": 1,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2671,
+          "output_tokens": 5,
+          "scheduled_audio_ms": 4950.0,
+          "start_wall_ms": 4960.160458002065,
+          "done_wall_ms": 5102.574583004753,
+          "elapsed_ms": 142.4141250026878,
+          "reused": 2656,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 48.257832997478545,
+            "verify": 0,
+            "generate": 85.19654200063087,
+            "trim": 0.03791699418798089
+          }
+        },
+        {
+          "event_index": 2,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2676,
+          "output_tokens": 11,
+          "scheduled_audio_ms": 6900.0,
+          "start_wall_ms": 6910.081458001514,
+          "done_wall_ms": 7175.037665998389,
+          "elapsed_ms": 264.9562079968746,
+          "reused": 2657,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 73.55962499423185,
+            "verify": 0,
+            "generate": 184.1502929892158,
+            "trim": 0.04008300311397761
+          }
+        },
+        {
+          "event_index": 3,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2679,
+          "output_tokens": 12,
+          "scheduled_audio_ms": 8350.0,
+          "start_wall_ms": 8360.105291001673,
+          "done_wall_ms": 8640.644708000764,
+          "elapsed_ms": 280.53941699909046,
+          "reused": 2662,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 72.59266699838918,
+            "verify": 0,
+            "generate": 200.4720420081867,
+            "trim": 0.01745799818309024
+          }
+        },
+        {
+          "event_index": 4,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2680,
+          "output_tokens": 16,
+          "scheduled_audio_ms": 9300.0,
+          "start_wall_ms": 9310.090708000644,
+          "done_wall_ms": 9651.70066599967,
+          "elapsed_ms": 341.60995799902594,
+          "reused": 2665,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 48.77149999811081,
+            "verify": 0,
+            "generate": 284.8440810048487,
+            "trim": 0.04933300078846514
+          }
+        },
+        {
+          "event_index": 5,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2681,
+          "output_tokens": 16,
+          "scheduled_audio_ms": 9750.0,
+          "start_wall_ms": 9750.704875004885,
+          "done_wall_ms": 10093.06212500087,
+          "elapsed_ms": 342.3572499959846,
+          "reused": 2666,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 50.77516599703813,
+            "verify": 0,
+            "generate": 285.8816270236275,
+            "trim": 0.037999998312443495
+          }
+        },
+        {
+          "event_index": 6,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2683,
+          "output_tokens": 21,
+          "scheduled_audio_ms": 11200.0,
+          "start_wall_ms": 11210.076458002732,
+          "done_wall_ms": 11643.455208002706,
+          "elapsed_ms": 433.3787499999744,
+          "reused": 2667,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 68.24383299681358,
+            "verify": 0,
+            "generate": 357.83387299306924,
+            "trim": 0.030625000363215804
+          }
+        },
+        {
+          "event_index": 7,
+          "kind": "endpoint",
+          "status": "cancelled_superseded",
+          "prompt_tokens": 2689,
+          "elapsed_ms": 499.7901669994462,
+          "scheduled_audio_ms": 15050.0,
+          "start_wall_ms": 15060.094083004515
+        },
+        {
+          "event_index": 8,
+          "kind": "endpoint",
+          "status": "cancelled_superseded",
+          "prompt_tokens": 2691,
+          "elapsed_ms": 2020.732124998176,
+          "scheduled_audio_ms": 15550.0,
+          "start_wall_ms": 15559.915083002124
+        },
+        {
+          "event_index": 9,
+          "kind": "end",
+          "status": "completed",
+          "prompt_tokens": 2695,
+          "output_tokens": 34,
+          "scheduled_audio_ms": 16339.133750001201,
+          "start_wall_ms": 17580.67049999954,
+          "done_wall_ms": 20177.85745800211,
+          "elapsed_ms": 2597.186958002567,
+          "reused": 0,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 2012.6153289966169,
+            "verify": 0,
+            "generate": 580.2207910091965,
+            "trim": 0
+          }
+        }
+      ],
+      "final_output_tokens": 34,
+      "output_sha256": "9dd070f05e698263dea67fc8023ae1975a7b2e34fc22cf6a510596b3f2ba881f",
+      "replayed_release_to_decoder_completion_ms": 3874.7324580021086,
+      "tail_available_to_decoder_completion_ms": 3838.723708000907,
+      "raw_completion_minus_release_ms": 3874.7324580021086,
+      "t4_ms": null,
+      "equals_official_reference": true
+    },
+    {
+      "condition": "early_history_draft",
+      "requests": [
+        {
+          "event_index": 0,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2670,
+          "output_tokens": 4,
+          "scheduled_audio_ms": 3550.0,
+          "start_wall_ms": 3553.0995830049505,
+          "done_wall_ms": 3696.8194159999257,
+          "elapsed_ms": 143.71983299497515,
+          "reused": 2652,
+          "proposed": 0,
+          "accepted": 0,
+          "phase_ms": {
+            "prefill": 67.76770800206577,
+            "verify": 0,
+            "generate": 67.44058299227618,
+            "trim": 0
+          }
+        },
+        {
+          "event_index": 1,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2671,
+          "output_tokens": 5,
+          "scheduled_audio_ms": 4950.0,
+          "start_wall_ms": 4959.814665999147,
+          "done_wall_ms": 5077.91320799879,
+          "elapsed_ms": 118.0985419996432,
+          "reused": 2656,
+          "proposed": 3,
+          "accepted": 2,
+          "phase_ms": {
+            "prefill": 57.508083002176136,
+            "verify": 19.349957998201717,
+            "generate": 33.83445800136542,
+            "trim": 0.038958001823630184
+          }
+        },
+        {
+          "event_index": 2,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2676,
+          "output_tokens": 11,
+          "scheduled_audio_ms": 6900.0,
+          "start_wall_ms": 6903.5436249978375,
+          "done_wall_ms": 7138.0639580020215,
+          "elapsed_ms": 234.52033300418407,
+          "reused": 2657,
+          "proposed": 5,
+          "accepted": 2,
+          "phase_ms": {
+            "prefill": 68.98991700290935,
+            "verify": 38.01825000118697,
+            "generate": 119.92329098575283,
+            "trim": 0.06387500616256148
+          }
+        },
+        {
+          "event_index": 3,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2679,
+          "output_tokens": 12,
+          "scheduled_audio_ms": 8350.0,
+          "start_wall_ms": 8360.096374999557,
+          "done_wall_ms": 8577.003083002637,
+          "elapsed_ms": 216.90670800307998,
+          "reused": 2662,
+          "proposed": 17,
+          "accepted": 5,
+          "phase_ms": {
+            "prefill": 71.34924999991199,
+            "verify": 51.703957993595395,
+            "generate": 85.41679199697683,
+            "trim": 0.08733299910090864
+          }
+        },
+        {
+          "event_index": 4,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2680,
+          "output_tokens": 16,
+          "scheduled_audio_ms": 9300.0,
+          "start_wall_ms": 9307.859833003022,
+          "done_wall_ms": 9563.444208004512,
+          "elapsed_ms": 255.58437500149012,
+          "reused": 2665,
+          "proposed": 24,
+          "accepted": 7,
+          "phase_ms": {
+            "prefill": 48.956999999063555,
+            "verify": 85.84637500462122,
+            "generate": 112.19933399843285,
+            "trim": 0.20358199981274083
+          }
+        },
+        {
+          "event_index": 5,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2681,
+          "output_tokens": 16,
+          "scheduled_audio_ms": 9750.0,
+          "start_wall_ms": 9751.995666003495,
+          "done_wall_ms": 9964.680958000827,
+          "elapsed_ms": 212.68529199733166,
+          "reused": 2666,
+          "proposed": 31,
+          "accepted": 10,
+          "phase_ms": {
+            "prefill": 45.23091699957149,
+            "verify": 101.01079100422794,
+            "generate": 57.300290995044634,
+            "trim": 0.2611230011098087
+          }
+        },
+        {
+          "event_index": 6,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2683,
+          "output_tokens": 21,
+          "scheduled_audio_ms": 11200.0,
+          "start_wall_ms": 11209.413083000982,
+          "done_wall_ms": 11410.437500002445,
+          "elapsed_ms": 201.024417001463,
+          "reused": 2667,
+          "proposed": 15,
+          "accepted": 15,
+          "phase_ms": {
+            "prefill": 66.82174999878043,
+            "verify": 43.192584002099466,
+            "generate": 83.58716899238061,
+            "trim": 0.017917001969181
+          }
+        },
+        {
+          "event_index": 7,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2689,
+          "output_tokens": 29,
+          "scheduled_audio_ms": 15050.0,
+          "start_wall_ms": 15059.081040999445,
+          "done_wall_ms": 15380.332250002539,
+          "elapsed_ms": 321.2512090030941,
+          "reused": 2669,
+          "proposed": 35,
+          "accepted": 19,
+          "phase_ms": {
+            "prefill": 79.28270899719791,
+            "verify": 114.7197079990292,
+            "generate": 117.16195799817797,
+            "trim": 0.06075000419514254
+          }
+        },
+        {
+          "event_index": 8,
+          "kind": "endpoint",
+          "status": "completed",
+          "prompt_tokens": 2691,
+          "output_tokens": 32,
+          "scheduled_audio_ms": 15550.0,
+          "start_wall_ms": 15552.77812499844,
+          "done_wall_ms": 15768.70887500263,
+          "elapsed_ms": 215.9307500041905,
+          "reused": 2675,
+          "proposed": 35,
+          "accepted": 27,
+          "phase_ms": {
+            "prefill": 54.118000000016764,
+            "verify": 113.98191700573079,
+            "generate": 39.17658199497964,
+            "trim": 0.080082994827535
+          }
+        },
+        {
+          "event_index": 9,
+          "kind": "end",
+          "status": "completed",
+          "prompt_tokens": 2695,
+          "output_tokens": 34,
+          "scheduled_audio_ms": 16339.133750001201,
+          "start_wall_ms": 16342.898125003558,
+          "done_wall_ms": 16584.779583005,
+          "elapsed_ms": 241.88145800144412,
+          "reused": 2677,
+          "proposed": 31,
+          "accepted": 27,
+          "phase_ms": {
+            "prefill": 48.50062500190688,
+            "verify": 110.07499900006223,
+            "generate": 74.87575100822141,
+            "trim": 0.13824999768985435
+          }
+        }
+      ],
+      "final_output_tokens": 34,
+      "output_sha256": "9dd070f05e698263dea67fc8023ae1975a7b2e34fc22cf6a510596b3f2ba881f",
+      "replayed_release_to_decoder_completion_ms": 281.65458300500177,
+      "tail_available_to_decoder_completion_ms": 245.64583300380036,
+      "raw_completion_minus_release_ms": 281.65458300500177,
+      "t4_ms": null,
+      "equals_official_reference": true
+    }
+  ],
+  "official_reference_repeat_equal": true,
+  "all_final_outputs_equal": true,
+  "t4_ms": null,
+  "clock_contract": "Endpoints are audio-sample offsets from offline streaming ASR; replay them at rate1 on perf_counter. End available at R + measured ASR tail compute. No audio/UI device or physical key was used.",
+  "limitations": [
+    "one constructed joined public ASR test-audio sequence, not natural continuous dictation",
+    "CPU ASR recorded offline then endpoints replayed at rate1 using perf_counter",
+    "release is replay audio-end+350ms marker, not a physical key event",
+    "decoder completion only; no IME/OS text delivery",
+    "cancellation observed only at pre/post forward block boundaries; GPU kernel cannot be interrupted",
+    "one repetition, mode order fixed; no performance population claim"
+  ]
+}

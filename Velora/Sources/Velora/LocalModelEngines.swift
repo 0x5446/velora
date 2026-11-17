@@ -809,18 +809,28 @@ public struct OllamaTextIntelligenceEngine: TextIntelligenceEngine {
     /// deadline or the rule result ships. LLM errors degrade instead of failing
     /// the pipeline — input mode keeps working with Ollama down.
     public func compose(_ request: ComposeRequest) async throws -> ComposeResult {
+        let ruleStart = ContinuousClock.now
         let baseline = try await ruleEngine.compose(request)
+        let ruleFloorMS = MonotonicMilliseconds.since(ruleStart)
+        let handoff = LLMMeasurementHandoff()
 
         let llmResult: ComposeResult?
+        let llmStart = ContinuousClock.now
         do {
             let client = client
             llmResult = try await DeadlineRunner.run(deadlineMS: request.deadlineMS) {
-                try await Self.composeWithLLM(client: client, request: request)
+                try await Self.composeWithLLM(client: client, request: request, handoff: handoff)
             }
         } catch {
             var degraded = baseline
             degraded.warnings.append("compose_llm_error:\(VeloraErrorPresenter.message(for: error))")
             degraded.reviewRequired = degraded.reviewRequired || request.mode == .translate
+            degraded.measurement = Self.measurementAfterLLMFailure(
+                ruleFloorMS: ruleFloorMS,
+                envelopeMS: MonotonicMilliseconds.since(llmStart),
+                completedSample: handoff.take(),
+                engine: baseline.engine
+            )
             return degraded
         }
 
@@ -828,9 +838,17 @@ public struct OllamaTextIntelligenceEngine: TextIntelligenceEngine {
             var degraded = baseline
             degraded.warnings.append("compose_deadline_fallback:\(request.deadlineMS)ms")
             degraded.reviewRequired = degraded.reviewRequired || request.mode == .translate
+            // The cancelled generation is still running or already abandoned.
+            // Reading its handoff would race, and waiting would change the deadline.
+            degraded.measurement = PipelineMeasurement.failureEnvelope(
+                ruleFloorMS: ruleFloorMS,
+                llmWaitMS: MonotonicMilliseconds.since(llmStart),
+                engine: baseline.engine
+            )
             return degraded
         }
 
+        let swapStart = ContinuousClock.now
         // Rule floor is the contract: an LLM result that lost its polished
         // side (missing field, wrong language) ships the baseline text, not
         // the raw uncleaned input.
@@ -839,12 +857,48 @@ public struct OllamaTextIntelligenceEngine: TextIntelligenceEngine {
             result.edits = baseline.edits
             result.warnings.append("compose_polished_rule_fallback")
         }
+        let swapMS = MonotonicMilliseconds.since(swapStart)
+        var measurement = result.measurement ?? PipelineMeasurement(engine: result.engine)
+        measurement.ruleFloorMS = ruleFloorMS
+        measurement.ruleFloorScope = "rule_engine_only"
+        measurement.engine = result.engine
+        if let swapMS {
+            if let existing = measurement.guardMS {
+                measurement.guardMS = existing + swapMS
+            } else {
+                measurement.guardMS = swapMS
+            }
+        }
+        result.measurement = measurement.sanitized()
         return result
+    }
+
+    private static func measurementAfterLLMFailure(
+        ruleFloorMS: Int?,
+        envelopeMS: Int?,
+        completedSample: PipelineMeasurement?,
+        engine: String
+    ) -> PipelineMeasurement {
+        guard let completedSample, completedSample.llmWaitScope == "generate_only" else {
+            return PipelineMeasurement.failureEnvelope(
+                ruleFloorMS: ruleFloorMS,
+                llmWaitMS: envelopeMS,
+                engine: engine
+            )
+        }
+        var measurement = completedSample
+        measurement.ruleFloorMS = ruleFloorMS
+        measurement.ruleFloorScope = "rule_engine_only"
+        if measurement.engine == nil {
+            measurement.engine = engine
+        }
+        return measurement.sanitized()
     }
 
     private static func composeWithLLM(
         client: OllamaLocalClient,
-        request: ComposeRequest
+        request: ComposeRequest,
+        handoff: LLMMeasurementHandoff
     ) async throws -> ComposeResult {
         // Cap dynamic context to the num_ctx budget the skeptic run measured:
         // glossary ≤8 lines, nearby ≤400 chars. Larger inputs silently shift
@@ -898,12 +952,24 @@ public struct OllamaTextIntelligenceEngine: TextIntelligenceEngine {
         }
         userSegment += "输入：\(strippedText)"
 
+        let generateStart = ContinuousClock.now
         let output = try await client.generateDetailed(
             system: wantsTarget ? OllamaPromptLibrary.translateSystem : OllamaPromptLibrary.inputSystem,
             prompt: userSegment,
             maxTokens: OllamaPromptLibrary.predictBudget(for: strippedText, translate: wantsTarget),
             format: "json"
         )
+        let generateMS = MonotonicMilliseconds.since(generateStart)
+        handoff.store(
+            PipelineMeasurement.llmSample(
+                output: output,
+                llmWaitMS: generateMS,
+                llmWaitScope: "generate_only",
+                guardMS: nil,
+                engine: "ollama:\(client.model)"
+            )
+        )
+        let guardStart = ContinuousClock.now
 
         var runtimeWarnings: [String] = []
         if let loadMS = output.loadDurationMS, loadMS > 500 {
@@ -1022,6 +1088,7 @@ public struct OllamaTextIntelligenceEngine: TextIntelligenceEngine {
         }
 
         let sourceForEdits = request.text
+        let guardMS = MonotonicMilliseconds.since(guardStart)
         return ComposeResult(
             polishedText: polished,
             targetText: targetText,
@@ -1040,7 +1107,14 @@ public struct OllamaTextIntelligenceEngine: TextIntelligenceEngine {
             warnings: warnings,
             confidence: 0.84,
             reviewRequired: reviewRequired,
-            engine: "ollama:\(client.model)"
+            engine: "ollama:\(client.model)",
+            measurement: PipelineMeasurement.llmSample(
+                output: output,
+                llmWaitMS: generateMS,
+                llmWaitScope: "generate_only",
+                guardMS: guardMS,
+                engine: "ollama:\(client.model)"
+            )
         )
     }
 
@@ -1310,6 +1384,11 @@ public struct OllamaTextIntelligenceEngine: TextIntelligenceEngine {
 /// Fallback slot engine. The default translate path is the compose call
 /// emitting `target` directly; this engine only runs when compose could not
 /// produce the target language (deadline, parse failure, LLM unavailable).
+private struct TimedOllamaGenerate: Sendable {
+    var output: OllamaGenerateOutput
+    var waitMS: Int?
+}
+
 public struct OllamaTranslationEngine: TranslationEngine {
     public var client: OllamaLocalClient
 
@@ -1338,23 +1417,34 @@ public struct OllamaTranslationEngine: TranslationEngine {
         let client = client
         let maxTokens = OllamaPromptLibrary.predictBudget(for: request.correctedSourceText, translate: true)
         let finalPrompt = prompt
-        let output = try await DeadlineRunner.run(deadlineMS: request.deadlineMS) {
-            try await client.generate(
+        let callStart = ContinuousClock.now
+        let timed = try await DeadlineRunner.run(deadlineMS: request.deadlineMS) {
+            let generateStart = ContinuousClock.now
+            let generated = try await client.generateDetailed(
                 system: OllamaPromptLibrary.fallbackTranslateSystem,
                 prompt: finalPrompt,
                 maxTokens: maxTokens,
                 format: "json"
             )
+            return TimedOllamaGenerate(output: generated, waitMS: MonotonicMilliseconds.since(generateStart))
         }
 
-        guard let output else {
+        guard let timed else {
             return LocalTranslationOutput(
                 targetText: "",
                 warnings: ["translation_fallback_deadline:\(request.deadlineMS)ms"],
                 confidence: 0,
-                reviewRequired: true
+                reviewRequired: true,
+                measurement: PipelineMeasurement.failureEnvelope(
+                    ruleFloorMS: nil,
+                    llmWaitMS: MonotonicMilliseconds.since(callStart),
+                    engine: "ollama:\(client.model)"
+                )
             )
         }
+        let generated = timed.output
+        let output = generated.text
+        let guardStart = ContinuousClock.now
 
         let targetText = OllamaTextIntelligenceEngine.parseComposePayload(output)?.target
             .map(OllamaTextIntelligenceEngine.cleanModelText) ?? ""
@@ -1383,7 +1473,14 @@ public struct OllamaTranslationEngine: TranslationEngine {
             glossaryHits: Array(Set(glossaryHits)).sorted(),
             warnings: warnings,
             confidence: 0.82,
-            reviewRequired: warnings.contains("translation_language_uncertain")
+            reviewRequired: warnings.contains("translation_language_uncertain"),
+            measurement: PipelineMeasurement.llmSample(
+                output: generated,
+                llmWaitMS: timed.waitMS,
+                llmWaitScope: "generate_only",
+                guardMS: MonotonicMilliseconds.since(guardStart),
+                engine: "ollama:\(client.model)"
+            )
         )
     }
 
@@ -1538,6 +1635,49 @@ public struct OllamaGenerateOutput: Sendable {
     public var text: String
     public var promptTokens: Int?
     public var loadDurationMS: Int?
+    /// Ollama `load_duration`, nanoseconds. Nil when the response omits it or the value is negative.
+    public var loadDurationNS: Int64?
+    /// Ollama `eval_count`. Nil when the response omits it. Not stored as zero.
+    public var evalCount: Int?
+    /// Ollama `eval_duration`, nanoseconds. Nil when the response omits it.
+    public var evalDurationNS: Int64?
+
+    public static func decode(responseJSON data: Data) throws -> OllamaGenerateOutput {
+        let decoded = try JSONDecoder().decode(OllamaGenerateResponse.self, from: data)
+        return OllamaGenerateOutput(
+            text: decoded.response,
+            promptTokens: Self.nonNegative(decoded.promptEvalCount),
+            loadDurationMS: Self.milliseconds(fromNanoseconds: decoded.loadDuration),
+            loadDurationNS: Self.nonNegative(decoded.loadDuration),
+            evalCount: Self.nonNegative(decoded.evalCount),
+            evalDurationNS: Self.nonNegative(decoded.evalDuration)
+        )
+    }
+
+    private static func nonNegative(_ value: Int?) -> Int? {
+        guard let value, value >= 0 else {
+            return nil
+        }
+        return value
+    }
+
+    private static func nonNegative(_ value: Int64?) -> Int64? {
+        guard let value, value >= 0 else {
+            return nil
+        }
+        return value
+    }
+
+    private static func milliseconds(fromNanoseconds value: Int64?) -> Int? {
+        guard let value, value >= 0 else {
+            return nil
+        }
+        let milliseconds = value / 1_000_000
+        guard milliseconds <= Int64(Int.max) else {
+            return nil
+        }
+        return Int(milliseconds)
+    }
 }
 
 public struct OllamaLocalClient: Sendable {
@@ -1644,12 +1784,7 @@ public struct OllamaLocalClient: Sendable {
                 throw PipelineError.localModelUnavailable("ollama_unavailable:http_\(http.statusCode):\(body.prefix(200))")
             }
 
-            let decoded = try JSONDecoder().decode(OllamaGenerateResponse.self, from: data)
-            return OllamaGenerateOutput(
-                text: decoded.response,
-                promptTokens: decoded.promptEvalCount,
-                loadDurationMS: decoded.loadDuration.map { Int($0 / 1_000_000) }
-            )
+            return try OllamaGenerateOutput.decode(responseJSON: data)
         } catch let error as PipelineError {
             throw error
         } catch is CancellationError {
@@ -1744,10 +1879,14 @@ private struct OllamaGenerateResponse: Decodable {
     var response: String
     var promptEvalCount: Int?
     var loadDuration: Int64?
+    var evalCount: Int?
+    var evalDuration: Int64?
 
     enum CodingKeys: String, CodingKey {
         case response
         case promptEvalCount = "prompt_eval_count"
         case loadDuration = "load_duration"
+        case evalCount = "eval_count"
+        case evalDuration = "eval_duration"
     }
 }
