@@ -87,3 +87,9 @@
 - `withObservedInsert` 原先只要 HUD 和 insert 都有数字就把 `physicalKeyAndInsertObserved` 写成 true。`debugInjectClip` 和真实松键共用 `runPipeline`，所以文件通知会被标成物理按键。
 - 现在 `observationSource` 只接受 `debug_file`、`real_key_release`、`cli`。文件回放保留 HUD 和 insert，物理标志保持 false。没有来源的旧 JSON 不能靠这个 bool 变成物理 T4。prompt、deadline 和上屏分支没有改。
 - 先前的 `env.txt` 和 `sensevoice.sha256` 已在 Mac 交接里。本仓库还没抄入，不代表从未采集。物理 T4 仍缺，门槛不降。
+
+## 2026-11-17 · 归档已采集的 M1 环境身份
+
+- `docs/evidence/m1/20261117/env.txt`：北京时间 14:41:21，HEAD `73e83ec`，Apple M4 Pro，25769803776 字节，macOS 26.2 build 25C56，Xcode 26.4 build 17E192，Swift 6.3，Ollama 0.40.16。
+- `docs/evidence/m1/20261117/sensevoice.sha256`：`model.int8.onnx` `c71f0ce00bec95b07744e116345e33d8cbbe08cef896382cf907bf4b51a2cd51`。没有重算，没有再跑音频。
+- 环境身份不再是缺项。真实物理 T4、文件回放 HUD/insert、三个时点 RSS、录音期预热、prefill 时长、功耗、质量六套和 M5 登记仍然 blocked。没有粘贴授权，不启动 1.7B。

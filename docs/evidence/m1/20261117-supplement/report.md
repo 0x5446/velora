@@ -46,7 +46,7 @@ M1 的标题是“仍不改用户可见行为”。协议把 `Apps/` 和 `Velora
 
 是否允许一次测量补丁：把已经算出来的 `wall_ms`、`insert_ms`，以及已经解码的 `prompt_eval_count`、`load_duration`（响应里若有 `eval_duration` 和 `eval_count` 也写入）放进现有 trace 和 CLI JSON。不改 prompt、temperature 0.1、输入 deadline 4000 ms、翻译 deadline 6000 ms、回退规则和上屏策略。允许之后才有可能做菜单栏测量。不允许则这些字段继续 blocked，M5 最小效应保持 TBD。本审查不实施这个补丁。
 
-另外可以把已有的 `env.txt` 和 `sensevoice.sha256` 从 Mac 采集目录抄进证据。那是抄文件，不是再跑音频。
+`env.txt` 和 `sensevoice.sha256` 已归档在 [`../20261117/`](../20261117/)。没有重新采集。
 
 ## 脚本
 

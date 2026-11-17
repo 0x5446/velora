@@ -29,16 +29,24 @@
 | xasr_0 | `7d93384ca14702cc584a7a33fe2fed92e89e708549161cb12ea38c916882103b` | 0/5 |
 | xasr_1 | `8bfb42c963e623ebab31b81ff4404867d07d3102507c87ac14577c4c61663b8c` | 5/5 |
 
+## 环境
+
+[`env.txt`](env.txt) 采集于北京时间 2026-11-17 14:41:21，基线 HEAD `73e83ec44363a1968c61da4865fb594bacbeda82`。Apple M4 Pro，内存 25769803776 字节，macOS 26.2 build 25C56，Xcode 26.4 build 17E192，Swift 6.3，Ollama 0.40.16。模型是源码缺省 `qwen3:8b`，采集进程用 `VELORA_OLLAMA_MODEL`。
+
+[`sensevoice.sha256`](sensevoice.sha256)：`model.int8.onnx` 为 `c71f0ce00bec95b07744e116345e33d8cbbe08cef896382cf907bf4b51a2cd51`，`tokens.txt` 为 `f449eb28dc567533d7fa59be34e2abca8784f771850c78a47fb731a31429a1dc`。这是已采集文件，没有重算。
+
 ## 保持 blocked 的缺项
 
-当前 trace 和客户端没有这些字段，写 null 是按规定留下的空位，不是漏记：
+环境身份已归档。下面这些仍缺，不降门槛：
 
-- 物理 T4、HUD `wall_ms`、粘贴毫秒。CLI 的 `insertionStrategy` 是 none。HUD 上的 `wall_ms` 和 `insert_ms` 只出现在 `MacSystemInputController.swift` 1077–1082 行的浮层，没有落盘。在产品日志补上这两项之前，不要用 debug 注入去粘贴：数字存不住，还会写入当前前台应用。
-- compose 内部的规则地板毫秒、护栏毫秒、LLM 独占等待。现有 stage 只有整段 `compose`。
-- 产品响应里的 prefill/decode。客户端没有把 eval duration 解出来。
-- 逐输出哈希。正式 redact 在包装层之前丢掉了原文，禁止为补哈希再跑一遍推理。
+- 真实物理 T4。文件回放的粘贴不是松键，`physicalKeyAndInsertObserved` 不能因此写成 true。
+- 输入模式的 HUD `wall_ms` 和 insert。CLI 按构造是 null。文件回放若以后测到，来源必须是 `debug_file`，不能填物理 T4。当前没有粘贴授权。
+- 录音前、模型常驻后、一次长句之后的 Velora、sidecar Python 和模型进程 RSS。结束后的 llama-server 快照不是这三个时点，也不是峰值。`ollama` 守护进程不是模型。
+- 预热是否落在录音期内。
+- prefill 时长。token 数不是时长。
 - 功耗。`powermetrics` 未采样。不要估瓦数。
-- llama-server 的逐段峰值。采样器匹配了 `ollama` 守护进程（约 28MiB），不能把它当成模型内存。序列结束后的 llama-server RSS 是 5,196,160 KiB，`size_vram` 是 5,076,072,529 字节，这是结束后的快照，不是每段峰值。
+- 质量六套。非确定性现状，不是这次回归通过。
+- M5 最小效应仍是 TBD。
 
 14B 的官方 `ollama rm` 和“没有误删其他模型、共享层仍被 8B 引用”沿用 Mac 报告。本环境没有重读那台机器的 blob 目录。
 

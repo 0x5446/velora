@@ -32,7 +32,7 @@
 
 ## 下一最小交付
 
-不要重跑 31 次，不要再跑 CLI，不要重跑六套质量，不要下载模型，不要开麦克风，不要粘贴。先前的 `env.txt` 和 `sensevoice.sha256` 已在 Mac 交接里，补抄进证据即可，不要写成从未采集，也不要重新采集。
+不要重跑 31 次，不要再跑 CLI，不要重跑六套质量，不要下载模型，不要开麦克风，不要粘贴。`env.txt` 和 `sensevoice.sha256` 已在 [`evidence/m1/20261117/`](evidence/m1/20261117/)。
 
 `app.velora.debug.dictate` 的 object 是文件路径。它会发生真实粘贴，但没有物理按键松开。修正后的日志把 `observationSource=debug_file` 和 `real_key_release` 分开。文件回放可以有 HUD 和 insert，`physicalKeyAndInsertObserved` 必须是 false，物理 T4 必须是 null。当前已编好的 App 还没有这个字段，用户同意之前不要启动它。真实松键不在这次文件回放里，门槛不降。
 
