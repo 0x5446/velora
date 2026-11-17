@@ -44,4 +44,4 @@
 
 ## 随后的两次快照
 
-`zh_short` 和 `zh_long` 各又跑了一次，单独归档在 [`../20261117-supplement/report.md`](../20261117-supplement/report.md)。那两次不并进上面的 31 次分布。llama-server 的前后 RSS 是快照，不是峰值。不要再为物理 T4、HUD、粘贴、功耗、内部阶段或峰值重跑 CLI。
+`zh_short` 和 `zh_long` 各又跑了一次，单独归档在 [`../20261117-supplement/report.md`](../20261117-supplement/report.md)。那两次不并进上面的 31 次分布。llama-server 的前后 RSS 是快照，不是峰值。`8eb669d` 的字段验证在 [`../20261117-measurement/report.md`](../20261117-measurement/report.md)，同样不并进这 31 次。不要再为物理 T4 重跑 CLI。

@@ -1,0 +1,188 @@
+{
+  "schema": "velora.measurement_validation.v1",
+  "commit": "8eb669d2bde510892fd6247d2a9892667d13739e",
+  "n_attempted": 2,
+  "scope": "new instrumentation validation only, not added to original31baseline",
+  "runs": [
+    {
+      "audio_sha256": "99f6b8eb776edc0f8f9f64effd3976381652a22bb7579dd88fcb845399c0755d",
+      "bytes": 384320,
+      "pass_index": 0,
+      "exit": 0,
+      "asr_engine": "sensevoice.sherpa-onnx",
+      "asr_model": "model.int8.onnx",
+      "asr_chars": 45,
+      "compose_engine": "rules",
+      "final_chars": 44,
+      "reviewRequired": false,
+      "insertion_inserted": null,
+      "insertion_strategy": null,
+      "release_to_insert_ms": 5128,
+      "stages": [
+        {
+          "name": "context_capture",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "hotword_rank",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_finalize",
+          "durationMS": 852,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_hotword_correction",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "compose",
+          "durationMS": 4276,
+          "phase": "after_release",
+          "critical": true
+        }
+      ],
+      "ollama_reload_ms": null,
+      "ollama_ctx_pressure_tokens": null,
+      "deadline_fallback_ms": 4000,
+      "redacted_warning_count": 0,
+      "llm_error": false,
+      "rule_floor_used": false,
+      "load_observation": "no_reload_warning",
+      "measurement_schema": "velora.pipeline_measurement.v1",
+      "critical_stage_sum_ms": 5128,
+      "physical_key_and_insert_observed": false,
+      "hud_wall_ms": null,
+      "insert_ms": null,
+      "rule_floor_ms": 1,
+      "rule_floor_scope": "rule_engine_only",
+      "llm_wait_ms": 4273,
+      "llm_wait_scope": "deadline_or_error_envelope",
+      "guard_ms": null,
+      "translation_fallback_ms": null,
+      "prompt_eval_count": null,
+      "load_duration_ns": null,
+      "eval_count": null,
+      "eval_duration_ns": null,
+      "fallback_llm_wait_ms": null,
+      "fallback_llm_wait_scope": null,
+      "fallback_guard_ms": null,
+      "fallback_prompt_eval_count": null,
+      "fallback_load_duration_ns": null,
+      "fallback_eval_count": null,
+      "fallback_eval_duration_ns": null,
+      "measurement_engine": "rules",
+      "measurement_exclude_from_critical_sum": true,
+      "rss_before": {
+        "ollama_rss_kb": 22960,
+        "sensevoice_rss_kb": null,
+        "llama_server_rss_kb": null
+      },
+      "rss_after": {
+        "ollama_rss_kb": 10080,
+        "sensevoice_rss_kb": 48304,
+        "llama_server_rss_kb": 5778800
+      },
+      "failure_class": "deadline_fallback",
+      "validation_audio_id": "zh_short"
+    },
+    {
+      "audio_sha256": "8bfb42c963e623ebab31b81ff4404867d07d3102507c87ac14577c4c61663b8c",
+      "bytes": 163244,
+      "pass_index": 0,
+      "exit": 0,
+      "asr_engine": "sensevoice.sherpa-onnx",
+      "asr_model": "model.int8.onnx",
+      "asr_chars": 22,
+      "compose_engine": "ollama:qwen3:8b",
+      "final_chars": 23,
+      "reviewRequired": false,
+      "insertion_inserted": null,
+      "insertion_strategy": null,
+      "release_to_insert_ms": 3129,
+      "stages": [
+        {
+          "name": "context_capture",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "hotword_rank",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_finalize",
+          "durationMS": 781,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_hotword_correction",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "compose",
+          "durationMS": 2348,
+          "phase": "after_release",
+          "critical": true
+        }
+      ],
+      "ollama_reload_ms": null,
+      "ollama_ctx_pressure_tokens": null,
+      "deadline_fallback_ms": null,
+      "redacted_warning_count": 0,
+      "llm_error": false,
+      "rule_floor_used": false,
+      "load_observation": "no_reload_warning",
+      "measurement_schema": "velora.pipeline_measurement.v1",
+      "critical_stage_sum_ms": 3129,
+      "physical_key_and_insert_observed": false,
+      "hud_wall_ms": null,
+      "insert_ms": null,
+      "rule_floor_ms": 1,
+      "rule_floor_scope": "rule_engine_only",
+      "llm_wait_ms": 2308,
+      "llm_wait_scope": "generate_only",
+      "guard_ms": 0,
+      "translation_fallback_ms": null,
+      "prompt_eval_count": 1626,
+      "load_duration_ns": 5077042,
+      "eval_count": 19,
+      "eval_duration_ns": 465464000,
+      "fallback_llm_wait_ms": null,
+      "fallback_llm_wait_scope": null,
+      "fallback_guard_ms": null,
+      "fallback_prompt_eval_count": null,
+      "fallback_load_duration_ns": null,
+      "fallback_eval_count": null,
+      "fallback_eval_duration_ns": null,
+      "measurement_engine": "ollama:qwen3:8b",
+      "measurement_exclude_from_critical_sum": true,
+      "rss_before": {
+        "ollama_rss_kb": 10096,
+        "sensevoice_rss_kb": null,
+        "llama_server_rss_kb": 5471392
+      },
+      "rss_after": {
+        "ollama_rss_kb": 10064,
+        "sensevoice_rss_kb": 743824,
+        "llama_server_rss_kb": 5460672
+      },
+      "failure_class": "llm",
+      "validation_audio_id": "xasr_1"
+    }
+  ]
+}

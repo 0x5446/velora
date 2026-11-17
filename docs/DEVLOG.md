@@ -75,3 +75,9 @@
 - `trace.measurement` 使用 `ContinuousClock`。规则地板、LLM 等待和护栏分开记，并标成不计入 critical 合计，避免和原有 `releaseToInsertMS` 叠加。deadline 或取消时，没拿到的 Ollama 计数保持 null。响应里没有的 `eval_count` / `eval_duration` 也保持 null。
 - CLI 的 `insertionStrategy` 仍是 none，所以 `hudWallMS` 和 `insertMS` 在管线边界被清空。菜单栏只有在 `MacPasteboardInserter.insert` 已经跑完之后才把这两个数写入 `measurement.jsonl`。这次不启动菜单栏，也不粘贴。
 - 本环境没有 Swift，包测试和 App 都没有编译。Python 采集器测试已覆盖新字段。M1 仍等 Mac 上一条公开音频的新 trace。
+
+## 2026-11-17 · 8eb669d 测量字段已验证，M1 仍 blocked
+
+- Mac 在 `8eb669d2bde510892fd6247d2a9892667d13739e` 上跑过：Swift 6.3，128 项包测试和 17 项 Python 测试退出码 0，CLI 与菜单栏构建退出码 0。菜单栏没有启动。交接写明 Xcode 26.4，用户工作区前后一致。源码比较里 prompt、options、temperature 0.1 和 deadline 与父提交相同。这不是位级等价，也不是零开销证明。
+- 两条公开音频不并进 31 次。`zh_short` 是 deadline：ASR 852 ms，compose 4276 ms，critical 5128 ms，规则地板 1 ms，LLM 等待 4273 ms，Ollama 计数为 null。`xasr_1` 是 LLM：critical 3129 ms，规则地板 1 ms，LLM 等待 2308 ms，护栏 0 ms，`prompt_eval_count` 1626，`load_duration_ns` 5077042，`eval_count` 19，`eval_duration_ns` 465464000。分段没有加进 critical。
+- HUD、insert、功耗、prefill 时长和录音三个时点的 RSS 仍缺。CLI 不能当作松键。M1 不通过。下一步是只读环境身份，以及用户同意后对空文本编辑文稿粘贴两次公开音频。1.7B 不接入。
