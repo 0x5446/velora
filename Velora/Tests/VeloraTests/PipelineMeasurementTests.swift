@@ -44,6 +44,7 @@ import Testing
         llmWaitMS: 3000,
         llmWaitScope: "generate_only"
     ).atPipelineBoundary(criticalStageSumMS: 4539, translationFallbackMS: nil)
+    #expect(staged.observationSource == "cli")
     #expect(staged.physicalKeyAndInsertObserved == false)
     #expect(staged.hudWallMS == nil)
     #expect(staged.insertMS == nil)
@@ -53,14 +54,43 @@ import Testing
     #expect(staged.ruleFloorMS == 4)
     #expect(staged.llmWaitMS == 3000)
 
-    let observed = staged.withObservedInsert(hudWallMS: 4800, insertMS: 20)
+    let observed = staged.withObservedInsert(
+        hudWallMS: 4800,
+        insertMS: 20,
+        observationSource: "real_key_release"
+    )
+    #expect(observed.observationSource == "real_key_release")
     #expect(observed.physicalKeyAndInsertObserved == true)
     #expect(observed.hudWallMS == 4800)
     #expect(observed.insertMS == 20)
-    let rejected = staged.withObservedInsert(hudWallMS: nil, insertMS: 20)
+    let replay = staged.withObservedInsert(
+        hudWallMS: 4800,
+        insertMS: 20,
+        observationSource: "debug_file"
+    )
+    #expect(replay.observationSource == "debug_file")
+    #expect(replay.physicalKeyAndInsertObserved == false)
+    #expect(replay.hudWallMS == 4800)
+    #expect(replay.insertMS == 20)
+    let rejected = staged.withObservedInsert(
+        hudWallMS: nil,
+        insertMS: 20,
+        observationSource: "real_key_release"
+    )
     #expect(rejected.hudWallMS == nil)
     #expect(rejected.insertMS == nil)
     #expect(rejected.physicalKeyAndInsertObserved == false)
+}
+
+@Test func oldMeasurementJSONWithoutASourceCannotBecomeAPhysicalKey() throws {
+    let json = """
+    {"schema":"velora.pipeline_measurement.v1","physicalKeyAndInsertObserved":true,"hudWallMS":4800,"insertMS":20}
+    """
+    let decoded = try JSONDecoder().decode(PipelineMeasurement.self, from: Data(json.utf8)).sanitized()
+    #expect(decoded.observationSource == nil)
+    #expect(decoded.physicalKeyAndInsertObserved == false)
+    #expect(decoded.hudWallMS == nil)
+    #expect(decoded.insertMS == nil)
 }
 
 @Test func negativeMeasurementsBecomeNullInsteadOfZero() {

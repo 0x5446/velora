@@ -24,7 +24,7 @@
 | M0 审计与资产清单 | 通过。见 [`evidence/m0/report.md`](evidence/m0/report.md)。1.7B 完整哈希是复用的先前验证；五个冻结清单匹配 |
 | F0 CPU 设施 | 通过。当时 18 项，见 [`evidence/f0/report.md`](evidence/f0/report.md)。同一命令现在会连同 F1 一起跑 |
 | F1 端点 schema / 采集器 / 回放 / 计时契约 | 通过。同一命令现为 41 项，退出码 0。CPU mock 的 `mlx_token_identity` 为 null。公共端点摘要因没有 revision 被拒绝。不是 M1 或 M5 |
-| M1 现行产品基线 | blocked。31 次基线在 [`evidence/m1/20261117/report.md`](evidence/m1/20261117/report.md)。字段验证在 [`evidence/m1/20261117-measurement/report.md`](evidence/m1/20261117-measurement/report.md)，不并池。缺的是一次真实粘贴的 HUD/insert，以及录音三个时点的 RSS |
+| M1 现行产品基线 | blocked。31 次基线在 [`evidence/m1/20261117/report.md`](evidence/m1/20261117/report.md)。字段验证在 [`evidence/m1/20261117-measurement/report.md`](evidence/m1/20261117-measurement/report.md)，不并池。文件回放的 HUD/insert 不是物理松键。真实 T4 仍缺 |
 | M2 六套门禁 | 未开始。研究 rubric 的绝对通过率不能代替 |
 | M3 取消/焦点/离线的产品观察 | 未开始。F0 只覆盖假模型上的调度 |
 | M4 产品决定 | 未通过。方向已写明，默认行为未切换 |
@@ -32,20 +32,9 @@
 
 ## 下一最小交付
 
-不要重跑 31 次，不要再跑 CLI，不要重跑六套质量，不要下载模型，不要开麦克风。编译已经通过。
+不要重跑 31 次，不要再跑 CLI，不要重跑六套质量，不要下载模型，不要开麦克风，不要粘贴。先前的 `env.txt` 和 `sensevoice.sha256` 已在 Mac 交接里，补抄进证据即可，不要写成从未采集，也不要重新采集。
 
-先做只读身份，把输出留在证据目录：
-
-```bash
-sysctl -n machdep.cpu.brand_string
-sysctl -n hw.memsize
-sw_vers
-xcodebuild -version
-ollama --version
-shasum -a 256 "$HOME/workspace/velora/Models/sensevoice/model.int8.onnx"
-```
-
-物理 T4 需要用户同意一次粘贴。使用 `$HOME/specdict/evidence/m1-measurement-20261117-153826/worktree` 里已编好的 `Velora.app`。打开空文本编辑文稿并点进去。`velora.developer_mode` 必须已经开启，否则停。对已有公开文件 `xasr_1` 再对 `zh_long` 发送 `app.velora.debug.dictate`，object 是文件路径。粘贴前、短音频后、长音频后，各记一次 `Velora`、sidecar python 和 `llama-server` 的 RSS。只把 `measurement.jsonl` 里的 `hudWallMS`、`insertMS`、`physicalKeyAndInsertObserved` 交回来。用户不同意粘贴，这项继续 blocked。
+`app.velora.debug.dictate` 的 object 是文件路径。它会发生真实粘贴，但没有物理按键松开。修正后的日志把 `observationSource=debug_file` 和 `real_key_release` 分开。文件回放可以有 HUD 和 insert，`physicalKeyAndInsertObserved` 必须是 false，物理 T4 必须是 null。当前已编好的 App 还没有这个字段，用户同意之前不要启动它。真实松键不在这次文件回放里，门槛不降。
 
 原型差异已经写在 [`evidence/prototype/REVIEW.md`](evidence/prototype/REVIEW.md)。产品 sidecar 仍不开始。
 

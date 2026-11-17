@@ -7,12 +7,21 @@ enum MacMeasurementLog {
     private static let folderName = "Velora"
     private static let fileName = "measurement.jsonl"
 
-    static func record(result: PipelineRunResult, hudWallMS: Int?, insertMS: Int?) {
+    static func record(
+        result: PipelineRunResult,
+        hudWallMS: Int?,
+        insertMS: Int?,
+        observationSource: String
+    ) {
         let base = result.trace.measurement ?? PipelineMeasurement(
             criticalStageSumMS: result.trace.releaseToInsertMS,
             engine: result.compose.engine
         )
-        let measurement = base.withObservedInsert(hudWallMS: hudWallMS, insertMS: insertMS)
+        let measurement = base.withObservedInsert(
+            hudWallMS: hudWallMS,
+            insertMS: insertMS,
+            observationSource: observationSource
+        )
         guard let line = jsonLine(measurement) else {
             return
         }

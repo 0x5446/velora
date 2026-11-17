@@ -4,7 +4,7 @@ import Foundation
 /// A missing, cancelled, or failed interval stays nil. Nil is not stored as zero.
 /// These parts sit inside stages that are already in `releaseToInsertMS`;
 /// `excludeFromCriticalSum` tells a collector not to add them again.
-public struct PipelineMeasurement: Codable, Sendable, Equatable {
+public struct PipelineMeasurement: Sendable, Equatable {
     public static let schema = "velora.pipeline_measurement.v1"
     public static let durationUnit = "ms"
     public static let nanosecondUnit = "ns"
@@ -21,7 +21,10 @@ public struct PipelineMeasurement: Codable, Sendable, Equatable {
     public var releaseToInsertMeaning: String
     public var excludeFromCriticalSum: Bool
     public var criticalStageSumMS: Int?
-    /// True only when a real key-release interval and an insert attempt were both observed.
+    /// `real_key_release` is a physical key. `debug_file` is a file replay. `cli` has neither.
+    public var observationSource: String?
+    /// True only for `real_key_release` when the insert attempt was also timed.
+    /// A file-driven paste does not set this.
     public var physicalKeyAndInsertObserved: Bool
     public var hudWallMS: Int?
     public var insertMS: Int?
@@ -53,6 +56,7 @@ public struct PipelineMeasurement: Codable, Sendable, Equatable {
         releaseToInsertMeaning: String = PipelineMeasurement.criticalStageSumMeaning,
         excludeFromCriticalSum: Bool = true,
         criticalStageSumMS: Int? = nil,
+        observationSource: String? = nil,
         physicalKeyAndInsertObserved: Bool = false,
         hudWallMS: Int? = nil,
         insertMS: Int? = nil,
@@ -83,6 +87,7 @@ public struct PipelineMeasurement: Codable, Sendable, Equatable {
         self.releaseToInsertMeaning = releaseToInsertMeaning
         self.excludeFromCriticalSum = excludeFromCriticalSum
         self.criticalStageSumMS = criticalStageSumMS
+        self.observationSource = observationSource
         self.physicalKeyAndInsertObserved = physicalKeyAndInsertObserved
         self.hudWallMS = hudWallMS
         self.insertMS = insertMS
@@ -135,11 +140,12 @@ public struct PipelineMeasurement: Codable, Sendable, Equatable {
         ).sanitized()
     }
 
-    /// Pipeline JSON never claims a physical key. HUD numbers are applied later, only after insert runs.
+    /// Pipeline JSON is not a key release and not a GUI paste.
     public func atPipelineBoundary(criticalStageSumMS: Int, translationFallbackMS: Int?) -> PipelineMeasurement {
         var copy = self
         copy.criticalStageSumMS = criticalStageSumMS
         copy.translationFallbackMS = translationFallbackMS
+        copy.observationSource = "cli"
         copy.physicalKeyAndInsertObserved = false
         copy.hudWallMS = nil
         copy.insertMS = nil
@@ -148,17 +154,17 @@ public struct PipelineMeasurement: Codable, Sendable, Equatable {
         return copy.sanitized()
     }
 
-    public func withObservedInsert(hudWallMS: Int?, insertMS: Int?) -> PipelineMeasurement {
+    /// `debug_file` may keep HUD and insert times. It never counts as a physical key release.
+    public func withObservedInsert(
+        hudWallMS: Int?,
+        insertMS: Int?,
+        observationSource: String
+    ) -> PipelineMeasurement {
         var copy = self
-        if let hudWallMS, let insertMS, hudWallMS >= 0, insertMS >= 0 {
-            copy.physicalKeyAndInsertObserved = true
-            copy.hudWallMS = hudWallMS
-            copy.insertMS = insertMS
-        } else {
-            copy.physicalKeyAndInsertObserved = false
-            copy.hudWallMS = nil
-            copy.insertMS = nil
-        }
+        copy.observationSource = observationSource
+        copy.hudWallMS = hudWallMS
+        copy.insertMS = insertMS
+        copy.physicalKeyAndInsertObserved = observationSource == "real_key_release"
         return copy.sanitized()
     }
 
@@ -208,11 +214,17 @@ public struct PipelineMeasurement: Codable, Sendable, Equatable {
             allowed: ["generate_only", "deadline_or_error_envelope"]
         )
         copy.engine = Self.engineToken(copy.engine)
-        if copy.physicalKeyAndInsertObserved,
+        copy.observationSource = Self.scope(
+            copy.observationSource,
+            allowed: ["debug_file", "real_key_release", "cli"]
+        )
+        let guiReplay = copy.observationSource == "debug_file" || copy.observationSource == "real_key_release"
+        if guiReplay,
            let wall = Self.nonNegative(copy.hudWallMS),
            let insert = Self.nonNegative(copy.insertMS) {
             copy.hudWallMS = wall
             copy.insertMS = insert
+            copy.physicalKeyAndInsertObserved = copy.observationSource == "real_key_release"
         } else {
             copy.physicalKeyAndInsertObserved = false
             copy.hudWallMS = nil
@@ -249,6 +261,109 @@ public struct PipelineMeasurement: Codable, Sendable, Equatable {
             return nil
         }
         return value
+    }
+}
+
+extension PipelineMeasurement: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case schema
+        case durationUnit
+        case nanosecondUnit
+        case countUnit
+        case clock
+        case releaseToInsertMeaning
+        case excludeFromCriticalSum
+        case criticalStageSumMS
+        case observationSource
+        case physicalKeyAndInsertObserved
+        case hudWallMS
+        case insertMS
+        case ruleFloorMS
+        case ruleFloorScope
+        case llmWaitMS
+        case llmWaitScope
+        case guardMS
+        case translationFallbackMS
+        case promptEvalCount
+        case loadDurationNS
+        case evalCount
+        case evalDurationNS
+        case fallbackLLMWaitMS
+        case fallbackLLMWaitScope
+        case fallbackGuardMS
+        case fallbackPromptEvalCount
+        case fallbackLoadDurationNS
+        case fallbackEvalCount
+        case fallbackEvalDurationNS
+        case engine
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schema = try container.decodeIfPresent(String.self, forKey: .schema) ?? Self.schema
+        durationUnit = try container.decodeIfPresent(String.self, forKey: .durationUnit) ?? Self.durationUnit
+        nanosecondUnit = try container.decodeIfPresent(String.self, forKey: .nanosecondUnit) ?? Self.nanosecondUnit
+        countUnit = try container.decodeIfPresent(String.self, forKey: .countUnit) ?? Self.countUnit
+        clock = try container.decodeIfPresent(String.self, forKey: .clock) ?? Self.clockName
+        releaseToInsertMeaning = try container.decodeIfPresent(String.self, forKey: .releaseToInsertMeaning) ?? Self.criticalStageSumMeaning
+        excludeFromCriticalSum = try container.decodeIfPresent(Bool.self, forKey: .excludeFromCriticalSum) ?? true
+        criticalStageSumMS = try container.decodeIfPresent(Int.self, forKey: .criticalStageSumMS)
+        observationSource = try container.decodeIfPresent(String.self, forKey: .observationSource)
+        physicalKeyAndInsertObserved = try container.decodeIfPresent(Bool.self, forKey: .physicalKeyAndInsertObserved) ?? false
+        hudWallMS = try container.decodeIfPresent(Int.self, forKey: .hudWallMS)
+        insertMS = try container.decodeIfPresent(Int.self, forKey: .insertMS)
+        ruleFloorMS = try container.decodeIfPresent(Int.self, forKey: .ruleFloorMS)
+        ruleFloorScope = try container.decodeIfPresent(String.self, forKey: .ruleFloorScope)
+        llmWaitMS = try container.decodeIfPresent(Int.self, forKey: .llmWaitMS)
+        llmWaitScope = try container.decodeIfPresent(String.self, forKey: .llmWaitScope)
+        guardMS = try container.decodeIfPresent(Int.self, forKey: .guardMS)
+        translationFallbackMS = try container.decodeIfPresent(Int.self, forKey: .translationFallbackMS)
+        promptEvalCount = try container.decodeIfPresent(Int.self, forKey: .promptEvalCount)
+        loadDurationNS = try container.decodeIfPresent(Int64.self, forKey: .loadDurationNS)
+        evalCount = try container.decodeIfPresent(Int.self, forKey: .evalCount)
+        evalDurationNS = try container.decodeIfPresent(Int64.self, forKey: .evalDurationNS)
+        fallbackLLMWaitMS = try container.decodeIfPresent(Int.self, forKey: .fallbackLLMWaitMS)
+        fallbackLLMWaitScope = try container.decodeIfPresent(String.self, forKey: .fallbackLLMWaitScope)
+        fallbackGuardMS = try container.decodeIfPresent(Int.self, forKey: .fallbackGuardMS)
+        fallbackPromptEvalCount = try container.decodeIfPresent(Int.self, forKey: .fallbackPromptEvalCount)
+        fallbackLoadDurationNS = try container.decodeIfPresent(Int64.self, forKey: .fallbackLoadDurationNS)
+        fallbackEvalCount = try container.decodeIfPresent(Int.self, forKey: .fallbackEvalCount)
+        fallbackEvalDurationNS = try container.decodeIfPresent(Int64.self, forKey: .fallbackEvalDurationNS)
+        engine = try container.decodeIfPresent(String.self, forKey: .engine)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(schema, forKey: .schema)
+        try container.encode(durationUnit, forKey: .durationUnit)
+        try container.encode(nanosecondUnit, forKey: .nanosecondUnit)
+        try container.encode(countUnit, forKey: .countUnit)
+        try container.encode(clock, forKey: .clock)
+        try container.encode(releaseToInsertMeaning, forKey: .releaseToInsertMeaning)
+        try container.encode(excludeFromCriticalSum, forKey: .excludeFromCriticalSum)
+        try container.encodeIfPresent(criticalStageSumMS, forKey: .criticalStageSumMS)
+        try container.encodeIfPresent(observationSource, forKey: .observationSource)
+        try container.encode(physicalKeyAndInsertObserved, forKey: .physicalKeyAndInsertObserved)
+        try container.encodeIfPresent(hudWallMS, forKey: .hudWallMS)
+        try container.encodeIfPresent(insertMS, forKey: .insertMS)
+        try container.encodeIfPresent(ruleFloorMS, forKey: .ruleFloorMS)
+        try container.encodeIfPresent(ruleFloorScope, forKey: .ruleFloorScope)
+        try container.encodeIfPresent(llmWaitMS, forKey: .llmWaitMS)
+        try container.encodeIfPresent(llmWaitScope, forKey: .llmWaitScope)
+        try container.encodeIfPresent(guardMS, forKey: .guardMS)
+        try container.encodeIfPresent(translationFallbackMS, forKey: .translationFallbackMS)
+        try container.encodeIfPresent(promptEvalCount, forKey: .promptEvalCount)
+        try container.encodeIfPresent(loadDurationNS, forKey: .loadDurationNS)
+        try container.encodeIfPresent(evalCount, forKey: .evalCount)
+        try container.encodeIfPresent(evalDurationNS, forKey: .evalDurationNS)
+        try container.encodeIfPresent(fallbackLLMWaitMS, forKey: .fallbackLLMWaitMS)
+        try container.encodeIfPresent(fallbackLLMWaitScope, forKey: .fallbackLLMWaitScope)
+        try container.encodeIfPresent(fallbackGuardMS, forKey: .fallbackGuardMS)
+        try container.encodeIfPresent(fallbackPromptEvalCount, forKey: .fallbackPromptEvalCount)
+        try container.encodeIfPresent(fallbackLoadDurationNS, forKey: .fallbackLoadDurationNS)
+        try container.encodeIfPresent(fallbackEvalCount, forKey: .fallbackEvalCount)
+        try container.encodeIfPresent(fallbackEvalDurationNS, forKey: .fallbackEvalDurationNS)
+        try container.encodeIfPresent(engine, forKey: .engine)
     }
 }
 

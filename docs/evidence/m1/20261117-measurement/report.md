@@ -48,34 +48,18 @@ critical 等于各 critical 阶段之和。规则地板、LLM 等待和护栏都
 
 仍强制 blocked：
 
-- HUD `wall_ms` 和 `insert_ms`。原文要求输入模式含粘贴，并和 critical 合计分列。CLI 按构造就是 null。
+- GUI 文件回放的 HUD 和 insert 还没测。测到之后来源必须是 `debug_file`，只能和 critical 合计分列，不能填物理 T4。
+- 真实物理 T4。`app.velora.debug.dictate` 会粘贴，但没有物理按键松开。`physicalKeyAndInsertObserved` 必须保持 false。
 - 录音前、模型常驻后、一次长句之后的 Velora、sidecar Python、`ollama` RSS。现有 llama-server 数字是 CLI 快照，不是这三个时点。
-- 环境身份还没进报告：CPU、内存、macOS、Ollama 版本、SenseVoice `model.int8.onnx` 的 sha256。Swift 6.3 已有；Xcode 26.4 来自交接说明。
 - 预热是否落在录音期内。CLI 没有录音期。
 - M5 最小效应仍是 TBD。本关没通过，不登记。
 
+环境身份不是“从未采集”。Mac 交接里已有先前的 `env.txt` 和 `sensevoice.sha256`。本仓库报告还没抄入这些文件，由主助手补入，不要重新采集。
+
 ## 下一动作
 
-只读部分可以直接做，把输出抄进证据，不要跑音频：
+不要跑音频，不要启动菜单栏，不要粘贴。现编好的 App 还没有来源字段，不能拿去测。
 
-```bash
-sysctl -n machdep.cpu.brand_string
-sysctl -n hw.memsize
-sw_vers
-xcodebuild -version
-ollama --version
-shasum -a 256 "$HOME/workspace/velora/Models/sensevoice/model.int8.onnx"
-```
+用户专项同意粘贴之后，先编入来源修正，再用公开文件走 `app.velora.debug.dictate`。那是 GUI 文件回放：`observationSource` 必须是 `debug_file`，HUD 和 insert 可以是实测，`physicalKeyAndInsertObserved` 必须是 false，`physical_t4_ms` 必须是 null。不要把这次写成物理松键。
 
-若 31 次目录里已有 `env.txt` 和 `sensevoice.sha256`，抄文件即可。
-
-物理 T4 停在系统输入边界。需要用户同意一次公开音频的粘贴，麦克风保持关闭。使用 worktree 里刚编出来的 `Velora.app`，不要改用户自己的工作区，不要装到 `/Applications`。
-
-1. 打开一个空的文本编辑文稿，点进文稿里。
-2. 确认 `defaults read app.velora.mac velora.developer_mode` 已是开启。没开就停，不要为了测试改偏好。
-3. 粘贴前记录一次进程 RSS：`Velora`、`sensevoice` 的 python、`llama-server`。不要把 `ollama` 守护进程的几十 MiB 当成模型。
-4. 对已有的公开文件发 `app.velora.debug.dictate`，object 为该文件路径。先 `xasr_1`，再 `zh_long`。通知会走现成的菜单栏管线并粘贴到前台文稿。
-5. 每次粘贴后再记一次上述三个进程的 RSS。
-6. 从 `~/Library/Application Support/Velora/measurement.jsonl` 只抄数字：`hudWallMS`、`insertMS`、`physicalKeyAndInsertObserved`。不要把粘贴出来的字抄回仓库。
-
-用户不同意这次粘贴，则 HUD、insert 和录音期 RSS 继续 blocked，M1 不通过。不要再跑 CLI 冒充松键。1.7B 仍要等 M1–M3 和 M4。
+真实物理 T4 仍缺。它要一次真实按键松开，不在这次文件回放里，门槛不降。1.7B 不接入。

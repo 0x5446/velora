@@ -182,6 +182,7 @@ _MEASUREMENT_SCOPES = {
     "rule_engine_only",
     "compose_stage",
 }
+_OBSERVATION_SOURCES = {"debug_file", "real_key_release", "cli"}
 
 
 def _nonnegative_int(value: object) -> int | None:
@@ -211,13 +212,24 @@ def measurement_fields(payload: dict) -> dict:
     raw = (payload.get("trace") or {}).get("measurement")
     if not isinstance(raw, dict) or raw.get("schema") != "velora.pipeline_measurement.v1":
         raw = {}
-    observed = raw.get("physicalKeyAndInsertObserved") is True
+    source = raw.get("observationSource")
+    source = source if source in _OBSERVATION_SOURCES else None
+    hud = _nonnegative_int(raw.get("hudWallMS"))
+    insert = _nonnegative_int(raw.get("insertMS"))
+    gui = source in {"debug_file", "real_key_release"} and hud is not None and insert is not None
+    physical = (
+        source == "real_key_release"
+        and gui
+        and raw.get("physicalKeyAndInsertObserved") is True
+    )
     return {
         "measurement_schema": "velora.pipeline_measurement.v1" if raw else None,
         "critical_stage_sum_ms": _nonnegative_int(raw.get("criticalStageSumMS")),
-        "physical_key_and_insert_observed": observed,
-        "hud_wall_ms": _nonnegative_int(raw.get("hudWallMS")) if observed else None,
-        "insert_ms": _nonnegative_int(raw.get("insertMS")) if observed else None,
+        "observation_source": source,
+        "physical_key_and_insert_observed": physical,
+        "hud_wall_ms": hud if gui else None,
+        "insert_ms": insert if gui else None,
+        "physical_t4_ms": hud if physical else None,
         "rule_floor_ms": _nonnegative_int(raw.get("ruleFloorMS")),
         "rule_floor_scope": _scope(raw.get("ruleFloorScope")),
         "llm_wait_ms": _nonnegative_int(raw.get("llmWaitMS")),
@@ -270,7 +282,7 @@ def report_limitations() -> list[str]:
     return [
         "process environment only; UserDefaults and the source default stay qwen3:8b",
         "no microphone and no pasteboard copy; insertion strategy in the CLI is none",
-        "release_to_insert_ms sums critical pipeline stages and is not an OS insert; hud_wall_ms and insert_ms stay null unless a real key and insert were observed",
+        "release_to_insert_ms sums critical pipeline stages and is not an OS insert; hud_wall_ms on debug_file is a file replay, and physical_t4_ms stays null without real_key_release",
         "pass_index follows script order and is not a warm proof; repeats_per_audio is the process setting, and a later supplement is not pooled with the 31",
         "no_reload_warning is not proof the weights were already resident",
         "qwen3:14b produced no accepted LLM sample (n=0) and is not this baseline",

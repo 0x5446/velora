@@ -173,11 +173,49 @@ class RedactionTests(unittest.TestCase):
         self.assertEqual(row["load_duration_ns"], 1807954000)
         self.assertIsNone(row["eval_count"])
         self.assertIsNone(row["guard_ms"])
+        self.assertIsNone(row["observation_source"])
         self.assertIsNone(row["hud_wall_ms"])
         self.assertIsNone(row["insert_ms"])
+        self.assertIsNone(row["physical_t4_ms"])
+        self.assertFalse(row["physical_key_and_insert_observed"])
         self.assertNotIn("明天开会", encoded)
         self.assertNotIn("private body", encoded)
         self.assertTrue(row["measurement_exclude_from_critical_sum"])
+
+    def test_debug_file_insert_is_not_a_physical_key_release(self):
+        def payload(source, claimed):
+            return {
+                "finalText": "",
+                "asr": {"text": "", "engine": "sensevoice.sherpa-onnx"},
+                "compose": {"engine": "ollama:qwen3:8b", "warnings": []},
+                "trace": {
+                    "stages": [],
+                    "measurement": {
+                        "schema": "velora.pipeline_measurement.v1",
+                        "observationSource": source,
+                        "physicalKeyAndInsertObserved": claimed,
+                        "hudWallMS": 4800,
+                        "insertMS": 20,
+                    },
+                },
+            }
+
+        replay = redact_run(payload("debug_file", True), audio_sha256="abc", audio_bytes=1, pass_index=0, exit_code=0)
+        self.assertEqual(replay["observation_source"], "debug_file")
+        self.assertEqual(replay["hud_wall_ms"], 4800)
+        self.assertEqual(replay["insert_ms"], 20)
+        self.assertFalse(replay["physical_key_and_insert_observed"])
+        self.assertIsNone(replay["physical_t4_ms"])
+
+        physical = redact_run(payload("real_key_release", True), audio_sha256="abc", audio_bytes=1, pass_index=0, exit_code=0)
+        self.assertTrue(physical["physical_key_and_insert_observed"])
+        self.assertEqual(physical["physical_t4_ms"], 4800)
+
+        unlabeled = redact_run(payload("not_a_source", True), audio_sha256="abc", audio_bytes=1, pass_index=0, exit_code=0)
+        self.assertIsNone(unlabeled["observation_source"])
+        self.assertIsNone(unlabeled["hud_wall_ms"])
+        self.assertFalse(unlabeled["physical_key_and_insert_observed"])
+        self.assertIsNone(unlabeled["physical_t4_ms"])
 
     def test_no_reload_warning_is_not_labeled_warm(self):
         payload = {

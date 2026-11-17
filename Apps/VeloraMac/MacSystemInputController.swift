@@ -927,7 +927,8 @@ final class MacDictationController {
                     startedAt: now.addingTimeInterval(-duration),
                     endedAt: now
                 ),
-                targetOverride: targetOverride
+                targetOverride: targetOverride,
+                observationSource: "debug_file"
             )
         }
     }
@@ -936,7 +937,8 @@ final class MacDictationController {
     /// stopAndRunPipeline so the debug bridge can inject a prepared clip.
     private func runPipeline(
         with clip: MacRecordedAudioClip,
-        targetOverride: MacInsertionTarget? = nil
+        targetOverride: MacInsertionTarget? = nil,
+        observationSource: String = "real_key_release"
     ) {
         let settings = activeSettings ?? settingsStore.load()
         let insertionTarget = targetOverride ?? MacInsertionTarget.captureFrontmost()
@@ -1046,7 +1048,12 @@ final class MacDictationController {
                             startedAt: nil
                         )
                     )
-                    MacMeasurementLog.record(result: result, hudWallMS: nil, insertMS: nil)
+                    MacMeasurementLog.record(
+                        result: result,
+                        hudWallMS: nil,
+                        insertMS: nil,
+                        observationSource: observationSource
+                    )
                     return
                 }
 
@@ -1072,7 +1079,12 @@ final class MacDictationController {
                         learnBlocked: learnBlocked,
                         composeObservability: composeObservability
                     )
-                    MacMeasurementLog.record(result: result, hudWallMS: nil, insertMS: nil)
+                    MacMeasurementLog.record(
+                        result: result,
+                        hudWallMS: nil,
+                        insertMS: nil,
+                        observationSource: observationSource
+                    )
                     return
                 }
 
@@ -1112,7 +1124,8 @@ final class MacDictationController {
                             audioRef: audioRef,
                             composeObservability: composeObservability,
                             hudWallMS: elapsedMS,
-                            insertMS: insertMS
+                            insertMS: insertMS,
+                            observationSource: observationSource
                         )
                         if let insertionTarget {
                             postInsertObserver.begin(
@@ -1171,7 +1184,12 @@ final class MacDictationController {
                         )
                     )
                 }
-                MacMeasurementLog.record(result: result, hudWallMS: elapsedMS, insertMS: insertMS)
+                MacMeasurementLog.record(
+                    result: result,
+                    hudWallMS: elapsedMS,
+                    insertMS: insertMS,
+                    observationSource: observationSource
+                )
             } catch is CancellationError {
                 return
             } catch PipelineError.asrUnavailable("no_speech_detected") {
@@ -1909,7 +1927,8 @@ enum MacCorrectionJournal {
         audioRef: String?,
         composeObservability: MacComposeObservability? = nil,
         hudWallMS: Int? = nil,
-        insertMS: Int? = nil
+        insertMS: Int? = nil,
+        observationSource: String? = nil
     ) {
         // Privacy is enforced by the caller's unified gate (focusedBlockReason
         // at release time); the learning master switch is enforced in append.
@@ -1937,6 +1956,9 @@ enum MacCorrectionJournal {
         if let hudWallMS, let insertMS, hudWallMS >= 0, insertMS >= 0 {
             entry["hud_wall_ms"] = hudWallMS
             entry["insert_ms"] = insertMS
+            if observationSource == "debug_file" || observationSource == "real_key_release" {
+                entry["observation_source"] = observationSource
+            }
         }
         append(entry)
     }

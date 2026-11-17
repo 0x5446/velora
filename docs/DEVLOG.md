@@ -81,3 +81,9 @@
 - Mac 在 `8eb669d2bde510892fd6247d2a9892667d13739e` 上跑过：Swift 6.3，128 项包测试和 17 项 Python 测试退出码 0，CLI 与菜单栏构建退出码 0。菜单栏没有启动。交接写明 Xcode 26.4，用户工作区前后一致。源码比较里 prompt、options、temperature 0.1 和 deadline 与父提交相同。这不是位级等价，也不是零开销证明。
 - 两条公开音频不并进 31 次。`zh_short` 是 deadline：ASR 852 ms，compose 4276 ms，critical 5128 ms，规则地板 1 ms，LLM 等待 4273 ms，Ollama 计数为 null。`xasr_1` 是 LLM：critical 3129 ms，规则地板 1 ms，LLM 等待 2308 ms，护栏 0 ms，`prompt_eval_count` 1626，`load_duration_ns` 5077042，`eval_count` 19，`eval_duration_ns` 465464000。分段没有加进 critical。
 - HUD、insert、功耗、prefill 时长和录音三个时点的 RSS 仍缺。CLI 不能当作松键。M1 不通过。下一步是只读环境身份，以及用户同意后对空文本编辑文稿粘贴两次公开音频。1.7B 不接入。
+
+## 2026-11-17 · 文件回放不是物理松键
+
+- `withObservedInsert` 原先只要 HUD 和 insert 都有数字就把 `physicalKeyAndInsertObserved` 写成 true。`debugInjectClip` 和真实松键共用 `runPipeline`，所以文件通知会被标成物理按键。
+- 现在 `observationSource` 只接受 `debug_file`、`real_key_release`、`cli`。文件回放保留 HUD 和 insert，物理标志保持 false。没有来源的旧 JSON 不能靠这个 bool 变成物理 T4。prompt、deadline 和上屏分支没有改。
+- 先前的 `env.txt` 和 `sensevoice.sha256` 已在 Mac 交接里。本仓库还没抄入，不代表从未采集。物理 T4 仍缺，门槛不降。
