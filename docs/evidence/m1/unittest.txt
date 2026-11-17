@@ -6,6 +6,7 @@ test_missing_model_has_zero_runs_and_no_milliseconds (test_plan.InvocationTests.
 test_missing_show_details_or_show_error_does_not_borrow_a_tag (test_plan.Ollama040DigestTests.test_missing_show_details_or_show_error_does_not_borrow_a_tag) ... ok
 test_show_digest_is_kept_when_present (test_plan.Ollama040DigestTests.test_show_digest_is_kept_when_present) ... ok
 test_tags_digest_is_not_the_wrapper_manifest_hash (test_plan.Ollama040DigestTests.test_tags_digest_is_not_the_wrapper_manifest_hash) ... ok
+test_measurement_numbers_stay_out_of_the_critical_sum (test_plan.RedactionTests.test_measurement_numbers_stay_out_of_the_critical_sum) ... ok
 test_no_reload_warning_is_not_labeled_warm (test_plan.RedactionTests.test_no_reload_warning_is_not_labeled_warm) ... ok
 test_rules_and_fallbacks_are_not_an_llm_baseline (test_plan.RedactionTests.test_rules_and_fallbacks_are_not_an_llm_baseline) ... ok
 test_transcript_is_dropped_and_reload_is_kept (test_plan.RedactionTests.test_transcript_is_dropped_and_reload_is_kept) ... ok
@@ -16,6 +17,6 @@ test_this_zsh_rejects_assigning_status (test_plan.ZshSupplementTests.test_this_z
 test_zsh_runs_the_collector_when_a_failure_sample_exits_1 (test_plan.ZshSupplementTests.test_zsh_runs_the_collector_when_a_failure_sample_exits_1) ... ok
 
 ----------------------------------------------------------------------
-Ran 16 tests in 0.028s
+Ran 17 tests in 0.021s
 
 OK

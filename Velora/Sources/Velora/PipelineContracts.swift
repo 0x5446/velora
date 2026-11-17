@@ -277,7 +277,7 @@ public struct ComposeRequest: Codable, Sendable, Equatable {
     }
 }
 
-public struct ComposeResult: Codable, Sendable, Equatable {
+public struct ComposeResult: Sendable, Equatable {
     public var polishedText: String
     /// Present only in translate mode. nil means the engine could not produce
     /// the target language; the orchestrator then uses the fallback TranslationEngine.
@@ -288,6 +288,8 @@ public struct ComposeResult: Codable, Sendable, Equatable {
     public var confidence: Double
     public var reviewRequired: Bool
     public var engine: String
+    /// Nil when this result predates measurement, or the engine did not time itself.
+    public var measurement: PipelineMeasurement?
 
     public init(
         polishedText: String,
@@ -297,7 +299,8 @@ public struct ComposeResult: Codable, Sendable, Equatable {
         warnings: [String] = [],
         confidence: Double,
         reviewRequired: Bool,
-        engine: String
+        engine: String,
+        measurement: PipelineMeasurement? = nil
     ) {
         self.polishedText = polishedText
         self.targetText = targetText
@@ -307,6 +310,7 @@ public struct ComposeResult: Codable, Sendable, Equatable {
         self.confidence = confidence
         self.reviewRequired = reviewRequired
         self.engine = engine
+        self.measurement = measurement
     }
 }
 
@@ -338,25 +342,28 @@ public struct LocalTranslationRequest: Codable, Sendable, Equatable {
     }
 }
 
-public struct LocalTranslationOutput: Codable, Sendable, Equatable {
+public struct LocalTranslationOutput: Sendable, Equatable {
     public var targetText: String
     public var glossaryHits: [String]
     public var warnings: [String]
     public var confidence: Double
     public var reviewRequired: Bool
+    public var measurement: PipelineMeasurement?
 
     public init(
         targetText: String,
         glossaryHits: [String] = [],
         warnings: [String] = [],
         confidence: Double,
-        reviewRequired: Bool
+        reviewRequired: Bool,
+        measurement: PipelineMeasurement? = nil
     ) {
         self.targetText = targetText
         self.glossaryHits = glossaryHits
         self.warnings = warnings
         self.confidence = confidence
         self.reviewRequired = reviewRequired
+        self.measurement = measurement
     }
 }
 
@@ -384,11 +391,13 @@ public struct InsertionResult: Codable, Sendable, Equatable {
     }
 }
 
-public struct PipelineTrace: Codable, Sendable, Equatable {
+public struct PipelineTrace: Sendable, Equatable {
     public var stages: [LatencyStage]
+    public var measurement: PipelineMeasurement?
 
-    public init(stages: [LatencyStage] = []) {
+    public init(stages: [LatencyStage] = [], measurement: PipelineMeasurement? = nil) {
         self.stages = stages
+        self.measurement = measurement
     }
 
     public var releaseToInsertMS: Int {

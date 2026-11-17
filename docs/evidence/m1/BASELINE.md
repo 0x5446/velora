@@ -18,4 +18,4 @@
 
 每个音频默认跑两遍。冷热只认 `ollama_model_reload`；没有这条警告就写 `no_reload_warning`。同时记录音频 sha256、阶段毫秒和 RSS。不传粘贴参数，不用麦克风，原文不入库。
 
-2026-11-17 的 31 次采集已经入库：[`20261117/report.md`](20261117/report.md)。19 次是严格 LLM 样本，12 次是失败回退。失败回退属于基线记录，n 不是 0。同日另有两次快照，见 [`20261117-supplement/report.md`](20261117-supplement/report.md)，不并进这 31 次。关卡仍 blocked。阻塞是产品没有导出 HUD、粘贴和 compose 内部分段，而 M1 又不允许改产品；不是样本不够。Ollama 0.40.16 的 digest 取自 `/api/tags`，不能把本地 manifest 文件哈希当成 registry digest。
+2026-11-17 的 31 次采集已经入库：[`20261117/report.md`](20261117/report.md)。19 次是严格 LLM 样本，12 次是失败回退。失败回退属于基线记录，n 不是 0。同日另有两次快照，见 [`20261117-supplement/report.md`](20261117-supplement/report.md)，不并进这 31 次。关卡仍 blocked。随后的测量补丁只增加 `trace.measurement`，不改变 prompt、deadline 或回退。CLI 上没有物理按键，`hudWallMS` 和 `insertMS` 保持 null。Ollama 0.40.16 的 digest 取自 `/api/tags`，不能把本地 manifest 文件哈希当成 registry digest。

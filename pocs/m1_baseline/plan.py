@@ -172,6 +172,71 @@ def redact_run(payload: dict, *, audio_sha256: str, audio_bytes: int, pass_index
         "llm_error": llm_error,
         "rule_floor_used": rule_floor,
         "load_observation": temperature,
+        **measurement_fields(payload),
+    }
+
+
+_MEASUREMENT_SCOPES = {
+    "generate_only",
+    "deadline_or_error_envelope",
+    "rule_engine_only",
+    "compose_stage",
+}
+
+
+def _nonnegative_int(value: object) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    if value < 0:
+        return None
+    return value
+
+
+def _scope(value: object) -> str | None:
+    if isinstance(value, str) and value in _MEASUREMENT_SCOPES:
+        return value
+    return None
+
+
+def _engine_token(value: object) -> str | None:
+    if not isinstance(value, str) or not value or len(value) > 80:
+        return None
+    if any(mark in value for mark in ("/", "\\", "\n", " ")):
+        return None
+    return value
+
+
+def measurement_fields(payload: dict) -> dict:
+    """Copy numeric trace measurements. Do not add them to release_to_insert_ms."""
+    raw = (payload.get("trace") or {}).get("measurement")
+    if not isinstance(raw, dict) or raw.get("schema") != "velora.pipeline_measurement.v1":
+        raw = {}
+    observed = raw.get("physicalKeyAndInsertObserved") is True
+    return {
+        "measurement_schema": "velora.pipeline_measurement.v1" if raw else None,
+        "critical_stage_sum_ms": _nonnegative_int(raw.get("criticalStageSumMS")),
+        "physical_key_and_insert_observed": observed,
+        "hud_wall_ms": _nonnegative_int(raw.get("hudWallMS")) if observed else None,
+        "insert_ms": _nonnegative_int(raw.get("insertMS")) if observed else None,
+        "rule_floor_ms": _nonnegative_int(raw.get("ruleFloorMS")),
+        "rule_floor_scope": _scope(raw.get("ruleFloorScope")),
+        "llm_wait_ms": _nonnegative_int(raw.get("llmWaitMS")),
+        "llm_wait_scope": _scope(raw.get("llmWaitScope")),
+        "guard_ms": _nonnegative_int(raw.get("guardMS")),
+        "translation_fallback_ms": _nonnegative_int(raw.get("translationFallbackMS")),
+        "prompt_eval_count": _nonnegative_int(raw.get("promptEvalCount")),
+        "load_duration_ns": _nonnegative_int(raw.get("loadDurationNS")),
+        "eval_count": _nonnegative_int(raw.get("evalCount")),
+        "eval_duration_ns": _nonnegative_int(raw.get("evalDurationNS")),
+        "fallback_llm_wait_ms": _nonnegative_int(raw.get("fallbackLLMWaitMS")),
+        "fallback_llm_wait_scope": _scope(raw.get("fallbackLLMWaitScope")),
+        "fallback_guard_ms": _nonnegative_int(raw.get("fallbackGuardMS")),
+        "fallback_prompt_eval_count": _nonnegative_int(raw.get("fallbackPromptEvalCount")),
+        "fallback_load_duration_ns": _nonnegative_int(raw.get("fallbackLoadDurationNS")),
+        "fallback_eval_count": _nonnegative_int(raw.get("fallbackEvalCount")),
+        "fallback_eval_duration_ns": _nonnegative_int(raw.get("fallbackEvalDurationNS")),
+        "measurement_engine": _engine_token(raw.get("engine")),
+        "measurement_exclude_from_critical_sum": True,
     }
 
 
@@ -205,7 +270,7 @@ def report_limitations() -> list[str]:
     return [
         "process environment only; UserDefaults and the source default stay qwen3:8b",
         "no microphone and no pasteboard copy; insertion strategy in the CLI is none",
-        "release_to_insert_ms sums critical pipeline stages and is not an OS insert",
+        "release_to_insert_ms sums critical pipeline stages and is not an OS insert; hud_wall_ms and insert_ms stay null unless a real key and insert were observed",
         "pass_index follows script order and is not a warm proof; repeats_per_audio is the process setting, and a later supplement is not pooled with the 31",
         "no_reload_warning is not proof the weights were already resident",
         "qwen3:14b produced no accepted LLM sample (n=0) and is not this baseline",

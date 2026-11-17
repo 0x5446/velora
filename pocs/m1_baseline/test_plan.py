@@ -126,6 +126,58 @@ class RedactionTests(unittest.TestCase):
         self.assertEqual(row["load_observation"], "reload_warning")
         self.assertEqual(row["redacted_warning_count"], 1)
         self.assertFalse(row["insertion_inserted"])
+        self.assertIsNone(row["hud_wall_ms"])
+        self.assertIsNone(row["insert_ms"])
+        self.assertFalse(row["physical_key_and_insert_observed"])
+
+    def test_measurement_numbers_stay_out_of_the_critical_sum(self):
+        payload = {
+            "finalText": "明天开会",
+            "asr": {"text": "明天开会", "engine": "sensevoice.sherpa-onnx"},
+            "compose": {
+                "engine": "ollama:qwen3:8b",
+                "warnings": ["compose_llm_error:private body"],
+            },
+            "trace": {
+                "stages": [
+                    {"name": "compose", "durationMS": 100, "phase": "after_release", "critical": True},
+                ],
+                "measurement": {
+                    "schema": "velora.pipeline_measurement.v1",
+                    "criticalStageSumMS": 100,
+                    "physicalKeyAndInsertObserved": False,
+                    "hudWallMS": 9999,
+                    "insertMS": 40,
+                    "ruleFloorMS": 4,
+                    "ruleFloorScope": "rule_engine_only",
+                    "llmWaitMS": 80,
+                    "llmWaitScope": "deadline_or_error_envelope",
+                    "guardMS": None,
+                    "promptEvalCount": 11,
+                    "loadDurationNS": 1807954000,
+                    "evalCount": -1,
+                    "evalDurationNS": None,
+                    "engine": "ollama:qwen3:8b",
+                    "response": "明天开会",
+                },
+            },
+        }
+        row = redact_run(payload, audio_sha256="abc", audio_bytes=10, pass_index=0, exit_code=0)
+        encoded = json.dumps(row, ensure_ascii=False)
+        self.assertEqual(row["release_to_insert_ms"], 100)
+        self.assertEqual(row["critical_stage_sum_ms"], 100)
+        self.assertEqual(row["rule_floor_ms"], 4)
+        self.assertEqual(row["llm_wait_ms"], 80)
+        self.assertEqual(row["llm_wait_scope"], "deadline_or_error_envelope")
+        self.assertEqual(row["prompt_eval_count"], 11)
+        self.assertEqual(row["load_duration_ns"], 1807954000)
+        self.assertIsNone(row["eval_count"])
+        self.assertIsNone(row["guard_ms"])
+        self.assertIsNone(row["hud_wall_ms"])
+        self.assertIsNone(row["insert_ms"])
+        self.assertNotIn("明天开会", encoded)
+        self.assertNotIn("private body", encoded)
+        self.assertTrue(row["measurement_exclude_from_critical_sum"])
 
     def test_no_reload_warning_is_not_labeled_warm(self):
         payload = {

@@ -175,6 +175,27 @@ import Testing
     #expect(try encodedKeepAlive("30m") as? String == "30m")
 }
 
+@Test func ollamaGenerateRequestKeepsItsOriginalFields() throws {
+    let request = OllamaGenerateRequest(
+        model: "qwen3:8b",
+        system: "s",
+        prompt: "p",
+        stream: false,
+        keepAlive: "30m",
+        think: false,
+        format: "json",
+        options: .init(temperature: 0.1, numPredict: 224, numCtx: 4096, repeatPenalty: 1.0)
+    )
+    let object = try #require(
+        JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: Any]
+    )
+    #expect(Set(object.keys) == ["format", "keep_alive", "model", "options", "prompt", "stream", "system", "think"])
+    let options = try #require(object["options"] as? [String: Any])
+    #expect(Set(options.keys) == ["num_ctx", "num_predict", "repeat_penalty", "temperature"])
+    #expect(options["num_ctx"] as? Int == 4096)
+    #expect(options["num_predict"] as? Int == 224)
+}
+
 @Test func fillerStripperKeepsQuotedRepliesAndInterjections() {
     // Reporting verb + 嗯/呃 + pause = quoted reply, must survive
     // (deep-review 2026-07-14: the old broad rule deleted all of these).

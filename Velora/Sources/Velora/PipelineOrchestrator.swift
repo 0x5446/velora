@@ -161,6 +161,7 @@ public struct PipelineOrchestrator: Sendable {
 
         let finalText: String
         let translation: TranslationResult?
+        var fallbackMeasurement: PipelineMeasurement?
 
         switch request.mode {
         case .input:
@@ -200,6 +201,7 @@ public struct PipelineOrchestrator: Sendable {
                         compose.warnings.append(contentsOf: fallback.warnings)
                         compose.glossaryHits = Array(Set(compose.glossaryHits + fallback.glossaryHits)).sorted()
                         compose.reviewRequired = compose.reviewRequired || fallback.reviewRequired
+                        fallbackMeasurement = fallback.measurement
                     } else {
                         compose.warnings.append("translation_fallback_deadline")
                         compose.reviewRequired = true
@@ -284,6 +286,22 @@ public struct PipelineOrchestrator: Sendable {
                 )
             )
         }
+
+        let fallbackStageMS = trace.stages.first { $0.name == "translation_fallback" }?.durationMS
+        var measurement = (compose.measurement ?? PipelineMeasurement(engine: compose.engine))
+            .adoptingFallback(fallbackMeasurement)
+        if compose.measurement == nil, let composeStage = trace.stages.first(where: {
+            $0.name == "compose" || $0.name == "compose_bilingual"
+        }) {
+            measurement.ruleFloorMS = composeStage.durationMS
+            measurement.ruleFloorScope = "compose_stage"
+            measurement.engine = compose.engine
+        }
+        compose.measurement = nil
+        trace.measurement = measurement.atPipelineBoundary(
+            criticalStageSumMS: trace.releaseToInsertMS,
+            translationFallbackMS: request.mode == .translate ? fallbackStageMS : nil
+        )
 
         return PipelineRunResult(
             session: session,

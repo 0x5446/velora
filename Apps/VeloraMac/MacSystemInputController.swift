@@ -1046,6 +1046,7 @@ final class MacDictationController {
                             startedAt: nil
                         )
                     )
+                    MacMeasurementLog.record(result: result, hudWallMS: nil, insertMS: nil)
                     return
                 }
 
@@ -1071,6 +1072,7 @@ final class MacDictationController {
                         learnBlocked: learnBlocked,
                         composeObservability: composeObservability
                     )
+                    MacMeasurementLog.record(result: result, hudWallMS: nil, insertMS: nil)
                     return
                 }
 
@@ -1108,7 +1110,9 @@ final class MacDictationController {
                             targetBundleID: insertionTarget?.bundleIdentifier,
                             language: result.asr.language,
                             audioRef: audioRef,
-                            composeObservability: composeObservability
+                            composeObservability: composeObservability,
+                            hudWallMS: elapsedMS,
+                            insertMS: insertMS
                         )
                         if let insertionTarget {
                             postInsertObserver.begin(
@@ -1167,6 +1171,7 @@ final class MacDictationController {
                         )
                     )
                 }
+                MacMeasurementLog.record(result: result, hudWallMS: elapsedMS, insertMS: insertMS)
             } catch is CancellationError {
                 return
             } catch PipelineError.asrUnavailable("no_speech_detected") {
@@ -1902,7 +1907,9 @@ enum MacCorrectionJournal {
         targetBundleID: String?,
         language: String,
         audioRef: String?,
-        composeObservability: MacComposeObservability? = nil
+        composeObservability: MacComposeObservability? = nil,
+        hudWallMS: Int? = nil,
+        insertMS: Int? = nil
     ) {
         // Privacy is enforced by the caller's unified gate (focusedBlockReason
         // at release time); the learning master switch is enforced in append.
@@ -1926,6 +1933,10 @@ enum MacCorrectionJournal {
             entry["compose_warnings"] = composeObservability.warnings
             entry["context_source"] = composeObservability.contextSource
             entry["correction_history_hit_count"] = composeObservability.historyHitCount
+        }
+        if let hudWallMS, let insertMS, hudWallMS >= 0, insertMS >= 0 {
+            entry["hud_wall_ms"] = hudWallMS
+            entry["insert_ms"] = insertMS
         }
         append(entry)
     }

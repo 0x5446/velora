@@ -68,3 +68,10 @@
 - `zh_short` 与 `zh_long` 各一次，不并进 31 次。短样本 `failure_class=llm`，ASR 768 ms，compose 3771 ms，critical 4539 ms。长样本 `deadline_fallback`，ASR 1103 ms，compose 4271 ms，critical 5374 ms。llama-server RSS 是片段前后快照：短 2408688→860272 KiB，长 860272→875632 KiB。采集器退出码 1，外层退出码 0。不是峰值，不是物理 T4，不是功耗。
 - `809f682` 的 `supplement_blocked.sh` 在 zsh 里给只读变量 `status` 赋值，推理还没开始就失败。正式脚本改用 `collector_status`，并用 `VELORA_M1_COLLECTOR` 指向采集器。测试用 zsh 5.9 实际执行，不是只做 `bash -n`。
 - 产品代码没有改。M1 仍 blocked：基线已经有了，缺的是产品未导出的 HUD、粘贴和 compose 内部分段。再跑 CLI 补不出这些数。
+
+## 2026-11-17 · 仅测量 instrumentation
+
+- 用户允许把已经算出来的数字写入 trace。这是 M1 前的测量例外，不放宽质量六套、温度 0.1、输入 4000 ms、翻译 6000 ms、回退或上屏。
+- `trace.measurement` 使用 `ContinuousClock`。规则地板、LLM 等待和护栏分开记，并标成不计入 critical 合计，避免和原有 `releaseToInsertMS` 叠加。deadline 或取消时，没拿到的 Ollama 计数保持 null。响应里没有的 `eval_count` / `eval_duration` 也保持 null。
+- CLI 的 `insertionStrategy` 仍是 none，所以 `hudWallMS` 和 `insertMS` 在管线边界被清空。菜单栏只有在 `MacPasteboardInserter.insert` 已经跑完之后才把这两个数写入 `measurement.jsonl`。这次不启动菜单栏，也不粘贴。
+- 本环境没有 Swift，包测试和 App 都没有编译。Python 采集器测试已覆盖新字段。M1 仍等 Mac 上一条公开音频的新 trace。
