@@ -1,6 +1,6 @@
 # 交接
 
-更新时间：2026-11-17。当前阶段：M0 已通过。F0 和 F1 的 CPU 设施已通过。M1 对照已恢复为 `qwen3:8b`。14B 没有被接受的 LLM 样本。真实 8B `runs.json` 还没回来，所以 M1 未通过。不要改产品代码。本环境没有访问 `/Users/alpha`。
+更新时间：2026-11-17。当前阶段：M0 已通过。F0 和 F1 的 CPU 设施已通过。M1 的 8B 采集已审查，31 次里 19 次是严格 LLM、12 次是失败回退。关卡保持 blocked。不要改产品代码。本环境没有访问 `/Users/alpha`。
 
 ## 现在在哪
 
@@ -24,7 +24,7 @@
 | M0 审计与资产清单 | 通过。见 [`evidence/m0/report.md`](evidence/m0/report.md)。1.7B 完整哈希是复用的先前验证；五个冻结清单匹配 |
 | F0 CPU 设施 | 通过。当时 18 项，见 [`evidence/f0/report.md`](evidence/f0/report.md)。同一命令现在会连同 F1 一起跑 |
 | F1 端点 schema / 采集器 / 回放 / 计时契约 | 通过。同一命令现为 41 项，退出码 0。CPU mock 的 `mlx_token_identity` 为 null。公共端点摘要因没有 revision 被拒绝。不是 M1 或 M5 |
-| M1 现行产品基线 | 未通过。对照恢复为源码默认 `qwen3:8b`，见 [`evidence/m1/BASELINE.md`](evidence/m1/BASELINE.md)。14B 的临时契约已撤回，n=0。规则回退不能算成功。本环境不能跑 Swift |
+| M1 现行产品基线 | blocked。[`evidence/m1/20261117/report.md`](evidence/m1/20261117/report.md)：n=19 的 LLM 样本和 12 次失败回退都已入库。物理 T4、粘贴、护栏内部时间、功耗、llama-server 峰值仍是 null。14B 临时契约 n=0，已撤回 |
 | M2 六套门禁 | 未开始。研究 rubric 的绝对通过率不能代替 |
 | M3 取消/焦点/离线的产品观察 | 未开始。F0 只覆盖假模型上的调度 |
 | M4 产品决定 | 未通过。方向已写明，默认行为未切换 |
@@ -32,16 +32,14 @@
 
 ## 下一最小交付
 
-8B 的官方拉取和 14B 清理由 Mac 工作流单独做。采集脚本不下载、不删除。输出写到 `/Users/alpha/specdict/evidence/m1-baseline-8b`，不要写进 git 工作区。脚本会把进程内的 `VELORA_OLLAMA_MODEL` 设为 `qwen3:8b`，即使外壳还留着 14B。
+8B 已恢复，14B 已按 Mac 报告官方删除。不要重跑那 31 次，也不要重跑六套质量。下一次只补 llama-server 的 RSS，使用已经在磁盘上的一条短音频和一条长音频：
 
 ```bash
-chmod +x /Users/alpha/workspace/velora/docs/evidence/m1/collect_baseline.sh
-/Users/alpha/workspace/velora/docs/evidence/m1/collect_baseline.sh /path/to/clip1.caf /path/to/clip2.wav
+chmod +x /Users/alpha/workspace/velora/docs/evidence/m1/supplement_blocked.sh
+VELORA_M1_RSS_SUPPLEMENT=1 /Users/alpha/workspace/velora/docs/evidence/m1/supplement_blocked.sh /path/to/short.caf /path/to/zh_long.caf
 ```
 
-脚本使用 `swift run --package-path Velora VeloraMac --mode input --sensevoice --audio … --source zh --json`。没有粘贴参数。模型名不是 `qwen3:8b` 时退出码 2。没有 digest 时写 n=0 并退出码 1。`compose.engine=rules` 或 `compose_llm_error` 不计入 n，并使脚本退出码 1。回来时带 `env.txt`、`sensevoice.sha256` 和 `runs.json`。其中要有这次 8B 的 digest、量化、音频哈希、阶段毫秒和 reload 记录，没有原文。
-
-这还不是 M1 通过。同名标签不是 7 月 GUI 的位级复现。M5 的最小效应仍等这批基线再登记。公共回放的 281.655 ms、历史 8B 分数和 14B 都不能填进这张表。
+`VELORA_M1_REPEATS=1`，`VELORA_OLLAMA_MODEL=qwen3:8b`。脚本不下载、不删除、不调用付费接口。退出码 1 表示有请求未被接受为 LLM，`runs.json` 仍然算数。粘贴、物理 T4 和功耗继续保持 null：HUD 的 `wall_ms` 没有落盘，不要为了看浮层去注入粘贴。M5 最小效应仍是 TBD。
 
 原型差异已经写在 [`evidence/prototype/REVIEW.md`](evidence/prototype/REVIEW.md)。产品 sidecar 仍不开始。
 

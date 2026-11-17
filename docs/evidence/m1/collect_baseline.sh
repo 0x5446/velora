@@ -66,6 +66,8 @@ from plan import (
     parse_rss,
     process_env,
     accepts_llm_baseline,
+    failure_class,
+    identity_from_show_and_tags,
     redact_run,
     report_limitations,
     swift_invocation,
@@ -90,12 +92,26 @@ def identity():
         text=True,
         capture_output=True,
     )
+    show_payload = {}
     if api.returncode == 0 and api.stdout.strip().startswith("{"):
-        parsed = parse_api_show(json.loads(api.stdout))
-        if parsed["digest"]:
-            return parsed
+        show_payload = json.loads(api.stdout)
+    tags_payload = None
+    if isinstance(show_payload, dict) and "error" not in show_payload and not parse_api_show(show_payload)["digest"]:
+        tags_api = subprocess.run(
+            ["curl", "-sS", "--max-time", "5", "http://127.0.0.1:11434/api/tags"],
+            text=True,
+            capture_output=True,
+        )
+        if tags_api.returncode == 0 and tags_api.stdout.strip().startswith("{"):
+            tags_payload = json.loads(tags_api.stdout)
+    parsed = identity_from_show_and_tags(show_payload, tags_payload, model)
+    if parsed["digest"]:
+        return parsed
     show = subprocess.run(["ollama", "show", model], text=True, capture_output=True)
-    return parse_ollama_show(show.stdout)
+    fallback = parse_ollama_show(show.stdout)
+    fallback["digest_source"] = "ollama show" if fallback["digest"] else None
+    fallback["wrapper_manifest_sha256"] = None
+    return fallback
 
 parsed = identity()
 if parsed["digest"] is None:
@@ -159,6 +175,8 @@ for raw in sys.argv[4:]:
         runs.append(row)
         pass_index += 1
 
+for row in runs:
+    row["failure_class"] = failure_class(row)
 ok = [row for row in runs if accepts_llm_baseline(row, model)]
 report = {
     "schema": "velora.m1_baseline.v1",

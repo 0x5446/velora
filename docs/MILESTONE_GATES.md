@@ -83,7 +83,7 @@ F1 没有逐块实测 3691.4 ms。归档摘要只有合计。逐块 `context_tok
 
 前置：M0 通过。环境：目标 Mac，记录 `sysctl -n machdep.cpu.brand_string`、内存、macOS 版本、Xcode、Swift、Ollama 版本、SenseVoice `model.int8.onnx` 的 sha256。Linux CI 不能代替本关。
 
-测量对象的模型是源码缺省 `qwen3:8b`。2026-11-17 曾短暂把采集契约改成 `qwen3:14b`，该标签没有被接受的 LLM 样本（n=0），随后用户决定恢复 8B 并清理 14B。契约见 [`docs/evidence/m1/BASELINE.md`](evidence/m1/BASELINE.md)。采集进程把 `VELORA_OLLAMA_MODEL` 设为 `qwen3:8b`。`compose.engine=rules` 或 `compose_llm_error` 不能算通过。重新拉到的同名标签不等于 7 月 GUI 那份 digest 或量化，digest 必须来自这次实测。质量六套的门槛不改。
+测量对象的模型是源码缺省 `qwen3:8b`。2026-11-17 曾短暂把采集契约改成 `qwen3:14b`，该标签没有被接受的 LLM 样本（n=0），随后用户决定恢复 8B 并清理 14B。同日 31 次 8B 采集已审查，见 [`docs/evidence/m1/20261117/report.md`](evidence/m1/20261117/report.md)：19 次严格 LLM，12 次失败回退。失败回退是基线的一部分，但这份报告里的物理 T4、粘贴、护栏内部时间、功耗和 runner 峰值仍是 null，所以 M1 保持 blocked。采集进程把 `VELORA_OLLAMA_MODEL` 设为 `qwen3:8b`。`compose.engine=rules` 或 `compose_llm_error` 不能算通过。重新拉到的同名标签不等于 7 月 GUI 那份 digest 或量化，digest 必须来自这次实测。质量六套的门槛不改。
 
 测量对象是现行 Mac 产品路径：`SenseVoiceASREngine` 整段识别 + `OllamaTextIntelligenceEngine` + 现有护栏。CLI 采集不传 `--copy`，所以粘贴不在这次数字里。`VeloraDiagnostics asr` 构造的是 `WhisperCLIASREngine`，不能当作这条路径。`debugInjectClip` 会走产品管线，但要求开发者模式并且会粘贴；用它时必须把模型就绪和粘贴分开计时。
 

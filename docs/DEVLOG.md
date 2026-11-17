@@ -56,3 +56,9 @@
 - 用户决定恢复 `qwen3:8b`，14B 从基线契约清理。产品源码本来就是 8B，没有改 `Apps/` 或 `Velora/Sources/`。
 - 菜单栏日志已闭环：27 条 `insertion` 为 `ollama:qwen3:8b` 且 `compose_fallback=false`，时间是 2026-07-13 17:50:37 至 2026-07-17 22:24:58（北京时间）。另 3 条 `rules` 是 deadline fallback。14B 缺 GGUF 的日志在 2026-10-22 已经存在，不能据此推断删除时间或原因。旧 CLI 的 14B 来自 `VELORA_OLLAMA_MODEL` 覆盖，不是 GUI 默认配置。
 - 14B 没有被接受的 LLM 样本，n=0。采集器拒绝把 `compose.engine=rules` 或 `compose_llm_error` 算进 n。重新安装的同名 8B 只记录这次的 digest 和量化，不声称与 7 月权重位级相同。真实 `runs.json` 未到，M1 仍未通过。质量门槛未改。
+
+## 2026-11-17 · 8B 采集审查，M1 仍 blocked
+
+- 复核 `docs/evidence/m1/20261117/runs.json`：31 次，19 次严格 LLM，12 次拒绝（7 deadline、5 rule floor）。全部 ASR 为 SenseVoice。registry digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`，Q4_K_M，8.2B。`/api/show` 无 digest，digest 来自 `/api/tags`。本地 manifest 文件哈希与 registry digest 分开记录。
+- 全部 31 次的 critical p90 是 5326 ms。只看 19 次成功样本会把尾部看成 4430.8 ms。`zh_long` 五次都落到 deadline。失败回退是基线的一部分，不是整关作废，也不是通过。
+- 物理 T4、粘贴、护栏内部时间、prefill/decode、功耗、llama-server 峰值保持 null。恢复 smoke 的 1974 ms 不进入这张表。采集器补上 0.40.16 的 tags digest，并开始记录 `llama-server` RSS 和 `failure_class`。质量门槛未改。

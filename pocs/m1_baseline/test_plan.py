@@ -12,6 +12,8 @@ from plan import (
     SOURCE_DEFAULT_MODEL,
     accepts_llm_baseline,
     assert_model_env_matches_source,
+    failure_class,
+    identity_from_show_and_tags,
     keep_time_lines,
     missing_model_report,
     parse_api_show,
@@ -35,6 +37,11 @@ class ScriptContractTests(unittest.TestCase):
         self.assertNotIn("ollama pull", script)
         for baked in ("282", "5017", "635.6"):
             self.assertNotIn(baked, script)
+        supplement = (Path(__file__).resolve().parents[2] / "docs/evidence/m1/supplement_blocked.sh").read_text()
+        self.assertIn('VELORA_M1_RSS_SUPPLEMENT:-0', supplement)
+        self.assertNotIn("ollama pull", supplement)
+        self.assertNotIn("ollama rm", supplement)
+        self.assertNotIn("cartesia", supplement.lower())
 
 
 class SourceContractTests(unittest.TestCase):
@@ -166,6 +173,11 @@ class RedactionTests(unittest.TestCase):
         }
         self.assertFalse(accepts_llm_baseline(named, "qwen3:8b"))
         self.assertFalse(accepts_llm_baseline({**named, "rule_floor_used": False, "compose_engine": "ollama:qwen3:14b"}, "qwen3:14b"))
+        self.assertEqual(failure_class(rules), "rules")
+        self.assertEqual(failure_class(deadline), "deadline_fallback")
+        self.assertEqual(failure_class(named), "rule_floor")
+        clean = {**named, "rule_floor_used": False}
+        self.assertEqual(failure_class(clean), "llm")
 
 
 class IdentityParserTests(unittest.TestCase):
@@ -206,11 +218,77 @@ SYSTEM you are a long private prompt
         kept = keep_time_lines("        1.20 real         0.80 user         0.10 sys\n明天开会\n            1024  maximum resident set size\n")
         self.assertNotIn("明天开会", kept)
         self.assertIn("maximum resident set size", kept)
-        rss = parse_rss("12345 /usr/local/bin/ollama serve\n999 python3 scripts/sensevoice_sidecar.py\n1 say 明天开会\n")
+        rss = parse_rss(
+            "12345 /usr/local/bin/ollama serve\n"
+            "999 python3 scripts/sensevoice_sidecar.py\n"
+            "5196160 llama-server\n"
+            "1 say 明天开会\n"
+        )
         encoded = json.dumps(rss, ensure_ascii=False)
         self.assertEqual(rss["ollama_rss_kb"], 12345)
         self.assertEqual(rss["sensevoice_rss_kb"], 999)
+        self.assertEqual(rss["llama_server_rss_kb"], 5196160)
         self.assertNotIn("明天开会", encoded)
+
+
+class Ollama040DigestTests(unittest.TestCase):
+    def test_tags_digest_is_not_the_wrapper_manifest_hash(self):
+        registry = "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41"
+        wrapper = "b3d9ba7c" + ("ab" * 28)
+        parsed = identity_from_show_and_tags(
+            {
+                "details": {"parameter_size": "8.2B", "quantization_level": "Q4_K_M"},
+                "modelfile": "SYSTEM secret",
+            },
+            {
+                "models": [
+                    {"name": "qwen3:8b", "digest": "sha256:" + registry},
+                    {"name": "qwen3:14b", "digest": "sha256:" + ("cd" * 32)},
+                ]
+            },
+            "qwen3:8b",
+            wrapper_manifest_sha256="sha256:" + wrapper,
+        )
+        self.assertEqual(parsed["digest"], registry)
+        self.assertEqual(parsed["digest_source"], "/api/tags (show details validated)")
+        self.assertEqual(parsed["parameters"], "8.2B")
+        self.assertEqual(parsed["quantization"], "Q4_K_M")
+        self.assertEqual(parsed["wrapper_manifest_sha256"], wrapper)
+        self.assertNotEqual(parsed["digest"], parsed["wrapper_manifest_sha256"])
+        self.assertNotIn("secret", json.dumps(parsed))
+        wrong_name = identity_from_show_and_tags(
+            {"details": {"parameter_size": "8.2B", "quantization_level": "Q4_K_M"}},
+            {"models": [{"name": "qwen3:8b:latest", "digest": registry}]},
+            "qwen3:8b",
+            wrapper_manifest_sha256=wrapper,
+        )
+        self.assertIsNone(wrong_name["digest"])
+        self.assertEqual(wrong_name["wrapper_manifest_sha256"], wrapper)
+
+    def test_missing_show_details_or_show_error_does_not_borrow_a_tag(self):
+        registry = "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41"
+        tags = {"models": [{"name": "qwen3:8b", "digest": registry}]}
+        errored = identity_from_show_and_tags({"error": "model not found"}, tags, "qwen3:8b")
+        self.assertIsNone(errored["digest"])
+        incomplete = identity_from_show_and_tags(
+            {"details": {"parameter_size": "8.2B"}},
+            tags,
+            "qwen3:8b",
+        )
+        self.assertIsNone(incomplete["digest"])
+
+    def test_show_digest_is_kept_when_present(self):
+        shown = "a" * 64
+        parsed = identity_from_show_and_tags(
+            {
+                "digest": "sha256:" + shown,
+                "details": {"parameter_size": "8.2B", "quantization_level": "Q4_K_M"},
+            },
+            {"models": [{"name": "qwen3:8b", "digest": "b" * 64}]},
+            "qwen3:8b",
+        )
+        self.assertEqual(parsed["digest"], shown)
+        self.assertEqual(parsed["digest_source"], "/api/show")
 
 
 if __name__ == "__main__":

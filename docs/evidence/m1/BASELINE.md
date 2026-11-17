@@ -16,4 +16,6 @@
 
 `compose.engine=rules`、`compose_llm_error`、deadline fallback、或润色文本退回规则地板，都不算 LLM 样本。n 只数 `ollama:qwen3:8b` 且没有这些回退的行。质量门槛不改。7 月的六套分数仍不是本 HEAD 的通过记录。
 
-每个音频默认跑两遍。冷热只认 `ollama_model_reload`；没有这条警告就写 `no_reload_warning`。同时记录音频 sha256、阶段毫秒和 RSS。不传粘贴参数，不用麦克风，原文不入库。输出在 `/Users/alpha/specdict/evidence/m1-baseline-8b`。真实 `runs.json` 回来之前，M1 不通过。
+每个音频默认跑两遍。冷热只认 `ollama_model_reload`；没有这条警告就写 `no_reload_warning`。同时记录音频 sha256、阶段毫秒和 RSS。不传粘贴参数，不用麦克风，原文不入库。
+
+2026-11-17 的 31 次采集已经入库：[`20261117/report.md`](20261117/report.md)。19 次是严格 LLM 样本，12 次是失败回退。失败回退属于基线记录，n 不是 0。关卡仍 blocked，因为物理 T4、粘贴、护栏内部时间、功耗和 llama-server 峰值仍是 null。Ollama 0.40.16 的 digest 取自 `/api/tags`，不能把本地 manifest 文件哈希当成 registry digest。

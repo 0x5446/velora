@@ -175,6 +175,19 @@ def redact_run(payload: dict, *, audio_sha256: str, audio_bytes: int, pass_index
     }
 
 
+def failure_class(row: dict) -> str:
+    """Separate a shipped rule floor from an accepted LLM sample. Does not hide either."""
+    if row.get("deadline_fallback_ms") is not None:
+        return "deadline_fallback"
+    if row.get("rule_floor_used"):
+        return "rule_floor"
+    if row.get("llm_error") or row.get("compose_engine") == "rules":
+        return "rules"
+    if accepts_llm_baseline(row, BASELINE_MODEL):
+        return "llm"
+    return "other"
+
+
 def accepts_llm_baseline(row: dict, model: str) -> bool:
     """A rule floor or an LLM error is a failed collection, not a baseline sample."""
     if model != BASELINE_MODEL or row.get("exit") != 0:
@@ -201,7 +214,72 @@ def report_limitations() -> list[str]:
         "historical qwen3:8b quality scores are not this HEAD's pass",
         "transcript text is not stored",
         "powermetrics was not sampled",
+        "ollama daemon RSS is not model memory; llama-server RSS is recorded separately",
     ]
+
+
+DIGEST_SOURCE_SHOW = "/api/show"
+DIGEST_SOURCE_TAGS = "/api/tags (show details validated)"
+
+
+def normalize_digest(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    raw = value.strip().lower()
+    if raw.startswith("sha256:"):
+        raw = raw[7:]
+    if len(raw) == 64 and all(char in "0123456789abcdef" for char in raw):
+        return raw
+    return None
+
+
+def registry_digest_from_tags(payload: dict, model: str) -> str | None:
+    """Read the registry digest from /api/tags. A local manifest hash is not this field."""
+    models = payload.get("models")
+    if not isinstance(models, list):
+        return None
+    found = None
+    for entry in models:
+        if not isinstance(entry, dict) or entry.get("name") != model:
+            continue
+        digest = normalize_digest(entry.get("digest"))
+        if digest is None:
+            continue
+        if found is not None and found != digest:
+            return None
+        found = digest
+    return found
+
+
+def identity_from_show_and_tags(
+    show_payload: dict,
+    tags_payload: dict | None,
+    model: str,
+    *,
+    wrapper_manifest_sha256: str | None = None,
+) -> dict[str, str | None]:
+    """Ollama 0.40.16 /api/show omits digest. Use /api/tags only after show details validate.
+
+    wrapper_manifest_sha256 is the on-disk manifest file hash. It is recorded
+    separately and is never copied into digest.
+    """
+    parsed = parse_api_show(show_payload if isinstance(show_payload, dict) else {})
+    parsed["wrapper_manifest_sha256"] = normalize_digest(wrapper_manifest_sha256)
+    parsed["digest_source"] = None
+    if not isinstance(show_payload, dict) or "error" in show_payload:
+        parsed["digest"] = None
+        return parsed
+    if parsed["digest"]:
+        parsed["digest_source"] = DIGEST_SOURCE_SHOW
+        return parsed
+    if not parsed["parameters"] or not parsed["quantization"] or not isinstance(tags_payload, dict):
+        return parsed
+    digest = registry_digest_from_tags(tags_payload, model)
+    if digest is None:
+        return parsed
+    parsed["digest"] = digest
+    parsed["digest_source"] = DIGEST_SOURCE_TAGS
+    return parsed
 
 
 def parse_api_show(payload: dict) -> dict[str, str | None]:
@@ -236,6 +314,7 @@ def keep_time_lines(stderr: str) -> str:
 def parse_rss(ps_output: str) -> dict[str, int | None]:
     ollama = None
     sidecar = None
+    llama = None
     for line in ps_output.splitlines():
         parts = line.split(None, 1)
         if len(parts) != 2 or not parts[0].isdigit():
@@ -246,7 +325,9 @@ def parse_rss(ps_output: str) -> dict[str, int | None]:
             ollama = rss
         if sidecar is None and "sensevoice_sidecar.py" in command:
             sidecar = rss
-    return {"ollama_rss_kb": ollama, "sensevoice_rss_kb": sidecar}
+        if llama is None and re.search(r"(^|/)llama-server(\s|$)", command):
+            llama = rss
+    return {"ollama_rss_kb": ollama, "sensevoice_rss_kb": sidecar, "llama_server_rss_kb": llama}
 
 
 def _split_field(lines: list[str], index: int) -> tuple[str, str | None]:
