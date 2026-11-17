@@ -10,6 +10,7 @@ from plan import (
     BASELINE_MODEL,
     MODEL_ENV,
     SOURCE_DEFAULT_MODEL,
+    accepts_llm_baseline,
     assert_model_env_matches_source,
     keep_time_lines,
     missing_model_report,
@@ -25,7 +26,10 @@ from plan import (
 class ScriptContractTests(unittest.TestCase):
     def test_shell_entry_uses_the_approved_model_and_does_not_copy(self):
         script = (Path(__file__).resolve().parents[2] / "docs/evidence/m1/collect_baseline.sh").read_text()
-        self.assertIn('MODEL="${VELORA_M1_MODEL:-qwen3:14b}"', script)
+        self.assertIn('MODEL="${VELORA_M1_MODEL:-qwen3:8b}"', script)
+        self.assertIn('[[ "$MODEL" != "qwen3:8b" ]]', script)
+        self.assertNotIn(":-qwen3:14b", script)
+        self.assertNotIn("m1-baseline-14b", script)
         self.assertIn("VELORA_OLLAMA_MODEL", script)
         self.assertNotIn("--copy", script)
         self.assertNotIn("ollama pull", script)
@@ -39,11 +43,11 @@ class SourceContractTests(unittest.TestCase):
         source = (Path(__file__).resolve().parents[2] / "Velora/Sources/Velora/LocalModelEngines.swift").read_text()
         self.assertIn(f'environment["{MODEL_ENV}"] ?? "{SOURCE_DEFAULT_MODEL}"', source)
 
-    def test_approved_baseline_is_not_the_source_default(self):
+    def test_approved_baseline_is_the_source_default(self):
         self.assertEqual(SOURCE_DEFAULT_MODEL, "qwen3:8b")
-        self.assertEqual(BASELINE_MODEL, "qwen3:14b")
+        self.assertEqual(BASELINE_MODEL, "qwen3:8b")
         with self.assertRaises(ValueError):
-            process_env(SOURCE_DEFAULT_MODEL, {})
+            process_env("qwen3:14b", {})
 
 
 class InvocationTests(unittest.TestCase):
@@ -55,8 +59,11 @@ class InvocationTests(unittest.TestCase):
         self.assertIn("--sensevoice", command)
         self.assertIn("--mode", command)
         self.assertEqual(command[command.index("--mode") + 1], "input")
-        env = process_env(BASELINE_MODEL, {"HOME": "/Users/alpha", "VELORA_ALLOW_REMOTE_LLM": "1"})
-        self.assertEqual(env[MODEL_ENV], "qwen3:14b")
+        env = process_env(
+            BASELINE_MODEL,
+            {"HOME": "/Users/alpha", "VELORA_ALLOW_REMOTE_LLM": "1", MODEL_ENV: "qwen3:14b"},
+        )
+        self.assertEqual(env[MODEL_ENV], "qwen3:8b")
         self.assertNotIn("VELORA_ALLOW_REMOTE_LLM", env)
 
     def test_missing_model_has_zero_runs_and_no_milliseconds(self):
@@ -75,7 +82,7 @@ class RedactionTests(unittest.TestCase):
             "finalText": "明天开会",
             "asr": {"text": "明天开会", "engine": "sensevoice.sherpa-onnx", "modelVersion": "int8"},
             "compose": {
-                "engine": "ollama:qwen3:14b",
+                "engine": "ollama:qwen3:8b",
                 "polishedText": "明天开会",
                 "edits": [{"from": "明天开会", "to": "明天开会"}],
                 "warnings": [
@@ -95,7 +102,10 @@ class RedactionTests(unittest.TestCase):
         encoded = json.dumps(row, ensure_ascii=False)
         self.assertNotIn("明天开会", encoded)
         self.assertNotIn("private body", encoded)
-        self.assertEqual(row["compose_engine"], "ollama:qwen3:14b")
+        self.assertEqual(row["compose_engine"], "ollama:qwen3:8b")
+        self.assertTrue(row["llm_error"])
+        self.assertNotIn("private body", encoded)
+        self.assertFalse(accepts_llm_baseline(row, "qwen3:8b"))
         self.assertEqual(row["asr_chars"], 4)
         self.assertEqual(row["release_to_insert_ms"], 940)
         self.assertEqual(row["ollama_reload_ms"], 4200)
@@ -107,12 +117,55 @@ class RedactionTests(unittest.TestCase):
         payload = {
             "finalText": "",
             "asr": {"text": "", "engine": "sensevoice.sherpa-onnx"},
-            "compose": {"engine": "ollama:qwen3:14b", "warnings": []},
+            "compose": {"engine": "ollama:qwen3:8b", "warnings": []},
             "trace": {"stages": []},
         }
         row = redact_run(payload, audio_sha256="abc", audio_bytes=1, pass_index=1, exit_code=0)
         self.assertEqual(row["load_observation"], "no_reload_warning")
         self.assertIsNone(row["ollama_reload_ms"])
+        self.assertTrue(accepts_llm_baseline(row, "qwen3:8b"))
+
+    def test_rules_and_fallbacks_are_not_an_llm_baseline(self):
+        rules = redact_run(
+            {
+                "finalText": "明天开会",
+                "asr": {"text": "明天开会", "engine": "sensevoice.sherpa-onnx"},
+                "compose": {"engine": "rules", "warnings": ["compose_llm_error:Ollama 本地模型服务不可用。请先运行 Ollama，并确认 qwen3:8b 已下载。"]},
+                "trace": {"stages": [{"name": "compose", "durationMS": 12, "phase": "after_release", "critical": True}]},
+            },
+            audio_sha256="abc",
+            audio_bytes=4,
+            pass_index=0,
+            exit_code=0,
+        )
+        self.assertEqual(rules["compose_engine"], "rules")
+        self.assertTrue(rules["llm_error"])
+        self.assertNotIn("请先运行", json.dumps(rules, ensure_ascii=False))
+        self.assertFalse(accepts_llm_baseline(rules, "qwen3:8b"))
+
+        deadline = redact_run(
+            {
+                "asr": {"text": "", "engine": "sensevoice.sherpa-onnx"},
+                "compose": {"engine": "rules", "warnings": ["compose_deadline_fallback:4000ms"]},
+                "trace": {"stages": []},
+            },
+            audio_sha256="abc",
+            audio_bytes=4,
+            pass_index=1,
+            exit_code=0,
+        )
+        self.assertEqual(deadline["deadline_fallback_ms"], 4000)
+        self.assertFalse(accepts_llm_baseline(deadline, "qwen3:8b"))
+
+        named = {
+            "exit": 0,
+            "compose_engine": "ollama:qwen3:8b",
+            "llm_error": False,
+            "rule_floor_used": True,
+            "deadline_fallback_ms": None,
+        }
+        self.assertFalse(accepts_llm_baseline(named, "qwen3:8b"))
+        self.assertFalse(accepts_llm_baseline({**named, "rule_floor_used": False, "compose_engine": "ollama:qwen3:14b"}, "qwen3:14b"))
 
 
 class IdentityParserTests(unittest.TestCase):

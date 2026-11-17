@@ -1,11 +1,19 @@
 # M1 基线契约
 
-日期：2026-11-17。用户批准：这台 Mac 上没有 `qwen3:8b`，M1 对照改用已经存在的 `qwen3:14b`。
+当前对照是 SenseVoice + Ollama `qwen3:8b`。产品源码一直是这个缺省值，这次不改 `Apps/` 或 `Velora/Sources/`。采集进程显式设置 `VELORA_OLLAMA_MODEL=qwen3:8b`，避免继承之前的 14B 覆盖。不写 UserDefaults。采集脚本自己不下载模型。
 
-这是基线模型变更，不是一次 8B 测量。源码默认仍是 `OllamaLocalClient` 里的 `VELORA_OLLAMA_MODEL` 缺省值 `qwen3:8b`。采集进程只在自己的环境里设置 `VELORA_OLLAMA_MODEL=qwen3:14b`，不写 UserDefaults，不下载 8B，不改产品默认。
+## 时间线
 
-昨天的采集器对 `ollama show qwen3:8b` 退出码 1。SenseVoice 和依赖在。`runs` 为 n=0。这里不补任何毫秒数。
+- 2026-07-13 17:50:37 至 2026-07-17 22:24:58（北京时间）：菜单栏 App 的 `corrections.jsonl` 有 27 条 `insertion`，`compose_engine=ollama:qwen3:8b` 且 `compose_fallback=false`。另有 3 条 `rules`，是 deadline fallback。这是 GUI 用过默认 8B 的记录，不是这次 M1 的延迟样本。
+- 2026-10-22 已有 14B 缺 GGUF 的日志。不能据此推断删除时间或原因。
+- 2026-11-16：第一版采集器按源码默认找 `qwen3:8b`，当时标签不在，退出码 1，n=0。没有补毫秒。
+- 2026-11-17 早些时候：曾把采集契约临时改成已有 manifest 的 `qwen3:14b`。该标签没有取得任何被接受的 LLM 样本，n=0。当时的 CLI 是用 `VELORA_OLLAMA_MODEL` 显式覆盖，不是菜单栏 App 的默认配置。
+- 2026-11-17：用户决定恢复 `qwen3:8b`，并清理 14B。14B 退出本契约。
 
-质量六套的门槛和历史 `qwen3:8b` 分数都不因这次换模型而改写。那些分数仍不是本 HEAD 的通过记录。延迟预算仍是设计目标，未复测。M1 要等这份 14B 采集的真实 `runs.json` 经关卡审查后才能通过。
+## 这次测量
 
-采集记录：本机 `127.0.0.1:11434/api/show` 的 digest、参数规模和量化名。响应里的 Modelfile 不落盘。每个音频默认跑两遍，`pass_index` 只表示这次脚本里的先后。冷热只认产品已有的 `ollama_model_reload` 警告；没有这条警告就写 `no_reload_warning`，不写成已经预热。同时记下音频 sha256、条数、关键阶段毫秒，以及 `ollama` 与 SenseVoice sidecar 的 RSS。没有 `--copy`，不用麦克风，不执行 `ollama pull`。原文不入库。输出目录是 `/Users/alpha/specdict/evidence/m1-baseline-14b`，与昨天那次空的 8B 尝试分开。
+同一标签名不等于 7 月那份权重。digest 和量化以这次 `ollama show` / 本机 `/api/show` 的实际返回为准，写入 `runs.json`。Modelfile 不落盘。不能把这次结果写成历史位级复现。
+
+`compose.engine=rules`、`compose_llm_error`、deadline fallback、或润色文本退回规则地板，都不算 LLM 样本。n 只数 `ollama:qwen3:8b` 且没有这些回退的行。质量门槛不改。7 月的六套分数仍不是本 HEAD 的通过记录。
+
+每个音频默认跑两遍。冷热只认 `ollama_model_reload`；没有这条警告就写 `no_reload_warning`。同时记录音频 sha256、阶段毫秒和 RSS。不传粘贴参数，不用麦克风，原文不入库。输出在 `/Users/alpha/specdict/evidence/m1-baseline-8b`。真实 `runs.json` 回来之前，M1 不通过。

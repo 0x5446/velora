@@ -238,7 +238,7 @@ ollama --version
 ollama show qwen3:8b
 ```
 
-上面的 `qwen3:8b` 是当时写下的原计划。2026-11-17 用户批准本机基线改为已安装的 `qwen3:14b`，见 [`evidence/m1/BASELINE.md`](evidence/m1/BASELINE.md)。不要把这段历史命令当成现在的测量。`ollama show` 的输出只保留名称、参数规模、量化名和摘要哈希，不粘贴 Modelfile 里的长提示词。SenseVoice：
+`qwen3:8b` 仍是现行测量对象。2026-11-17 对 `qwen3:14b` 的临时契约已经撤回，该标签 n=0，见 [`evidence/m1/BASELINE.md`](evidence/m1/BASELINE.md)。`ollama show` 的输出只保留名称、参数规模、量化名和摘要哈希，不粘贴 Modelfile 里的长提示词。SenseVoice：
 
 ```bash
 # 根目录按 resolvedDefault 的实际搜索顺序，不要改用 README 里多出来的 Application Support

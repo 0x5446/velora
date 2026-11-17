@@ -1,19 +1,19 @@
 #!/bin/zsh
-# M1 baseline on this Mac: SenseVoice + Ollama qwen3:14b.
-# The app default stays qwen3:8b. This process sets VELORA_OLLAMA_MODEL only.
+# M1 baseline on this Mac: SenseVoice + Ollama qwen3:8b.
+# The process sets VELORA_OLLAMA_MODEL itself, so a leftover 14b value is not inherited.
 # Does not pass the pasteboard flag, does not use the microphone, and does not pull a model.
 #
 #   docs/evidence/m1/collect_baseline.sh /path/one.caf /path/two.wav
 set -euo pipefail
 
 ROOT="${VELORA_ROOT:-/Users/alpha/workspace/velora}"
-OUT="${VELORA_M1_OUT:-/Users/alpha/specdict/evidence/m1-baseline-14b}"
-MODEL="${VELORA_M1_MODEL:-qwen3:14b}"
+OUT="${VELORA_M1_OUT:-/Users/alpha/specdict/evidence/m1-baseline-8b}"
+MODEL="${VELORA_M1_MODEL:-qwen3:8b}"
 mkdir -p "$OUT"
 cd "$ROOT"
 
-if [[ "$MODEL" == "qwen3:8b" ]]; then
-  printf 'refusing qwen3:8b; the approved baseline on this machine is qwen3:14b\n' >&2
+if [[ "$MODEL" != "qwen3:8b" ]]; then
+  printf 'refusing %s; the M1 baseline is qwen3:8b\n' "$MODEL" >&2
   exit 2
 fi
 
@@ -65,6 +65,7 @@ from plan import (
     parse_ollama_show,
     parse_rss,
     process_env,
+    accepts_llm_baseline,
     redact_run,
     report_limitations,
     swift_invocation,
@@ -158,7 +159,7 @@ for raw in sys.argv[4:]:
         runs.append(row)
         pass_index += 1
 
-ok = [row for row in runs if row.get("exit") == 0 and row.get("compose_engine") == f"ollama:{model}"]
+ok = [row for row in runs if accepts_llm_baseline(row, model)]
 report = {
     "schema": "velora.m1_baseline.v1",
     "baseline_model": model,

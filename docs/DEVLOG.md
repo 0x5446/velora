@@ -50,3 +50,9 @@
 - 用户批准：这台 Mac 没有默认的 `qwen3:8b`，用已安装的 `qwen3:14b` 作本机对照，并写明契约变更。昨天的采集器对 `ollama show qwen3:8b` 退出码 1，SenseVoice 在，`runs` 为 n=0。没有补造毫秒。
 - 源码默认仍是 `LocalModelEngines.swift` 的 `VELORA_OLLAMA_MODEL` 缺省 `qwen3:8b`。采集进程只设置这个已有变量。不写 UserDefaults，不下载 8B，不改质量门槛。
 - 采集器默认不传 `--copy`。每个音频跑两遍。冷热只记录产品已有的 `ollama_model_reload` 警告。digest 来自本机 `/api/show`，Modelfile 不落盘。原文不入库。M1 仍未通过，要等真实 `runs.json` 审查。
+
+## 2026-11-17 · M1 对照恢复为 qwen3:8b
+
+- 用户决定恢复 `qwen3:8b`，14B 从基线契约清理。产品源码本来就是 8B，没有改 `Apps/` 或 `Velora/Sources/`。
+- 菜单栏日志已闭环：27 条 `insertion` 为 `ollama:qwen3:8b` 且 `compose_fallback=false`，时间是 2026-07-13 17:50:37 至 2026-07-17 22:24:58（北京时间）。另 3 条 `rules` 是 deadline fallback。14B 缺 GGUF 的日志在 2026-10-22 已经存在，不能据此推断删除时间或原因。旧 CLI 的 14B 来自 `VELORA_OLLAMA_MODEL` 覆盖，不是 GUI 默认配置。
+- 14B 没有被接受的 LLM 样本，n=0。采集器拒绝把 `compose.engine=rules` 或 `compose_llm_error` 算进 n。重新安装的同名 8B 只记录这次的 digest 和量化，不声称与 7 月权重位级相同。真实 `runs.json` 未到，M1 仍未通过。质量门槛未改。

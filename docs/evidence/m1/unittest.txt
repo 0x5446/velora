@@ -4,12 +4,13 @@ test_two_line_show_keeps_digest_only (test_plan.IdentityParserTests.test_two_lin
 test_command_sets_the_existing_env_and_does_not_copy (test_plan.InvocationTests.test_command_sets_the_existing_env_and_does_not_copy) ... ok
 test_missing_model_has_zero_runs_and_no_milliseconds (test_plan.InvocationTests.test_missing_model_has_zero_runs_and_no_milliseconds) ... ok
 test_no_reload_warning_is_not_labeled_warm (test_plan.RedactionTests.test_no_reload_warning_is_not_labeled_warm) ... ok
+test_rules_and_fallbacks_are_not_an_llm_baseline (test_plan.RedactionTests.test_rules_and_fallbacks_are_not_an_llm_baseline) ... ok
 test_transcript_is_dropped_and_reload_is_kept (test_plan.RedactionTests.test_transcript_is_dropped_and_reload_is_kept) ... ok
 test_shell_entry_uses_the_approved_model_and_does_not_copy (test_plan.ScriptContractTests.test_shell_entry_uses_the_approved_model_and_does_not_copy) ... ok
-test_approved_baseline_is_not_the_source_default (test_plan.SourceContractTests.test_approved_baseline_is_not_the_source_default) ... ok
+test_approved_baseline_is_the_source_default (test_plan.SourceContractTests.test_approved_baseline_is_the_source_default) ... ok
 test_env_name_is_the_one_in_local_model_engines (test_plan.SourceContractTests.test_env_name_is_the_one_in_local_model_engines) ... ok
 
 ----------------------------------------------------------------------
-Ran 10 tests in 0.002s
+Ran 11 tests in 0.001s
 
 OK

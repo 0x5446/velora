@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 SOURCE_DEFAULT_MODEL = "qwen3:8b"
-BASELINE_MODEL = "qwen3:14b"
+BASELINE_MODEL = "qwen3:8b"
 MODEL_ENV = "VELORA_OLLAMA_MODEL"
 SCHEMA = "velora.m1_baseline.v1"
 
@@ -56,8 +56,8 @@ def swift_invocation(root: Path, audio: Path) -> list[str]:
 
 
 def process_env(model: str, inherited: dict[str, str]) -> dict[str, str]:
-    if not model or model == SOURCE_DEFAULT_MODEL:
-        raise ValueError("this approved baseline is qwen3:14b, not the absent qwen3:8b")
+    if model != BASELINE_MODEL:
+        raise ValueError("M1 baseline is qwen3:8b; qwen3:14b is not a measured baseline")
     env = dict(inherited)
     env[MODEL_ENV] = model
     env.pop("VELORA_ALLOW_REMOTE_LLM", None)
@@ -122,6 +122,8 @@ def redact_run(payload: dict, *, audio_sha256: str, audio_bytes: int, pass_index
     reload_ms = None
     ctx_pressure = None
     deadline_fallback_ms = None
+    llm_error = False
+    rule_floor = False
     redacted_warnings = 0
     for warning in compose.get("warnings") or []:
         if not isinstance(warning, str):
@@ -137,7 +139,11 @@ def redact_run(payload: dict, *, audio_sha256: str, audio_bytes: int, pass_index
         elif deadline:
             deadline_fallback_ms = int(deadline.group(1))
         elif warning == "compose_polished_rule_fallback":
+            rule_floor = True
             continue
+        elif warning.startswith("compose_llm_error"):
+            llm_error = True
+            redacted_warnings += 1
         else:
             redacted_warnings += 1
     if reload_ms is not None and reload_ms > 500:
@@ -163,8 +169,23 @@ def redact_run(payload: dict, *, audio_sha256: str, audio_bytes: int, pass_index
         "ollama_ctx_pressure_tokens": ctx_pressure,
         "deadline_fallback_ms": deadline_fallback_ms,
         "redacted_warning_count": redacted_warnings,
+        "llm_error": llm_error,
+        "rule_floor_used": rule_floor,
         "load_observation": temperature,
     }
+
+
+def accepts_llm_baseline(row: dict, model: str) -> bool:
+    """A rule floor or an LLM error is a failed collection, not a baseline sample."""
+    if model != BASELINE_MODEL or row.get("exit") != 0:
+        return False
+    if row.get("compose_engine") != f"ollama:{model}":
+        return False
+    if row.get("llm_error") or row.get("rule_floor_used"):
+        return False
+    if row.get("deadline_fallback_ms") is not None:
+        return False
+    return True
 
 
 def report_limitations() -> list[str]:
@@ -174,7 +195,10 @@ def report_limitations() -> list[str]:
         "release_to_insert_ms sums critical pipeline stages and is not an OS insert",
         "each audio path is run twice; pass_index 0 then 1 is script order, not a warm proof",
         "no_reload_warning is not proof the weights were already resident",
-        "historical qwen3:8b quality scores are not measurements of this 14b baseline",
+        "qwen3:14b produced no accepted LLM sample (n=0) and is not this baseline",
+        "the restored qwen3:8b tag is not a claim of the July 2026 digest or quantization",
+        "compose.engine=rules or compose_llm_error is not an LLM success",
+        "historical qwen3:8b quality scores are not this HEAD's pass",
         "transcript text is not stored",
         "powermetrics was not sampled",
     ]
