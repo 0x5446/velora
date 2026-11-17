@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
+import stat
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -39,6 +43,9 @@ class ScriptContractTests(unittest.TestCase):
             self.assertNotIn(baked, script)
         supplement = (Path(__file__).resolve().parents[2] / "docs/evidence/m1/supplement_blocked.sh").read_text()
         self.assertIn('VELORA_M1_RSS_SUPPLEMENT:-0', supplement)
+        self.assertIn('VELORA_M1_COLLECTOR:-', supplement)
+        self.assertIn("collector_status=0", supplement)
+        self.assertNotRegex(supplement, r"(?m)^status=")
         self.assertNotIn("ollama pull", supplement)
         self.assertNotIn("ollama rm", supplement)
         self.assertNotIn("cartesia", supplement.lower())
@@ -229,6 +236,67 @@ SYSTEM you are a long private prompt
         self.assertEqual(rss["sensevoice_rss_kb"], 999)
         self.assertEqual(rss["llama_server_rss_kb"], 5196160)
         self.assertNotIn("明天开会", encoded)
+
+
+class ZshSupplementTests(unittest.TestCase):
+    script = Path(__file__).resolve().parents[2] / "docs/evidence/m1/supplement_blocked.sh"
+
+    def test_this_zsh_rejects_assigning_status(self):
+        probe = subprocess.run(["zsh", "-c", "status=0"], capture_output=True, text=True)
+        self.assertNotEqual(probe.returncode, 0)
+        self.assertIn("read-only variable: status", probe.stderr)
+
+    def test_zsh_runs_the_collector_when_a_failure_sample_exits_1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            log = root / "collector.log"
+            stub = root / "collector.sh"
+            stub.write_text(
+                "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$STUB_LOG\"\nexit \"$STUB_EXIT\"\n",
+                encoding="utf-8",
+            )
+            stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
+            env = os.environ.copy()
+            env.update(
+                {
+                    "VELORA_M1_RSS_SUPPLEMENT": "1",
+                    "VELORA_M1_COLLECTOR": str(stub),
+                    "VELORA_ROOT": str(root),
+                    "VELORA_M1_OUT": str(root / "out"),
+                    "STUB_LOG": str(log),
+                    "STUB_EXIT": "1",
+                }
+            )
+            proc = subprocess.run(
+                ["zsh", str(self.script), "short.caf", "zh_long.caf"],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn("collector_exit=1", proc.stdout)
+            self.assertIn("snapshots, not peaks", proc.stdout)
+            self.assertEqual(log.read_text(encoding="utf-8").strip(), "short.caf zh_long.caf")
+
+            env["STUB_EXIT"] = "2"
+            refused = subprocess.run(
+                ["zsh", str(self.script), "short.caf", "zh_long.caf"],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            self.assertEqual(refused.returncode, 2, refused.stderr)
+            self.assertIn("collector_exit=2", refused.stdout)
+
+            env.pop("VELORA_M1_RSS_SUPPLEMENT")
+            skipped = subprocess.run(
+                ["zsh", str(self.script)],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            self.assertEqual(skipped.returncode, 0, skipped.stderr)
+            self.assertIn("RSS supplement not requested", skipped.stdout)
 
 
 class Ollama040DigestTests(unittest.TestCase):

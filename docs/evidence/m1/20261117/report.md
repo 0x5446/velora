@@ -42,6 +42,6 @@
 
 14B 的官方 `ollama rm` 和“没有误删其他模型、共享层仍被 8B 引用”沿用 Mac 报告。本环境没有重读那台机器的 blob 目录。
 
-## 最小补测
+## 随后的两次快照
 
-不改 prompt，不改阈值，不重跑六套质量，不下载模型。只补 RSS 缺口：`VELORA_M1_RSS_SUPPLEMENT=1 docs/evidence/m1/supplement_blocked.sh short.caf long.caf`。`VELORA_M1_REPEATS=1`，模型固定 `qwen3:8b`。采集器现在会把 `llama-server` 的 RSS 和 `failure_class` 分开记。退出码 1 只表示有请求没被接受为 LLM，文件仍然有效。粘贴和功耗继续保持 null。
+`zh_short` 和 `zh_long` 各又跑了一次，单独归档在 [`../20261117-supplement/report.md`](../20261117-supplement/report.md)。那两次不并进上面的 31 次分布。llama-server 的前后 RSS 是快照，不是峰值。不要再为物理 T4、HUD、粘贴、功耗、内部阶段或峰值重跑 CLI。

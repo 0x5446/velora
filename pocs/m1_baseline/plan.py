@@ -206,7 +206,7 @@ def report_limitations() -> list[str]:
         "process environment only; UserDefaults and the source default stay qwen3:8b",
         "no microphone and no pasteboard copy; insertion strategy in the CLI is none",
         "release_to_insert_ms sums critical pipeline stages and is not an OS insert",
-        "each audio path is run twice; pass_index 0 then 1 is script order, not a warm proof",
+        "pass_index follows script order and is not a warm proof; repeats_per_audio is the process setting, and a later supplement is not pooled with the 31",
         "no_reload_warning is not proof the weights were already resident",
         "qwen3:14b produced no accepted LLM sample (n=0) and is not this baseline",
         "the restored qwen3:8b tag is not a claim of the July 2026 digest or quantization",

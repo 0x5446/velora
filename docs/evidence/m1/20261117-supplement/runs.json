@@ -1,0 +1,167 @@
+{
+  "schema": "velora.m1_baseline.v1",
+  "baseline_model": "qwen3:8b",
+  "source_default_model": "qwen3:8b",
+  "config_mechanism": "VELORA_OLLAMA_MODEL",
+  "persistent_preferences_changed": false,
+  "copied_to_pasteboard": false,
+  "microphone_used": false,
+  "model_downloaded": false,
+  "model_present": true,
+  "ollama_show": {
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "parameters": "8.2B",
+    "quantization": "Q4_K_M",
+    "wrapper_manifest_sha256": null,
+    "digest_source": "/api/tags (show details validated)"
+  },
+  "repeats_per_audio": 1,
+  "n": 1,
+  "n_attempted": 2,
+  "runs": [
+    {
+      "audio_sha256": "99f6b8eb776edc0f8f9f64effd3976381652a22bb7579dd88fcb845399c0755d",
+      "bytes": 384320,
+      "pass_index": 0,
+      "exit": 0,
+      "asr_engine": "sensevoice.sherpa-onnx",
+      "asr_model": "model.int8.onnx",
+      "asr_chars": 45,
+      "compose_engine": "ollama:qwen3:8b",
+      "final_chars": 44,
+      "reviewRequired": false,
+      "insertion_inserted": null,
+      "insertion_strategy": null,
+      "release_to_insert_ms": 4539,
+      "stages": [
+        {
+          "name": "context_capture",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "hotword_rank",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_finalize",
+          "durationMS": 768,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_hotword_correction",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "compose",
+          "durationMS": 3771,
+          "phase": "after_release",
+          "critical": true
+        }
+      ],
+      "ollama_reload_ms": null,
+      "ollama_ctx_pressure_tokens": null,
+      "deadline_fallback_ms": null,
+      "redacted_warning_count": 0,
+      "llm_error": false,
+      "rule_floor_used": false,
+      "load_observation": "no_reload_warning",
+      "rss_before": {
+        "ollama_rss_kb": 29168,
+        "sensevoice_rss_kb": null,
+        "llama_server_rss_kb": 2408688
+      },
+      "rss_after": {
+        "ollama_rss_kb": 20480,
+        "sensevoice_rss_kb": 756064,
+        "llama_server_rss_kb": 860272
+      },
+      "failure_class": "llm"
+    },
+    {
+      "audio_sha256": "138bcce428784426389ae7acdab9f49553e15d279e6a3343d24637f730967363",
+      "bytes": 1730522,
+      "pass_index": 1,
+      "exit": 0,
+      "asr_engine": "sensevoice.sherpa-onnx",
+      "asr_model": "model.int8.onnx",
+      "asr_chars": 203,
+      "compose_engine": "rules",
+      "final_chars": 203,
+      "reviewRequired": false,
+      "insertion_inserted": null,
+      "insertion_strategy": null,
+      "release_to_insert_ms": 5374,
+      "stages": [
+        {
+          "name": "context_capture",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "hotword_rank",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_finalize",
+          "durationMS": 1103,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "asr_hotword_correction",
+          "durationMS": 0,
+          "phase": "after_release",
+          "critical": true
+        },
+        {
+          "name": "compose",
+          "durationMS": 4271,
+          "phase": "after_release",
+          "critical": true
+        }
+      ],
+      "ollama_reload_ms": null,
+      "ollama_ctx_pressure_tokens": null,
+      "deadline_fallback_ms": 4000,
+      "redacted_warning_count": 0,
+      "llm_error": false,
+      "rule_floor_used": false,
+      "load_observation": "no_reload_warning",
+      "rss_before": {
+        "ollama_rss_kb": 20480,
+        "sensevoice_rss_kb": null,
+        "llama_server_rss_kb": 860272
+      },
+      "rss_after": {
+        "ollama_rss_kb": 20048,
+        "sensevoice_rss_kb": 821568,
+        "llama_server_rss_kb": 875632
+      },
+      "failure_class": "deadline_fallback"
+    }
+  ],
+  "limitations": [
+    "process environment only; UserDefaults and the source default stay qwen3:8b",
+    "no microphone and no pasteboard copy; insertion strategy in the CLI is none",
+    "release_to_insert_ms sums critical pipeline stages and is not an OS insert",
+    "each audio path is run twice; pass_index 0 then 1 is script order, not a warm proof",
+    "no_reload_warning is not proof the weights were already resident",
+    "qwen3:14b produced no accepted LLM sample (n=0) and is not this baseline",
+    "the restored qwen3:8b tag is not a claim of the July 2026 digest or quantization",
+    "compose.engine=rules or compose_llm_error is not an LLM success",
+    "historical qwen3:8b quality scores are not this HEAD's pass",
+    "transcript text is not stored",
+    "powermetrics was not sampled",
+    "ollama daemon RSS is not model memory; llama-server RSS is recorded separately"
+  ]
+}

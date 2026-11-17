@@ -12,8 +12,10 @@ test_transcript_is_dropped_and_reload_is_kept (test_plan.RedactionTests.test_tra
 test_shell_entry_uses_the_approved_model_and_does_not_copy (test_plan.ScriptContractTests.test_shell_entry_uses_the_approved_model_and_does_not_copy) ... ok
 test_approved_baseline_is_the_source_default (test_plan.SourceContractTests.test_approved_baseline_is_the_source_default) ... ok
 test_env_name_is_the_one_in_local_model_engines (test_plan.SourceContractTests.test_env_name_is_the_one_in_local_model_engines) ... ok
+test_this_zsh_rejects_assigning_status (test_plan.ZshSupplementTests.test_this_zsh_rejects_assigning_status) ... ok
+test_zsh_runs_the_collector_when_a_failure_sample_exits_1 (test_plan.ZshSupplementTests.test_zsh_runs_the_collector_when_a_failure_sample_exits_1) ... ok
 
 ----------------------------------------------------------------------
-Ran 14 tests in 0.001s
+Ran 16 tests in 0.028s
 
 OK

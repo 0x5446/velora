@@ -1,6 +1,6 @@
 # 交接
 
-更新时间：2026-11-17。当前阶段：M0 已通过。F0 和 F1 的 CPU 设施已通过。M1 的 8B 采集已审查，31 次里 19 次是严格 LLM、12 次是失败回退。关卡保持 blocked。不要改产品代码。本环境没有访问 `/Users/alpha`。
+更新时间：2026-11-17。当前阶段：M0 已通过。F0 和 F1 的 CPU 设施已通过。M1 基线已有：31 次里 19 次严格 LLM、12 次失败回退。另两次 RSS 快照不并进这 31 次。关卡保持 blocked，因为要的 HUD、粘贴和内部分段没有从产品导出，而本关不改产品。不要再跑 CLI 补这些空位。本环境没有访问 `/Users/alpha`。
 
 ## 现在在哪
 
@@ -24,7 +24,7 @@
 | M0 审计与资产清单 | 通过。见 [`evidence/m0/report.md`](evidence/m0/report.md)。1.7B 完整哈希是复用的先前验证；五个冻结清单匹配 |
 | F0 CPU 设施 | 通过。当时 18 项，见 [`evidence/f0/report.md`](evidence/f0/report.md)。同一命令现在会连同 F1 一起跑 |
 | F1 端点 schema / 采集器 / 回放 / 计时契约 | 通过。同一命令现为 41 项，退出码 0。CPU mock 的 `mlx_token_identity` 为 null。公共端点摘要因没有 revision 被拒绝。不是 M1 或 M5 |
-| M1 现行产品基线 | blocked。[`evidence/m1/20261117/report.md`](evidence/m1/20261117/report.md)：n=19 的 LLM 样本和 12 次失败回退都已入库。物理 T4、粘贴、护栏内部时间、功耗、llama-server 峰值仍是 null。14B 临时契约 n=0，已撤回 |
+| M1 现行产品基线 | blocked。基线在 [`evidence/m1/20261117/report.md`](evidence/m1/20261117/report.md)：n=19，另 12 次失败回退。两次快照在 [`evidence/m1/20261117-supplement/report.md`](evidence/m1/20261117-supplement/report.md)，不并池。空着的是产品未导出的 HUD、粘贴和 compose 内部分段 |
 | M2 六套门禁 | 未开始。研究 rubric 的绝对通过率不能代替 |
 | M3 取消/焦点/离线的产品观察 | 未开始。F0 只覆盖假模型上的调度 |
 | M4 产品决定 | 未通过。方向已写明，默认行为未切换 |
@@ -32,14 +32,11 @@
 
 ## 下一最小交付
 
-8B 已恢复，14B 已按 Mac 报告官方删除。不要重跑那 31 次，也不要重跑六套质量。下一次只补 llama-server 的 RSS，使用已经在磁盘上的一条短音频和一条长音频：
+不要再跑 CLI，不要重跑六套质量，不要下载模型。31 次基线和两次快照都已经够用。剩下的空位不是再跑两次能填上的。
 
-```bash
-chmod +x /Users/alpha/workspace/velora/docs/evidence/m1/supplement_blocked.sh
-VELORA_M1_RSS_SUPPLEMENT=1 /Users/alpha/workspace/velora/docs/evidence/m1/supplement_blocked.sh /path/to/short.caf /path/to/zh_long.caf
-```
+唯一需要的决定：是否允许一次不改变用户可见行为的测量补丁。补丁只把已经算出来的 HUD `wall_ms`、`insert_ms`，以及客户端已经解码的 `prompt_eval_count`、`load_duration`（响应里若有 `eval_duration` / `eval_count` 也一并写入）放进现有 trace 和 CLI JSON。不改 prompt、temperature 0.1、输入 deadline 4000 ms、翻译 deadline 6000 ms、回退规则和上屏策略。不允许的话，这些字段继续按关卡写 blocked，M1 不能通过，M5 最小效应保持 TBD。
 
-`VELORA_M1_REPEATS=1`，`VELORA_OLLAMA_MODEL=qwen3:8b`。脚本不下载、不删除、不调用付费接口。退出码 1 表示有请求未被接受为 LLM，`runs.json` 仍然算数。粘贴、物理 T4 和功耗继续保持 null：HUD 的 `wall_ms` 没有落盘，不要为了看浮层去注入粘贴。M5 最小效应仍是 TBD。
+若 Mac 上那次 31 次采集目录里已经有 `env.txt` 和 `sensevoice.sha256`，把这两个文件抄进证据即可。不要为它们再跑音频。
 
 原型差异已经写在 [`evidence/prototype/REVIEW.md`](evidence/prototype/REVIEW.md)。产品 sidecar 仍不开始。
 

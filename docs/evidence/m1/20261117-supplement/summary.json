@@ -1,0 +1,71 @@
+{
+  "observed_at_asia_shanghai": "2026-11-17T14:59:41.938376+08:00",
+  "n_attempted": 2,
+  "n_llm": 1,
+  "n_failed_or_fallback": 1,
+  "outer_supplement_exit": 0,
+  "collector_exit": 1,
+  "original31_runs_repeated": false,
+  "failure_samples_are_valid_baseline_observations": true,
+  "clips": [
+    {
+      "id": "zh_short",
+      "failure_class": "llm",
+      "compose_engine": "ollama:qwen3:8b",
+      "asr_ms": 768,
+      "compose_ms": 3771,
+      "critical_stage_sum_ms": 4539,
+      "rss_before": {
+        "ollama_rss_kb": 29168,
+        "sensevoice_rss_kb": null,
+        "llama_server_rss_kb": 2408688
+      },
+      "rss_after": {
+        "ollama_rss_kb": 20480,
+        "sensevoice_rss_kb": 756064,
+        "llama_server_rss_kb": 860272
+      },
+      "load_observation": "no_reload_warning",
+      "physical_t4_ms": null
+    },
+    {
+      "id": "zh_long",
+      "failure_class": "deadline_fallback",
+      "compose_engine": "rules",
+      "asr_ms": 1103,
+      "compose_ms": 4271,
+      "critical_stage_sum_ms": 5374,
+      "rss_before": {
+        "ollama_rss_kb": 20480,
+        "sensevoice_rss_kb": null,
+        "llama_server_rss_kb": 860272
+      },
+      "rss_after": {
+        "ollama_rss_kb": 20048,
+        "sensevoice_rss_kb": 821568,
+        "llama_server_rss_kb": 875632
+      },
+      "load_observation": "no_reload_warning",
+      "physical_t4_ms": null
+    }
+  ],
+  "closed_gaps": [
+    "explicit failure_class from809f682 helper for each of these two new runs",
+    "real llama-server RSS before and after each short/long clip, separate from daemon RSS"
+  ],
+  "remaining_blocked": {
+    "physical_t4_ms": null,
+    "hud_wall_ms": null,
+    "insert_ms": null,
+    "power_watts": null,
+    "per_internal_stage_rss_peak": null,
+    "exclusive_rule_floor_ms": null,
+    "exclusive_llm_wait_ms": null,
+    "guard_ms": null,
+    "product_prefill_ms": null,
+    "product_decode_ms": null
+  },
+  "inference_scope": "exactly two authorized existing file-input product requests; no other model inference/pull/rm/quality suite",
+  "interpretation_correction": "Previous31-run failures describe the baseline; 12failures do not by themselves prevent establishing it. Gate remains blocked on unobserved required measurements, not the mere existence of failures.",
+  "collector_limitation_correction": "source report_limitations still says each path twice, but actual repeats_per_audio=1 and two clips were each executed once."
+}

@@ -62,3 +62,9 @@
 - 复核 `docs/evidence/m1/20261117/runs.json`：31 次，19 次严格 LLM，12 次拒绝（7 deadline、5 rule floor）。全部 ASR 为 SenseVoice。registry digest `500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41`，Q4_K_M，8.2B。`/api/show` 无 digest，digest 来自 `/api/tags`。本地 manifest 文件哈希与 registry digest 分开记录。
 - 全部 31 次的 critical p90 是 5326 ms。只看 19 次成功样本会把尾部看成 4430.8 ms。`zh_long` 五次都落到 deadline。失败回退是基线的一部分，不是整关作废，也不是通过。
 - 物理 T4、粘贴、护栏内部时间、prefill/decode、功耗、llama-server 峰值保持 null。恢复 smoke 的 1974 ms 不进入这张表。采集器补上 0.40.16 的 tags digest，并开始记录 `llama-server` RSS 和 `failure_class`。质量门槛未改。
+
+## 2026-11-17 · RSS 快照审查，停止再跑 CLI
+
+- `zh_short` 与 `zh_long` 各一次，不并进 31 次。短样本 `failure_class=llm`，ASR 768 ms，compose 3771 ms，critical 4539 ms。长样本 `deadline_fallback`，ASR 1103 ms，compose 4271 ms，critical 5374 ms。llama-server RSS 是片段前后快照：短 2408688→860272 KiB，长 860272→875632 KiB。采集器退出码 1，外层退出码 0。不是峰值，不是物理 T4，不是功耗。
+- `809f682` 的 `supplement_blocked.sh` 在 zsh 里给只读变量 `status` 赋值，推理还没开始就失败。正式脚本改用 `collector_status`，并用 `VELORA_M1_COLLECTOR` 指向采集器。测试用 zsh 5.9 实际执行，不是只做 `bash -n`。
+- 产品代码没有改。M1 仍 blocked：基线已经有了，缺的是产品未导出的 HUD、粘贴和 compose 内部分段。再跑 CLI 补不出这些数。

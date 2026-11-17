@@ -1,7 +1,7 @@
 #!/bin/zsh
-# Minimum follow-up for the blocked M1 fields. Does not pull, delete, or
-# call a paid judge. Does not paste unless the operator sets the gate below.
-# A clean exit is not an M1 pass.
+# RSS snapshot wrapper. Does not pull, delete, paste, or sample power.
+# collector exit 1 means a failure sample was written. A clean exit is not an M1 pass.
+# zsh keeps `status` read-only, so the collector result uses another name.
 set -euo pipefail
 
 ROOT="${VELORA_ROOT:-/Users/alpha/workspace/velora}"
@@ -27,10 +27,11 @@ export VELORA_M1_OUT="$OUT"
 export VELORA_M1_MODEL=qwen3:8b
 export VELORA_M1_REPEATS=1
 export VELORA_OLLAMA_MODEL=qwen3:8b
-status=0
-"$ROOT/docs/evidence/m1/collect_baseline.sh" "$1" "$2" || status=$?
-printf 'collector_exit=%s\n' "$status"
-printf 'paste_ms and physical T4 stay null. powermetrics was not sampled.\n'
-if [[ "$status" -gt 1 ]]; then
-  exit "$status"
+collector="${VELORA_M1_COLLECTOR:-$ROOT/docs/evidence/m1/collect_baseline.sh}"
+collector_status=0
+"$collector" "$1" "$2" || collector_status=$?
+printf 'collector_exit=%s\n' "$collector_status"
+printf 'paste_ms and physical T4 stay null. powermetrics was not sampled. RSS lines are snapshots, not peaks.\n'
+if [[ "$collector_status" -gt 1 ]]; then
+  exit "$collector_status"
 fi
