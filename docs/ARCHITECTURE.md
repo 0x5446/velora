@@ -26,7 +26,7 @@ Mac 微基准支持的只有：在合成端点上，历史草稿可以和贪心�
 产品侧现有接缝：
 
 - 识别：`SenseVoiceASREngine` 是长驻 Python sidecar，一次 `transcribe` 返回整段文本，没有端点回调。`resolvedDefault` 按 `VELORA_SENSEVOICE_ROOT`、cwd、`~/workspace/velora` 找 venv 和 `scripts/sensevoice_sidecar.py`。
-- 润色：`OllamaTextIntelligenceEngine` 一次 HTTP，默认 `qwen3:8b`。`VeloraMac/main.swift` 在构造管线时注入引擎。
+- 润色：`OllamaTextIntelligenceEngine` 一次 HTTP。源码默认仍是 `qwen3:8b`，由 `VELORA_OLLAMA_MODEL` 覆盖。2026-11-17 批准的 M1 对照是本机已有的 `qwen3:14b`，只在采集进程里设置该变量。`VeloraMac/main.swift` 在构造管线时注入引擎。
 - 上屏：松键后粘贴一次。翻译仍走确认卡。
 
 选定的部署形态，等 M1–M4 通过后再写进 `Apps/` 和 `Velora/Sources/`：

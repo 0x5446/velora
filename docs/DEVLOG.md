@@ -44,3 +44,9 @@
 - 隔离原型的 `draft_core.py` 裁短 `max_tokens`、不输出匹配到的 EOS、异常时清空 cache。研究 `LocalPolisher` 不是这样。CPU 设施补上 EOS 不输出，仍不加载 MLX。
 - 新的 3099/442 块日志是 5 个请求、1919 块的重跑，不是 5017.2 ms 那一轮。当前块校验接受它。公共端点摘要没有 `revision`，采集器拒绝。三种条件的 decoder 完成时间是 937.214 / 3874.732 / 281.655 ms，T4 为 null。
 - M1 采集脚本在 [`evidence/m1/collect_baseline.sh`](evidence/m1/collect_baseline.sh)。本环境没有跑。没有改 `Apps/` 或 `Velora/Sources/`。
+
+## 2026-11-17 · M1 基线改为本机已有的 qwen3:14b
+
+- 用户批准：这台 Mac 没有默认的 `qwen3:8b`，用已安装的 `qwen3:14b` 作本机对照，并写明契约变更。昨天的采集器对 `ollama show qwen3:8b` 退出码 1，SenseVoice 在，`runs` 为 n=0。没有补造毫秒。
+- 源码默认仍是 `LocalModelEngines.swift` 的 `VELORA_OLLAMA_MODEL` 缺省 `qwen3:8b`。采集进程只设置这个已有变量。不写 UserDefaults，不下载 8B，不改质量门槛。
+- 采集器默认不传 `--copy`。每个音频跑两遍。冷热只记录产品已有的 `ollama_model_reload` 警告。digest 来自本机 `/api/show`，Modelfile 不落盘。原文不入库。M1 仍未通过，要等真实 `runs.json` 审查。

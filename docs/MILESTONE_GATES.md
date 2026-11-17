@@ -81,9 +81,11 @@ F1 没有逐块实测 3691.4 ms。归档摘要只有合计。逐块 `context_tok
 
 ## M1 · 产品基线（仍不改用户可见行为）
 
-前置：M0 通过。环境：目标 Mac，记录 `sysctl -n machdep.cpu.brand_string`、内存、macOS 版本、Xcode、Swift、Ollama 版本、`ollama show qwen3:8b` 的摘要、SenseVoice `model.int8.onnx` 的 sha256。Linux CI 不能代替本关。
+前置：M0 通过。环境：目标 Mac，记录 `sysctl -n machdep.cpu.brand_string`、内存、macOS 版本、Xcode、Swift、Ollama 版本、SenseVoice `model.int8.onnx` 的 sha256。Linux CI 不能代替本关。
 
-测量对象是现行 Mac 产品路径：`SenseVoiceASREngine` 整段识别 + `OllamaTextIntelligenceEngine`（默认 `qwen3:8b`）+ 现有护栏 + 现有一次粘贴。`VeloraDiagnostics asr` 构造的是 `WhisperCLIASREngine`，不能当作这条路径。`debugInjectClip` 会走产品管线，但要求开发者模式并且会粘贴；用它时必须把模型就绪和粘贴分开计时。
+2026-11-17 用户批准的基线模型变更：这台机器没有 `qwen3:8b`，只有已经安装的 `qwen3:14b`。M1 对照因此是 SenseVoice + Ollama `qwen3:14b`。这不是 8B 测量。源码默认仍是 `LocalModelEngines.swift` 里的 `VELORA_OLLAMA_MODEL` 缺省 `qwen3:8b`；采集进程只设置这一个已有变量，不改 UserDefaults，不下载 8B。契约见 [`docs/evidence/m1/BASELINE.md`](evidence/m1/BASELINE.md)。昨天对 `ollama show qwen3:8b` 的采集退出码 1，`runs` 为 n=0，不补毫秒。质量六套的门槛不因换模型而改。
+
+测量对象是现行 Mac 产品路径：`SenseVoiceASREngine` 整段识别 + `OllamaTextIntelligenceEngine` + 现有护栏。CLI 采集不传 `--copy`，所以粘贴不在这次数字里。`VeloraDiagnostics asr` 构造的是 `WhisperCLIASREngine`，不能当作这条路径。`debugInjectClip` 会走产品管线，但要求开发者模式并且会粘贴；用它时必须把模型就绪和粘贴分开计时。
 
 三个现成数字不是同一个指标，报告里要分列：
 
@@ -99,7 +101,7 @@ F1 没有逐块实测 3691.4 ms。归档摘要只有合计。逐块 `context_tok
 - 内存：录音前、模型常驻后、一次长句之后，分别记录 Velora、sidecar Python 和 `ollama` 的 RSS。能耗若无仪表，写明 blocked，以及 `powermetrics` 是否被允许。不要估一个瓦数。
 - `LatencyBudgetTests` 通过不算测量。那些阶段时长是源码里的常数。
 
-通过：`docs/evidence/m1/report.md` 含上述字段、命令、n、音频清单哈希、模型摘要。音频本身不入库。缺音频或模型则整关 blocked，不编造 n。
+通过：`docs/evidence/m1/report.md` 含上述字段、命令、n、音频清单哈希、`qwen3:14b` 的 digest。音频本身不入库。缺音频、digest，或 `runs.json` 的 n 为 0，则整关 blocked，不编造 n。历史 8B 分数和任何旧的 14B 输出都不能填进这张表。
 
 本关结束时必须 **事前登记** M5 的延迟规则：比较对象是 M1 基线，统计是配对差的 bootstrap 95% CI，最小效应由 M1 的区间宽度和产品预算缺口决定。登记之前最小效应保持 TBD。不得把设计稿的 30% 或 20% 抄进来。
 

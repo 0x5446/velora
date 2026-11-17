@@ -1,6 +1,6 @@
 # 交接
 
-更新时间：2026-11-16。当前阶段：M0 已通过。F0 和 F1 的 CPU 设施已通过。M1 还没在目标 Mac 上跑。不要改产品代码。本环境没有访问 `/Users/alpha`。
+更新时间：2026-11-17。当前阶段：M0 已通过。F0 和 F1 的 CPU 设施已通过。M1 的本机对照已改为 `qwen3:14b`，真实 `runs.json` 还没回来，所以 M1 未通过。不要改产品代码。本环境没有访问 `/Users/alpha`。
 
 ## 现在在哪
 
@@ -24,7 +24,7 @@
 | M0 审计与资产清单 | 通过。见 [`evidence/m0/report.md`](evidence/m0/report.md)。1.7B 完整哈希是复用的先前验证；五个冻结清单匹配 |
 | F0 CPU 设施 | 通过。当时 18 项，见 [`evidence/f0/report.md`](evidence/f0/report.md)。同一命令现在会连同 F1 一起跑 |
 | F1 端点 schema / 采集器 / 回放 / 计时契约 | 通过。同一命令现为 41 项，退出码 0。CPU mock 的 `mlx_token_identity` 为 null。公共端点摘要因没有 revision 被拒绝。不是 M1 或 M5 |
-| M1 现行产品基线 | 未开始。脚本 [`evidence/m1/collect_baseline.sh`](evidence/m1/collect_baseline.sh) 测的是现行 SenseVoice + Ollama `qwen3:8b`，不切换默认路径。本环境不能跑 Swift |
+| M1 现行产品基线 | 未通过。用户批准用本机已有的 `qwen3:14b` 作对照，见 [`evidence/m1/BASELINE.md`](evidence/m1/BASELINE.md)。源码默认仍是 `qwen3:8b`。昨天 8B 采集 n=0。本环境不能跑 Swift |
 | M2 六套门禁 | 未开始。研究 rubric 的绝对通过率不能代替 |
 | M3 取消/焦点/离线的产品观察 | 未开始。F0 只覆盖假模型上的调度 |
 | M4 产品决定 | 未通过。方向已写明，默认行为未切换 |
@@ -32,16 +32,16 @@
 
 ## 下一最小交付
 
-在用户机器上执行，输出写到 `/Users/alpha/specdict/evidence/m1-baseline-20261116`，不要写进 git 工作区：
+在用户机器上执行。输出写到 `/Users/alpha/specdict/evidence/m1-baseline-14b`，不要写进 git 工作区。每个音频默认跑两遍。进程内 `VELORA_OLLAMA_MODEL=qwen3:14b`，不改持久偏好，不下载模型。
 
 ```bash
 chmod +x /Users/alpha/workspace/velora/docs/evidence/m1/collect_baseline.sh
 /Users/alpha/workspace/velora/docs/evidence/m1/collect_baseline.sh /path/to/clip1.caf /path/to/clip2.wav
 ```
 
-脚本使用 `swift run --package-path Velora VeloraMac --mode input --sensevoice --audio … --source zh --json`。没有 `--copy`。音频缺失或 SenseVoice 文件缺失时退出码 2。回来时带 `env.txt`、`sensevoice.sha256` 和 `runs.json`。`runs.json` 只有引擎名、阶段毫秒和字符数。
+脚本使用 `swift run --package-path Velora VeloraMac --mode input --sensevoice --audio … --source zh --json`。没有 `--copy`。SenseVoice 文件缺失或显式要求 8B 时退出码 2。模型没有 digest 时写 n=0 并退出码 1。回来时带 `env.txt`、`sensevoice.sha256` 和 `runs.json`。`runs.json` 有模型 digest、音频哈希、阶段毫秒、reload 警告和 RSS，没有原文。
 
-这还不是 M1 通过。M5 的最小效应仍等这批基线再登记。公共回放的 281.655 ms 不能填进这张表。
+这还不是 M1 通过。M5 的最小效应仍等这批基线再登记。公共回放的 281.655 ms、历史 8B 分数和任何旧的 14B 输出都不能填进这张表。
 
 原型差异已经写在 [`evidence/prototype/REVIEW.md`](evidence/prototype/REVIEW.md)。产品 sidecar 仍不开始。
 
